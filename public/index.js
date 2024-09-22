@@ -1,47 +1,29 @@
-// idk wtf is this
+// check for username
+document.addEventListener('DOMContentLoaded', function() {
+  const username = localStorage.getItem('username')
+  const userId =  localStorage.getItem('userId');
+  if (!username) window.location.href = '/Login/login.html'
+  if (!userId) window.location.href = '/Login/login.html'
+});
 let socket = io();
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 const messages = document.getElementById("messages")
-
-form.addEventListener('submit', function(e) {
-  e.preventDefault();
-  if (input.value) {
-    socket.emit('chat message', input.value);
-    // input.value = '';
-  }
-});
-
-socket.on('chat message', function(msg) {
-  messages.innerHTML += message(msg);
-  window.scrollTo(0, document.body.scrollHeight);
-});
-// idk wtf is this end
-
-// divider
-function dividerEffect(){
-
-}
-function dividerDeffect(){
-  
-}
-const devider = document.getElementById("divider")
-devider.addEventListener("mousedown",()=>{
-
+socket.on('chat message', (msg) => {
+  // Append the message to the chat without refreshing the page
+  messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage);
+  // Scroll to the bottom after appending a new message
+  setTimeout(() => {scrollToBottom("messages")},10)
 })
-devider.addEventListener("mouseup",()=>{
-
+// end this is for updating 
+// divider
+const divider = document.getElementById("divider")
+divider.addEventListener("mousedown",()=>{
+  divider.addEventListener("mousemove",()=>{
+    console.log("a")
+  })
 })
 //end divider
-// send button
-const sendButton = document.getElementById("send")
-sendButton.addEventListener("click",()=>{
-  setTimeout(() => {
-    scrollToBottom("messages")
-  },10)
-})
-
-// end send button
 // auto scroll down
 function scrollToBottom(element){
   let messageContainer = document.getElementById(`${element}`);
@@ -51,43 +33,41 @@ function scrollToBottom(element){
 });
 }
 
-input.addEventListener("keypress", function(event) {
-  if (event.key === "Enter") {
-    setTimeout(() => {
-      scrollToBottom("messages")
-    },10)}
-}); 
-
 // end auto scroll down
 // handle user input to db
 form.addEventListener('submit', function(e) {
   e.preventDefault();
   const message = input.value.trim();
+  const userId = localStorage.getItem('userId');
+  
+  if (!userId) {
+    console.error('User ID not found. User might not be logged in.');
+    return;
+  }
   
   if (message === '') {
     console.error('Empty message, nothing to send.');
     return;
   }
-
+  
   fetch('/submit-message', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: message }),
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message: message, userId: userId }),
   })
   .then(response => {
-    if (!response.ok) {
-        throw new Error('Failed to submit message');
-    }
-    return response.text();
+    if (!response.ok) throw new Error('Failed to submit message');
+    return response.json();
   })
   .then(data => {
-      console.log(data); // Display server response
-      input.value = ''; // Clear the input field after success
+    // Clear the input field after success
+    input.value = '';
   })
   .catch(error => console.error('Error:', error));
 });
+
 // end handle user input to db 
 
 // handing db data to client
@@ -98,7 +78,7 @@ function loadMessages() {
     .then(data => {
       messages.innerHTML = '';
       data.forEach(message => {
-        messages.innerHTML+= messageTemplate(message.message);
+        messages.innerHTML+= messageTemplate(message.message,message.username, message.profile_image);
       });
     })
     .catch(error => console.error('Error fetching messages:', error));
@@ -109,14 +89,14 @@ document.addEventListener('DOMContentLoaded', loadMessages);
 
 
 // message func
-function messageTemplate(message){
+function messageTemplate(message,username,profileImage){
   return`<div class="message">
     <div class="message-container">
       <div class="message-profile">
-        <img src="Images/User Profile/a.jpg" alt="" class="user-profile">
+        <img src="uploads/${profileImage}" alt="" class="user-profile">
       </div>
       <div class="message-content">
-        <div class="message-header">mmd</div>
+        <div class="message-header">${username}</div>
         <div class="message-text"  ><p>${message}</p></div>
         <div class="message-detail"></div>
       </div>
@@ -124,13 +104,3 @@ function messageTemplate(message){
   </div>`
 }
 // end message func
-// new
-document.addEventListener('DOMContentLoaded', function() {
-  // Assuming you're storing the username in localStorage
-  const username = localStorage.getItem('username');
-  
-  if (!username) {
-    // Redirect to the login page if no username is found
-    window.location.href = '/Login/login.html'; 
-  }
-});
