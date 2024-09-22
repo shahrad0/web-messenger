@@ -2,8 +2,10 @@
 document.addEventListener('DOMContentLoaded', function() {
   const username = localStorage.getItem('username')
   const userId =  localStorage.getItem('userId');
+  const authorized =  localStorage.getItem('authorized');
   if (!username) window.location.href = '/Login/login.html'
   if (!userId) window.location.href = '/Login/login.html'
+  if (!authorized) window.location.href = '/Authorize/'
 });
 let socket = io();
 const form = document.getElementById('form');
@@ -96,7 +98,7 @@ function messageTemplate(message,username,profileImage){
         <img src="uploads/${profileImage}" alt="" class="user-profile">
       </div>
       <div class="message-content">
-        <div class="message-header">${username}</div>
+        <div class="username">${username}</div>
         <div class="message-text"  ><p>${message}</p></div>
         <div class="message-detail"></div>
       </div>
@@ -104,3 +106,9 @@ function messageTemplate(message,username,profileImage){
   </div>`
 }
 // end message func
+// black screen
+const closeBlackScreen = document.getElementById("close-black-screen")
+const blackScreen = 
+closeBlackScreen.addEventListener("click",()=>{
+
+})

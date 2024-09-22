@@ -12,7 +12,7 @@
     --input-blur            : rgb(13, 65, 0);
     --message-background    : rgb(29, 29, 29);
     --username              : rgb(0, 168, 36);
-    
+    --username-hover        : rgb(0, 209, 45);
 }
 
 
@@ -25,6 +25,10 @@ body{
     background-color: var(--main-background-color);
     overflow: hidden;
     height: 100vh !important;
+}
+button{
+    background-color: transparent;
+    border: none;
 }
 .main-container{
     display: flex;
@@ -139,8 +143,38 @@ body{
     position: relative;
     width: 75px;
 }
-.message-header{
+.username{
     color: var(--username);
     margin-bottom: 10px;
     cursor: pointer;
+    transition: all 200ms;
+}
+.username:hover{
+    color: var(--username-hover);
+}
+#black-screen{
+    background-color: rgba(0, 0, 0, 0.69);
+    backdrop-filter: blur(6px);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 10;
+    display: none;
+}
+#close-black-screen svg {
+    path{
+        fill: var(--main-border) !important; 
+        transition: all 500ms;
+    }
+}
+#close-black-screen:hover svg {
+    path{
+        fill: var(--border-focus) !important; 
+        transition: all 500ms;
+    }
+}
+#close-black-screen{
+    width:  4vw;
+    height: 4vw;
+    margin: 2% ;
 }
