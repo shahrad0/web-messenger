@@ -34,6 +34,7 @@ form.addEventListener('submit', function(e) {
   })
   .catch(error => {
   console.error('Error:', error);
+  alert(error.message);
 }); 
   setTimeout(()=>{window.location.href = '../../'},100)
   

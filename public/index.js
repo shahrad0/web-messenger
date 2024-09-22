@@ -67,7 +67,7 @@ form.addEventListener('submit', function(e) {
     // Clear the input field after success
     input.value = '';
   })
-  .catch(error => console.error('Error:', error));
+  .catch(error => console.error('Error:', error));  
 });
 
 // end handle user input to db 
@@ -98,7 +98,7 @@ function messageTemplate(message,username,profileImage){
         <img src="uploads/${profileImage}" alt="" class="user-profile">
       </div>
       <div class="message-content">
-        <div class="username">${username}</div>
+        <div class="username" data-username="${username}">${username}</div>
         <div class="message-text"  ><p>${message}</p></div>
         <div class="message-detail"></div>
       </div>
@@ -107,8 +107,50 @@ function messageTemplate(message,username,profileImage){
 }
 // end message func
 // black screen
-const closeBlackScreen = document.getElementById("close-black-screen")
-const blackScreen = 
-closeBlackScreen.addEventListener("click",()=>{
 
-})
+const blackScreen = document.getElementById("black-screen")
+// closeBlackScreen.addEventListener("click",()=>{
+//   blackScreen.style.display = `none`
+// })
+document.addEventListener("click", function(event) {
+  if (event.target.classList.contains('username')) {
+    const username = event.target.getAttribute('data-username'); // Get the username from the clicked element
+    
+    fetch(`/user-details?username=${encodeURIComponent(username)}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+      return response.json();  // Attempt to parse JSON only if the response is okay
+    })
+    .then(user => {
+      if (user) {
+        // Display the user details (e.g., in a modal or a separate section)
+        blackScreen.style.display = 'block';
+        blackScreen.innerHTML = `
+        <div class="user-profile-detail">
+          <div class="user-info">
+            <p>User Info</p>
+            <button id="close-black-screen"><svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"/><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/><g id="SVGRepo_iconCarrier"> <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
+          </div>
+          <div class="user-info-container">
+            <img class="user-image" src="/uploads/${user.profile_image}" alt="">
+            <div style="width: 100%;">
+              <p class="user-detail">${user.username}</p>
+              <p class="user-detail">User ID: ${user.id}</p>
+              <p class="user-detail">User Role: -----</p>
+            </div>
+          </div>
+        `;
+
+        const closeBlackScreen = document.getElementById("close-black-screen");
+        closeBlackScreen.addEventListener("click", () => {
+          blackScreen.style.display = `none`;
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching user details:', error);
+    });
+  }
+});

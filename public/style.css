@@ -10,7 +10,6 @@
     --input-color           : rgb(201, 201, 201);
     --input-border          : rgb(0, 138, 53);
     --input-blur            : rgb(13, 65, 0);
-    --message-background    : rgb(29, 29, 29);
     --username              : rgb(0, 168, 36);
     --username-hover        : rgb(0, 209, 45);
 }
@@ -154,10 +153,10 @@ button{
 }
 #black-screen{
     background-color: rgba(0, 0, 0, 0.69);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(10px);
     width: 100%;
     height: 100%;
-    position: absolute;
+    position: fixed;
     z-index: 10;
     display: none;
 }
@@ -174,7 +173,40 @@ button{
     }
 }
 #close-black-screen{
-    width:  4vw;
-    height: 4vw;
-    margin: 2% ;
+    width:  5%;
+    margin-right: 3%;
+    cursor: pointer;
+}
+.user-profile-detail{
+    background-color: var(--secondary-background);
+    width: 40%;
+    height: 80%;
+    margin: 5% auto;
+    border-radius: 15px;
+    border: 2px solid var(--main-border) ;
+    box-shadow: 0 0 25px var(--main-blur);
+}
+.user-info{
+    display: flex;
+    width: 40%;
+    height: 10%;
+    position: fixed;
+}
+.user-info p{
+    margin-left: 3%;
+    margin-top:  2%;
+    width: 90%;
+    text-align: left;
+    font-size: 24px;
+}
+.user-info-container{
+    margin-top: 10%;
+    display: flex;
+}
+.user-image {
+    width: 100px;
+}
+.user-detail{
+    padding: 1%;
+    font-size: 20px;
 }

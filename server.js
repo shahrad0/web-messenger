@@ -12,7 +12,6 @@ app.use(express.static('public'));
 
 io.on('connection', (socket) => {
   console.log('a user connected');
-  
   socket.on('chat message', (msg) => {
     io.emit('chat message', msg);
   });
@@ -122,7 +121,7 @@ const upload = multer({ storage: storage });
 // Create the users table if it doesn't exist
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL,
+  username TEXT NOT NULL UNIQUE,
   profile_image TEXT
 )`, (err) => {
   if (err) {
@@ -135,10 +134,18 @@ app.post('/register', upload.single('profileImage'), (req, res) => {
   const profileImage = req.file ? req.file.filename : null; // Store file path if uploaded
 
   if (!username) return res.status(400).send('Username is required')
-    
+
+// Handle user details request
+
+
+
+
   // Insert user data into the database
   db.run(`INSERT INTO users (username, profile_image) VALUES (?, ?)`, [username, profileImage], function(err) {
     if (err) {
+      if (err.message.includes("UNIQUE constraint failed")) {
+        return res.status(400).send("Username already taken");
+      }
       console.error("Error inserting data:", err.message);
       return res.status(500).send("Error saving user data");
     }
@@ -147,3 +154,17 @@ app.post('/register', upload.single('profileImage'), (req, res) => {
 });
 // not sure about this one 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/user-details', (req, res) => {
+  const { username } = req.query;
+
+  db.get('SELECT username, profile_image ,id FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) {
+      console.error("Error fetching user details:", err.message);
+      return res.status(500).json({ error: "Error fetching user details" });
+    }
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user); // Send user details as JSON
+  });
+});
