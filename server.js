@@ -122,7 +122,8 @@ const upload = multer({ storage: storage });
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,
-  profile_image TEXT
+  profile_image TEXT,
+  role TEXT
 )`, (err) => {
   if (err) {
     console.error("Error creating table:", err.message);
@@ -141,7 +142,7 @@ app.post('/register', upload.single('profileImage'), (req, res) => {
 
 
   // Insert user data into the database
-  db.run(`INSERT INTO users (username, profile_image) VALUES (?, ?)`, [username, profileImage], function(err) {
+  db.run(`INSERT INTO users (username, profile_image,role) VALUES (?, ?,?)`, [username, profileImage,"user"], function(err) {
     if (err) {
       if (err.message.includes("UNIQUE constraint failed")) {
         return res.status(400).send("Username already taken");
@@ -157,7 +158,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/user-details', (req, res) => {
   const { username } = req.query;
 
-  db.get('SELECT username, profile_image ,id FROM users WHERE username = ?', [username], (err, user) => {
+  db.get('SELECT username, profile_image ,role,id FROM users WHERE username = ?', [username], (err, user) => {
     if (err) {
       console.error("Error fetching user details:", err.message);
       return res.status(500).json({ error: "Error fetching user details" });

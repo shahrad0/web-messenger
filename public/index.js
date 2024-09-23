@@ -95,7 +95,7 @@ function messageTemplate(message,username,profileImage){
   return`<div class="message">
     <div class="message-container">
       <div class="message-profile">
-        <img src="uploads/${profileImage}" alt="" class="user-profile">
+        <img src="uploads/${profileImage}" alt="npc" class="user-profile">
       </div>
       <div class="message-content">
         <div class="username" data-username="${username}">${username}</div>
@@ -138,7 +138,7 @@ document.addEventListener("click", function(event) {
             <div style="width: 100%;">
               <p class="user-detail">${user.username}</p>
               <p class="user-detail">User ID: ${user.id}</p>
-              <p class="user-detail">User Role: -----</p>
+              <p class="user-detail">User Role: ${user.role}</p>
             </div>
           </div>
         `;
@@ -154,3 +154,11 @@ document.addEventListener("click", function(event) {
     });
   }
 });
+document.getElementById("turn-off").addEventListener("click",()=>{
+    document.getElementById("off").style.display="block"
+  document.body.style.cursor = `none`
+  document.getElementById("off").addEventListener("click",()=>{
+    document.body.style.cursor = `default`
+    document.getElementById("off").style.display="none"
+  })
+})

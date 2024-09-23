@@ -210,3 +210,21 @@ button{
     padding: 1%;
     font-size: 20px;
 }
+svg g g path{
+    fill: var(--main-color);
+    transition: all 500ms;
+}
+svg:hover {g g path{fill: var(--main-border );}}
+svg:active{g g path{fill: var(--border-focus);}}
+#turn-off{
+    width: 3%;
+    margin:1% 0 0 1%;
+}
+#off{
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background-color: black;
+}
