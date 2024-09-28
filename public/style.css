@@ -12,9 +12,12 @@
     --input-blur            : rgb(13, 65, 0);
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
+    --third-background      : rgb(60, 60, 60);
 }
 
-
+input:focus{
+    outline: none;
+}
 *{
     margin: 0;
     padding: 0;
@@ -33,7 +36,7 @@ button{
 .main-container{
     display: flex;
 }
-.chats{
+.menu{
     width: 20%;
 }
 .chat{
@@ -286,4 +289,49 @@ svg:active{g path{fill: var(--border-focus);}}
         transition: all 200ms;
         fill: var(--border-focus);
     }
+}
+#pre-written-text-menu-container{
+    background-color: var(--secondary-background);
+    width: 100%;
+    height: 100%;
+}
+#submit-text{
+    width: 75%;
+    margin: 5% 0 0 2%;
+    padding: 2%;
+    background-color: var(--third-background);
+    border-radius: 152222px;
+    border: solid 2px var(--main-border);
+    box-shadow: 0 0 15px var(--main-blur);
+    transition: all 500ms;
+}
+#submit-text:focus{
+    box-shadow: 0 0 25px var(--blur-focus);
+    border-color: var(--border-focus) ;
+}
+#submit-pre-written-text-button{
+    background-color: var(--third-background);
+    padding: 2%;
+    border: solid 2px var(--main-border);
+    border-radius: 1005px ;
+    transition: all 200ms;
+}
+#submit-pre-written-text-button:hover{
+    border: solid 2px var(--border-focus);
+    box-shadow: 0 0 15px var(--main-blur);
+}
+#submit-pre-written-text-button:active{
+    box-shadow: 0 0 15px var(--border-focus);
+}
+#pre-written-text-container{
+    display: flex;
+    flex-wrap: wrap;
+}
+.pre-written-text{
+    margin: 3% 0 0 5%;
+    background-color: var(--third-background);
+    border-radius: 15px;
+    padding: 2% 4%;
+    border: solid 1px var(--main-border);
+    cursor: pointer;
 }

@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
 app.post('/submit-message', (req, res) => {
   const { message, userId } = req.body;
 
-  db.get('SELECT username, profile_image FROM users WHERE id = ?', [userId], (err, user) => {
+  db.get('SELECT username, profile_image,id FROM users WHERE id = ?', [userId], (err, user) => {
     if (err) {
       console.error("Error fetching user data:", err.message);
       return res.status(500).send("Error fetching user data");
@@ -77,7 +77,8 @@ app.post('/submit-message', (req, res) => {
         console.error("Error inserting message:", err.message);
         return res.status(500).send("Error inserting message");
       }
-      io.emit('chat message', { message, username: user.username, profileImage: user.profile_image });
+      io.emit('chat message', { message, username: user.username, profileImage: user.profile_image,id : user.id });
+      console.log(message, user.username,  user.profile_image, user.id)
       res.status(200).json({ message, username: user.username, profileImage: user.profile_image, userId });
     });
   });
@@ -86,7 +87,7 @@ app.post('/submit-message', (req, res) => {
 // Fetch all messages
 app.get('/get-messages', (req, res) => {
   const query = `
-    SELECT messages.message, users.username, users.profile_image
+    SELECT messages.message, users.username, users.profile_image , users.id
     FROM messages
     INNER JOIN users ON messages.user_id = users.id
     ORDER BY messages.id ASC
@@ -121,8 +122,8 @@ app.post('/register', upload.single('profileImage'), (req, res) => {
 
 // Serve user details
 app.get('/user-details', (req, res) => {
-  const { username } = req.query;
-  db.get('SELECT username, profile_image, role, id FROM users WHERE username = ?', [username], (err, user) => {
+  const { id } = req.query;
+  db.get('SELECT username, profile_image, role, id FROM users WHERE id = ?', [id], (err, user) => {
     if (err) {
       console.error("Error fetching user details:", err.message);
       return res.status(500).send("Error fetching user details");
