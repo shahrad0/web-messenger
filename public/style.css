@@ -12,7 +12,7 @@
     --input-blur            : rgb(13, 65, 0);
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
-    --third-background      : rgb(60, 60, 60);
+    --third-background      : rgb(70, 70, 70);
 }
 
 input:focus{
@@ -36,7 +36,7 @@ button{
 .main-container{
     display: flex;
 }
-.menu{
+#menu{
     width: 20%;
 }
 .chat{
@@ -254,7 +254,7 @@ svg:active{g path{fill: var(--border-focus);}}
     opacity: 0;
     transition: all 200ms;
 }
-.more-menu-item{padding: 6%;transition: all 300ms;}
+.more-menu-item{padding: 6%;transition: all 300ms;cursor: pointer;}
 .more-menu-item:hover{color: var(--text-hover);}
 #setting-button{
     margin: 5% 0 0 6%;
@@ -271,6 +271,7 @@ svg:active{g path{fill: var(--border-focus);}}
         fill: var(--main-border);
     }
 }
+#setting-button:active{   svg path{   fill: var(--border-focus);}}
 #edit-profile{
     margin-right: 2%;
     width: 7.5%;
@@ -297,7 +298,7 @@ svg:active{g path{fill: var(--border-focus);}}
 }
 #submit-text{
     width: 75%;
-    margin: 5% 0 0 2%;
+    margin: 5% 0 0 5%;
     padding: 2%;
     background-color: var(--third-background);
     border-radius: 152222px;
@@ -311,7 +312,7 @@ svg:active{g path{fill: var(--border-focus);}}
 }
 #submit-pre-written-text-button{
     background-color: var(--third-background);
-    padding: 2%;
+    padding: 2% 1.5%;
     border: solid 2px var(--main-border);
     border-radius: 1005px ;
     transition: all 200ms;
@@ -334,4 +335,26 @@ svg:active{g path{fill: var(--border-focus);}}
     padding: 2% 4%;
     border: solid 1px var(--main-border);
     cursor: pointer;
+    transition: all 200ms;
+    -webkit-user-select: none; /* Safari */        
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE10+/Edge */
+    user-select: none;         /* Standard */
+}
+.pre-written-text:hover{
+    border-color:  var(--border-focus);
+    box-shadow: 0 0 5px 5px var(--main-blur);
+}
+.pre-written-text:active{
+    box-shadow: 0 0 15px 5px var(--blur-focus);
+}
+.note{
+    display: flex;
+    font-size: 12px;
+    padding: 5% 7%;
+    border-bottom: solid 1px black ;
+}
+#close-menu{
+    width: 15%;
+    margin-right: 5%;
 }
