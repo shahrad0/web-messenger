@@ -1,0 +1,89 @@
+body{
+    background-color: black;
+    font-size: 20px;
+    color: rgb(194, 194, 194) !important;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+input{
+    background-color: rgb(54, 54, 54);
+    border: 1px solid red;
+    border-radius: 1000px ;
+    box-shadow: 0 0 10px red;
+    transition: 500ms;
+    width: 95%;
+    padding: 2% ;
+    color: inherit;
+    position: absolute;
+    
+}
+input button{
+    background-color: aqua;
+}
+input:focus{
+    box-shadow: 0 0 20px  red;
+    outline: none;
+}
+form{
+    margin: auto;
+    margin-top: 5%;
+    padding: 1%;
+    width: 40%;
+    height: 75%;
+    background-color: rgb(22, 22, 22);
+    border-radius: 30px;
+    box-shadow: 0 0 50px  rgb(185, 0, 0);
+    position: relative;
+}
+button{
+    background-color: rgb(54, 54, 54);
+    border: 1px solid red;
+    border-radius: 1000px ;
+    padding: 0.5% 0;
+    color: inherit;
+    width: 10%;
+    cursor: pointer;
+    transition: all 200ms;
+}
+button:hover{
+    border: 1px solid red;
+    box-shadow: 0 0 16px red;
+}
+button:active{
+    box-shadow: 0 0 20px rgb(255, 0, 0);
+    border: solid 1px rgb(255, 62, 62);
+}
+.separate{
+    height: 10%;
+    margin:1% 0  ;
+    position: relative;
+}
+label{
+    display: flex;
+    width: 10%;
+}
+.profile-preview{
+    margin-top: 2%;
+    width: 22%;
+}
+#submit{
+    position: absolute;
+    bottom: 5%;
+    padding: 2%;
+}
+h1{
+    text-align: center;
+    margin-top: 2%;
+    transition: all 400ms;
+}
+h1:hover{
+    color: red;
+}
+#login-redirect{
+    position: absolute;
+    bottom: 5%;
+    padding: 2%;
+    right: 3%;
+    width: fit-content;
+}

@@ -1,11 +1,18 @@
 // check for username
 document.addEventListener('DOMContentLoaded', function() {
-  const username   = localStorage.getItem('username')
-  const userId     =  localStorage.getItem('userId');
+  // const username   = localStorage.getItem('username')
+  // const userId     =  localStorage.getItem('userId');
+  // if (!username) window.location.href = '/Login/login.html'
+  // if (!userId) window.location.href = '/Login/login.html'
   const authorized =  localStorage.getItem('authorized');
-  if (!username) window.location.href = '/Login/login.html'
-  if (!userId) window.location.href = '/Login/login.html'
   if (!authorized) window.location.href = '/Authorize/'
+  if (authToken) {
+    // User is authenticated, proceed with loading the protected content
+    console.log('User authenticated with token:', authToken);
+  } else {
+    // Redirect to login page
+    window.location.href = '/login';
+  }
 });
 let socket = io();
 const form     = document.getElementById('form');

@@ -6,15 +6,20 @@
     <title>Document</title>
 </head>
 <body>
-    <input type="text" id="input">
-    <button onclick="check()"> submit</button>
+    <form action="" id="Authorize">
+        <input type="text" id="input">
+        <button type="submit" onclick="check()"> submit</button>
+    </form>
     <script>
         function check(){
-            a = document.getElementById("input").value 
-            if (a == "Meth Head"){
-                localStorage.setItem('authorized', true);
-                window.location.href = '../'
-            }
+            document.getElementById("Authorize").addEventListener(`submit`,(e)=>{
+                e.preventDefault()
+                a = document.getElementById("input").value 
+                if (a == "Meth Head"){
+                    localStorage.setItem('authorized', true);
+                    window.location.href = '../'
+                }
+            })
         }
     </script>
 </body>

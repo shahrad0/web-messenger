@@ -4,8 +4,16 @@ const socketIo = require('socket.io');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
+// pass Encryption
+const bcrypt = require('bcrypt');
+// idk wtf is this
+const saltRounds = 10;
+// handling images
 const multer = require('multer');
-
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+// idk wtf is this 
+const secretKey = 'C3%ke$lctd^eqcO7-xqxZSj%sca:^lu[FB#4e=9G@JyS?N<>VTLRYi:MD0"brK=';
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -13,6 +21,7 @@ const io = socketIo(server);
 app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // SQLite Database Setup
 const db = new sqlite3.Database('./database.db', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
@@ -101,23 +110,75 @@ app.get('/get-messages', (req, res) => {
   });
 });
 
-// Handle user registration
+// Handle user registration (sign up)
 app.post('/register', upload.single('profileImage'), (req, res) => {
-  const { username } = req.body;
+  const { username, password } = req.body; 
   const profileImage = req.file ? req.file.filename : null;
 
   if (!username) return res.status(400).send('Username is required');
+  if (!password) return res.status(400).send('Username is required');
 
-  db.run('INSERT INTO users (username, profile_image, role) VALUES (?, ?, ?)', [username, profileImage, 'user'], function(err) {
-    if (err) {
-      if (err.message.includes("UNIQUE constraint failed")) {
-        return res.status(400).send("Username already taken");
+  bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
+    if (err) return res.status(500).send('Error hashing password');
+
+    // Store the user details along with the hashed password
+    db.run('INSERT INTO users (username, password, profile_image, role) VALUES (?, ?, ?, ?)', 
+    [username, hashedPassword, profileImage, 'user'], function(err) {
+      if (err) {
+        if (err.message.includes("UNIQUE constraint failed")) {
+          return res.status(400).send("Username already taken");
+        }
+        console.error("Error inserting user:", err.message);
+        return res.status(500).send("Error saving user data");
       }
-      console.error("Error inserting user:", err.message);
-      return res.status(500).send("Error saving user data");
-    }
-    res.status(200).json({ userId: this.lastID });
+
+      // Generate a JWT token for the user
+      const token = jwt.sign({ userId: this.lastID, username }, secretKey, { expiresIn: '7d' });
+
+      // Set the token as a cookie
+      res.cookie('auth_token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+
+      res.status(200).json({ userId: this.lastID });
+    });
   });
+});
+
+// Handle user login
+app.post('/login', (req, res) => {
+  const { username,password } = req.body;
+  if (!username) return res.status(400).send('Username is required');
+  if (!password ) return res.status(400).send('Username is required');
+
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) return res.status(500).send('Error retrieving user');
+    if (!user) return res.status(400).send('Invalid username or password');
+    // Compare entered password with the hashed password
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if (err) return res.status(500).send('Error comparing passwords');
+      if (!isMatch) return res.status(400).send('Invalid username or password');
+      // Generate a JWT token
+      const token = jwt.sign({ userId: user.id, username: user.username }, secretKey, { expiresIn: '7d' });
+      // Set the token as a cookie
+      res.cookie('auth_token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+      // If valid, send user info or session data
+      res.status(200).json({ userId: user.id, username: user.username });
+    });
+  });
+});
+
+function authenticateToken(req, res, next) {
+  const token = req.cookies.auth_token;
+  if (!token) return res.status(401).send('Access denied. No token provided.');
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) return res.status(403).send('Invalid token');
+    req.user = user; // Attach user info to request object
+    next();
+  });
+}
+
+app.get('/protected-route', authenticateToken, (req, res) => {
+  res.send(`Hello ${req.user.username}, you have access to this route!`);
 });
 
 // Serve user details

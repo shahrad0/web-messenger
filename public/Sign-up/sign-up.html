@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign up</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <form action="" id="form">
+        <h1 >Sign up</h1>
+        <div class="separate">
+            <input type="name" placeholder="name"name="username" id="username">
+        </div>
+        <div class="separate">
+            <input type="password" placeholder="password"name="password" id="password">
+        </div>
+        <div class="separate">
+            <input type="file" onchange="previewFile()"  name="profileImage"accept="image/*">
+            <br>
+            <br>
+            <br>
+            <img src="" class="profile-preview" alt="Image preview...">
+        </div>
+        <button type="button" id="login-redirect" > Login </button>
+        <button type="submit" id="submit"> submit </button>
+    </form>
+    <script src="sign-up.js"></script>
+</body>
+</html>

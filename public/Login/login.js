@@ -14,11 +14,20 @@ function previewFile() {
 const form = document.getElementById("form")
 form.addEventListener('submit', function(e) {
   e.preventDefault();
-  const formData = new FormData(form);
-  localStorage.setItem('username', document.getElementById("username").value);
-  fetch('/register', {
-      method: 'POST',
-      body: formData
+  
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  // Prepare the data as JSON
+  const data = JSON.stringify({ username, password });
+
+  fetch('/login', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: data,
+    credentials: 'include' // Ensure cookies are sent with the request
   })
   .then(response => {
   if (!response.ok) { 
@@ -28,14 +37,20 @@ form.addEventListener('submit', function(e) {
   return response.json();
   })
   .then(data => {
-  console.log(data);    
-  // Save userId to localStorage
-  localStorage.setItem('userId', data.userId);
+
+  // localStorage.setItem('userId'  , data.userId)
+  // localStorage.setItem('username', username)
+  // localStorage.setItem('password', password)
+
+  setTimeout(()=>{window.location.href = '../../'},1)
   })
   .catch(error => {
   console.error('Error:', error);
   alert(error.message);
 }); 
-  setTimeout(()=>{window.location.href = '../../'},100)
   
 });
+document.getElementById("login-redirect").addEventListener("click",()=>{
+  setTimeout(()=>{window.location.href = '../Sign-up/sign-up.html'},1)
+
+})
