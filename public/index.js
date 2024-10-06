@@ -1,21 +1,14 @@
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop().split(';').shift();
-  }
+  if (parts.length === 2)   return parts.pop().split(';').shift();
   return null;
 }
 const authToken = getCookie("auth_token")
 
-// check for username
+// check for cookie and authorization
 document.addEventListener('DOMContentLoaded', function() {
-    if (authToken) {
-      // User is authenticated, proceed with loading the protected content
-      console.log('User authenticated with token:', authToken);
-    } 
-    else   window.location.href = '../login/login.html';
-    
+  if ( !authToken) window.location.href = '../login/login.html';
   const authorized =  localStorage.getItem('authorized');
   if (!authorized) window.location.href = '/Authorize/'
 })
@@ -27,6 +20,7 @@ const messages = document.getElementById("messages")
 const menu     = document.getElementById("menu")
 socket.on('chat message', (msg) => {
   // Append the message to the chat without refreshing the page
+  console.log(msg.message, msg.username, msg.profileImage,msg.id)
   messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
   // Scroll to the bottom after appending a new message
   setTimeout(() => {scrollToBottom("messages")},10)
@@ -64,7 +58,7 @@ form.addEventListener('submit', function(e) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
-    body: JSON.stringify({message: message,}),
+    body: JSON.stringify({message: message}),
   })
   .then(response => {
     if (!response.ok) throw new Error('Failed to submit message');
@@ -106,7 +100,7 @@ function messageTemplate(message,username,profileImage,id){
         <img src="uploads/${profileImage}" alt="npc" class="user-profile">
       </div>
       <div class="message-content">
-        <div class="username" data-username="${username}" data-id="${id}">${username}</div>
+        <div class="username" data-id="${id}">${username}</div>
         <div class="message-text"  ><p>${message}</p></div>
         <div class="message-detail"></div>
       </div>

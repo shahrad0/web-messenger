@@ -112,9 +112,8 @@ app.post("/submit-message", (req, res) => {
               message,
               username: user.username,
               profileImage: user.profile_image,
-              id: user.id,
-            });
-            console.log(message, user.username, user.profile_image, user.id);
+              id: user.userId,
+            })
             res.status(200).json({
               message,
               username: user.username,
@@ -164,26 +163,11 @@ app.post("/register", upload.single("profileImage"), (req, res) => {
       [username, hashedPassword, profileImage, "user"],
       function (err) {
         if (err) {
-          if (err.message.includes("UNIQUE constraint failed")) {
-            return res.status(400).send("Username already taken");
-          }
+          if (err.message.includes("UNIQUE constraint failed"))   return res.status(400).send("Username already taken")
           console.error("Error inserting user:", err.message);
           return res.status(500).send("Error saving user data");
         }
-
-        // Generate a JWT token for the user
-        const token = jwt.sign(
-          { userId: this.lastID, username, profile_image: profileImage },
-          secretKey,
-          { expiresIn: "7d" }
-        );
-        res.cookie("auth_token", token, {
-          secure: true,
-          sameSite: "none",
-          path: "/",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-        // Set the token as a cookie
+        generateToken({ userId: this.lastID,username,profile_image : profileImage},res)
         res.status(200).json({ userId: this.lastID });
       }
     );
@@ -203,23 +187,7 @@ app.post("/login", (req, res) => {
     bcrypt.compare(password, user.password, (err, isMatch) => {
       if (err) return res.status(500).send("Error comparing passwords");
       if (!isMatch) return res.status(400).send("Invalid username or password");
-      // Generate a JWT token
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          username: user.username,
-          profile_image: user.profile_image,
-        },
-        secretKey,
-        { expiresIn: "7d" }
-      );
-      // Set the token as a cookie
-      res.cookie("auth_token", token, {
-        secure: true,
-        sameSite: "none",
-        path: "/",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      }); // 7 days
+      generateToken({userId: user.id,username: user.username,profile_image : profileImage},res)
       // If valid, send user info or session data
       res.status(200).json({ userId: user.id, username: user.username });
     });
@@ -279,7 +247,12 @@ app.post("/update-profile", upload.single("profile_image"), (req, res) => {
   }
 
   db.run(query, params, function (err) {
-    if (err) return res.status(500).send("Error updating profile");
+    if (err) {
+      console.error("Database error: ", err);
+      return res.status(500).send("Error updating profile");
+    }
+    
+    generateToken({userId: userId,username: username,profile_image : profileImage},res)
     res.status(200).send("Profile updated successfully");
   });
 });
@@ -292,3 +265,20 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+// new 
+function generateToken(user, res) {
+  const tokenData = {
+      userId: user.userId,
+      username: user.username,
+  }
+  if (user.profile_image)  tokenData.profile_image = user.profile_image; // Only include if available
+  // Generate JWT token
+  const token = jwt.sign(tokenData, secretKey, { expiresIn: "7d" });
+  // Set the token as a cookie
+  res.cookie("auth_token", token, {
+      secure: process.env.NODE_ENV === "production", // true in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // lax in development
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+}
