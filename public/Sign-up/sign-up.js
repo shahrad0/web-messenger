@@ -15,12 +15,6 @@ const form = document.getElementById("form")
 form.addEventListener('submit', function(e) {
   e.preventDefault();
   const formData = new FormData(form);
-  const password = document.getElementById("password").value;
-  formData.append('password', password); // Append password to form data
-
-
-
-  // localStorage.setItem('username', document.getElementById("username").value);
   fetch('/register', {
       method: 'POST',
       body: formData
@@ -33,8 +27,6 @@ form.addEventListener('submit', function(e) {
   return response.json();
   })
   .then(data => {
-  // Save userId to localStorage
-  // localStorage.setItem('userId', data.userId);
   setTimeout(()=>{window.location.href = '../../'},1)
   })
   .catch(error => {

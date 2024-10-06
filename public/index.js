@@ -1,19 +1,25 @@
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop().split(';').shift();
+  }
+  return null;
+}
+const authToken = getCookie("auth_token")
+
 // check for username
 document.addEventListener('DOMContentLoaded', function() {
-  // const username   = localStorage.getItem('username')
-  // const userId     =  localStorage.getItem('userId');
-  // if (!username) window.location.href = '/Login/login.html'
-  // if (!userId) window.location.href = '/Login/login.html'
+    if (authToken) {
+      // User is authenticated, proceed with loading the protected content
+      console.log('User authenticated with token:', authToken);
+    } 
+    else   window.location.href = '../login/login.html';
+    
   const authorized =  localStorage.getItem('authorized');
   if (!authorized) window.location.href = '/Authorize/'
-  if (authToken) {
-    // User is authenticated, proceed with loading the protected content
-    console.log('User authenticated with token:', authToken);
-  } else {
-    // Redirect to login page
-    window.location.href = '/login';
-  }
-});
+})
+
 let socket = io();
 const form     = document.getElementById('form');
 const input    = document.getElementById('input');
@@ -48,11 +54,6 @@ function scrollToBottom(element){
 form.addEventListener('submit', function(e) {
   e.preventDefault();
   const message = input.value.trim();
-  const userId = localStorage.getItem('userId');
-  if (!userId) {
-    console.error('User ID not found. User might not be logged in.');
-    return;
-  }
   if (message === '') {
     console.error('Empty message, nothing to send.');
     return;
@@ -61,8 +62,9 @@ form.addEventListener('submit', function(e) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
     },
-    body: JSON.stringify({ message: message, userId: userId }),
+    body: JSON.stringify({message: message,}),
   })
   .then(response => {
     if (!response.ok) throw new Error('Failed to submit message');
@@ -119,7 +121,7 @@ document.addEventListener("click", function(event) {
   if (event.target.classList.contains('username')) {
     const id = event.target.getAttribute('data-id'); // Get the username from the clicked element
     
-    fetch(`/user-details?id=${encodeURIComponent(id)}`)
+    fetch(`/user-details-v2?id=${encodeURIComponent(id)}`)
     .then(response => {
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -214,8 +216,12 @@ moreButton.addEventListener("click",()=>{
 function settingButtonSetup(){
   settingButton = document.getElementById("setting-button")
   settingButton.addEventListener("click",()=>{
-      const id = localStorage.getItem(`userId`)
-      fetch(`/user-details?id=${encodeURIComponent(id)}`)
+      fetch(`/user-details`,  {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      }},)
+      
       .then(response => {
         if (!response.ok) {
           throw new Error(`Error: ${response.status} ${response.statusText}`);

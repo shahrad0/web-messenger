@@ -30,26 +30,24 @@ form.addEventListener('submit', function(e) {
     credentials: 'include' // Ensure cookies are sent with the request
   })
   .then(response => {
+  console.log(response.headers)
   if (!response.ok) { 
     console.error('Error Status:', response.status, response.statusText)
     return response.text().then(text => { throw new Error(text); })
   }
+
   return response.json();
   })
   .then(data => {
-
-  // localStorage.setItem('userId'  , data.userId)
-  // localStorage.setItem('username', username)
-  // localStorage.setItem('password', password)
-
-  setTimeout(()=>{window.location.href = '../../'},1)
+    setTimeout(()=>{window.location.href = '../../'},1)
   })
   .catch(error => {
-  console.error('Error:', error);
-  alert(error.message);
+    console.error('Error:', error);
+    alert(error.message);
 }); 
   
 });
+
 document.getElementById("login-redirect").addEventListener("click",()=>{
   setTimeout(()=>{window.location.href = '../Sign-up/sign-up.html'},1)
 
