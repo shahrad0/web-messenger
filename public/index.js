@@ -20,10 +20,7 @@ const messages = document.getElementById("messages")
 const menu     = document.getElementById("menu")
 socket.on('chat message', (msg) => {
   // Append the message to the chat without refreshing the page
-  console.log(msg.message, msg.username, msg.profileImage,msg.id)
   messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
-  // Scroll to the bottom after appending a new message
-  setTimeout(() => {scrollToBottom("messages")},10)
 })
 // end this is for updating 
 // divider
@@ -47,28 +44,8 @@ function scrollToBottom(element){
 // handle user input to db
 form.addEventListener('submit', function(e) {
   e.preventDefault();
-  const message = input.value.trim();
-  if (message === '') {
-    console.error('Empty message, nothing to send.');
-    return;
-  }
-  fetch('/submit-message', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`
-    },
-    body: JSON.stringify({message: message}),
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('Failed to submit message');
-    return response.json();
-  })
-  .then(data => {
-    // Clear the input field after success
-    input.value = '';
-  })
-  .catch(error => console.error('Error:', error));  
+  sendMessage(input.value)
+  setTimeout(() => {scrollToBottom("messages")},10)
 });
 
 // end handle user input to db 
@@ -82,8 +59,8 @@ function loadMessages() {
       messages.innerHTML = '';
       data.forEach(message => {
         messages.innerHTML+= messageTemplate(message.message,message.username, message.profile_image,message.id);
-        console.log(message.id)
       });
+    setTimeout(() => {scrollToBottom("messages")},10)
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
@@ -106,6 +83,30 @@ function messageTemplate(message,username,profileImage,id){
       </div>
     </div>
   </div>`
+}
+function sendMessage(userMessage){
+  const message = userMessage.trim();
+  if (message === '') {
+    console.error('Empty message, nothing to send.');
+    return;
+  }
+  fetch('/submit-message', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
+    body: JSON.stringify({message: message}),
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Failed to submit message');
+    return response.json();
+  })
+  .then(data => {
+    // Clear the input field after success
+    input.value = '';
+  })
+  .catch(error => console.error('Error:', error));  
 }
 // end message func
 // black screen
@@ -166,6 +167,11 @@ document.getElementById("turn-off").addEventListener("click",()=>{
 let altPressed
 document.addEventListener("keydown", function (event) {
   if (event.keyCode === 18)  altPressed = true; // Alt key is pressed
+  if (event.key === "/") {
+    if (document.activeElement !== input) { 
+      event.preventDefault()
+      input.focus()
+    }}
 
   if (altPressed && event.keyCode === 190) { // Alt + .
     if (toggleOff) {
@@ -282,6 +288,8 @@ preWrittenMenu.addEventListener("click",()=>{
           </div>
           <input  id="submit-text" type="text" placeholder="submit-text">
           <button id="submit-pre-written-text-button"> add </button>
+          <input type="checkbox" id="send-immediately">
+          <label for="send-immediately">send immediately</label>
         </form>
       </div>
       <div id="pre-written-text-container">
@@ -291,6 +299,7 @@ preWrittenMenu.addEventListener("click",()=>{
   moreMenu.style.opacity = `0`  
   moreMenuToggle = false
   updatePreWrittenText(input)
+
   // actual main functionality
   document.getElementById("submit-pre-written-text").addEventListener(`submit`,function(e){
     e.preventDefault();
@@ -307,9 +316,9 @@ preWrittenMenu.addEventListener("click",()=>{
           preWrittenTextInput.value = ''
           let savedPreWrittenText = JSON.parse(localStorage.getItem('preWrittenText'))
           if (savedPreWrittenText){
-            newSavedPreWrittenText = tempArray.concat(savedPreWrittenText)
+            let newSavedPreWrittenText = tempArray.concat(savedPreWrittenText)
             localStorage.setItem('preWrittenText', JSON.stringify(newSavedPreWrittenText))
-            updatePreWrittenText(input)
+            setTimeout(() => {updatePreWrittenText(input)}, 50);
           }
           else localStorage.setItem('preWrittenText', JSON.stringify(tempArray))
         }
@@ -345,8 +354,12 @@ function updatePreWrittenText(chatInput){
   const preWrittenText = document.querySelectorAll(".pre-written-text")
   preWrittenText.forEach(element => {
     element.addEventListener(`click`,()=>{
-      chatInput.value += element.innerHTML
-
+      if (document.getElementById('send-immediately').checked)  {
+        // chatInput.value += element.innerHTML;
+        sendMessage(element.innerHTML)
+      }
+      else chatInput.value += element.innerHTML
+      
     })
   });
 }

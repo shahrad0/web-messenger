@@ -35,4 +35,4 @@ form.addEventListener('submit', function(e) {
 }); 
   
 });
-document.getElementById("login-redirect").addEventListener("click",()=>{setTimeout(()=>{window.location.href = '../../'},1)})
+document.getElementById("login-redirect").addEventListener("click",()=>{setTimeout(()=>{window.location.href = '../login/login.html'},1)})

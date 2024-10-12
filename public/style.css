@@ -27,6 +27,7 @@ body{
     background-color: var(--main-background-color);
     overflow: hidden;
     height: 100vh !important;
+    font-family: 'Roboto', sans-serif;
 }
 button{
     background-color: transparent;
@@ -357,4 +358,9 @@ svg:active{g path{fill: var(--border-focus);}}
 #close-menu{
     width: 15%;
     margin-right: 5%;
+}
+.menu-item{
+    border: 1px var(--main-border) solid;
+    border-top:0px ;
+    padding: 10%;
 }

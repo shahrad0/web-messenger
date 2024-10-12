@@ -127,22 +127,25 @@ app.post("/submit-message", (req, res) => {
   });
 });
 
-// Fetch all messages
+// Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `
-    SELECT messages.message, users.username, users.profile_image , users.id
+    SELECT messages.message, users.username, users.profile_image, users.id
     FROM messages
     INNER JOIN users ON messages.user_id = users.id
-    ORDER BY messages.id ASC
+    ORDER BY messages.id DESC
+    LIMIT 50
   `;
   db.all(query, [], (err, rows) => {
     if (err) {
       console.error("Error fetching messages:", err.message);
       return res.status(500).send("Error fetching messages");
     }
-    res.json(rows);
+    // Reverse the order so the latest message is at the bottom
+    res.json(rows.reverse());
   });
 });
+
 
 // Handle user registration (sign up)
 app.post("/register", upload.single("profileImage"), (req, res) => {
@@ -187,7 +190,7 @@ app.post("/login", (req, res) => {
     bcrypt.compare(password, user.password, (err, isMatch) => {
       if (err) return res.status(500).send("Error comparing passwords");
       if (!isMatch) return res.status(400).send("Invalid username or password");
-      generateToken({userId: user.id,username: user.username,profile_image : profileImage},res)
+      generateToken({userId: user.id,username: user.username,profileImage : user.profile_image},res)
       // If valid, send user info or session data
       res.status(200).json({ userId: user.id, username: user.username });
     });
@@ -261,7 +264,7 @@ app.post("/update-profile", upload.single("profile_image"), (req, res) => {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve the client files
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 42069;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
