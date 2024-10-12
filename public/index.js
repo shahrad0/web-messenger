@@ -31,21 +31,26 @@ divider.addEventListener("mousedown",()=>{
   })
 })
 //end divider
-// auto scroll down
-function scrollToBottom(element){
-  let messageContainer = document.getElementById(`${element}`);
-  messageContainer.scrollTo({
-    top: messageContainer.scrollHeight,
+// auto scroll down and scroll down button
+messages.addEventListener('scroll', () => {
+  if       (messages.scrollTop < messages.scrollHeight-1000 && document.getElementById("scroll-down").style.display != `block`) {
+    document.getElementById("scroll-down").style.display = `block`
+    setTimeout(() => {document.getElementById("scroll-down").style.opacity = `1`}, 200); 
+  }
+  else if  (messages.scrollTop > messages.scrollHeight-1000 && document.getElementById("scroll-down").style.opacity != `0`){
+    document.getElementById("scroll-down").style.opacity = `0`
+    setTimeout(() => {document.getElementById("scroll-down").style.display = `none`}, 200);
+}})
+function scrollToBottom(){
+  document.getElementById("messages").scrollTo({
+    top: document.getElementById("messages").scrollHeight,
     behavior: "smooth"
-});
-}
-
-// end auto scroll down
+})}
+// end auto scroll down and scroll down button
 // handle user input to db
 form.addEventListener('submit', function(e) {
   e.preventDefault();
   sendMessage(input.value)
-  setTimeout(() => {scrollToBottom("messages")},10)
 });
 
 // end handle user input to db 
@@ -56,11 +61,10 @@ function loadMessages() {
   fetch('/get-messages')
     .then(response => response.json())
     .then(data => {
-      messages.innerHTML = '';
       data.forEach(message => {
         messages.innerHTML+= messageTemplate(message.message,message.username, message.profile_image,message.id);
       });
-    setTimeout(() => {scrollToBottom("messages")},10)
+    setTimeout(() => {scrollToBottom()},10)
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
@@ -100,6 +104,7 @@ function sendMessage(userMessage){
   })
   .then(response => {
     if (!response.ok) throw new Error('Failed to submit message');
+    setTimeout(() => {scrollToBottom()},10)
     return response.json();
   })
   .then(data => {
@@ -202,11 +207,13 @@ const moreMenu = document.getElementById("more-menu")
 let moreMenuToggle = false 
 moreButton.addEventListener("click",()=>{
   if (!moreMenuToggle){
-    moreMenu.style.opacity = `1`  
+    moreMenu.style.display = 'block'
+    moreMenu.style.opacity = `1` 
     moreMenuToggle = true
   }
   else{
     moreMenu.style.opacity = `0`  
+    setTimeout(() => {moreMenu.style.display = 'none' }, 200);
     moreMenuToggle = false
   }
 })
