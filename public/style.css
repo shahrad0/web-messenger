@@ -385,3 +385,10 @@ svg:active{g path{fill: var(--border-focus);}}
 #scroll-down:active{
     box-shadow: 0 0 25px 5px var(--main-blur);
 }
+#mouse-lock{
+    width: 10%;
+    height: 2%;
+    position: absolute;
+    bottom:  0 ;
+    background-color: aqua;
+}

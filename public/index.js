@@ -19,8 +19,9 @@ const input    = document.getElementById('input');
 const messages = document.getElementById("messages")
 const menu     = document.getElementById("menu")
 socket.on('chat message', (msg) => {
-  // Append the message to the chat without refreshing the page
+  console.log(messages.scrollHeight,messages.scrollTop + messages.offsetHeight)
   messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
+  if (messages.scrollHeight-100 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 // end this is for updating 
 // divider
@@ -162,7 +163,7 @@ let toggleOff = false
 // turn off button 
 document.getElementById("turn-off").addEventListener("click",()=>{
     document.getElementById("off").style.display="block"
-    document.body.style.cursor = `none`
+    // document.body.style.cursor = `none`
     toggleOff = true 
     document.getElementById("off").addEventListener("click",()=>{
       document.body.style.cursor = `default`
@@ -187,6 +188,10 @@ document.addEventListener("keydown", function (event) {
       document.getElementById("off").style.display = "block";
       document.body.style.cursor = "none";
       toggleOff = true;
+      // document.addEventListener("mousemove",()=>{
+      //   document.getElementById("mouse-lock").requestPointerLock()
+      //   console.log(document.getElementById("mouse-lock"))
+      // })
       document.getElementById("off").addEventListener("click",()=>{
         document.body.style.cursor = `default`
         document.getElementById("off").style.display="none"
