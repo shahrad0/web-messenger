@@ -126,7 +126,25 @@ app.post("/submit-message", (req, res) => {
     );
   });
 });
+function deleteMessage() {
+  const query = `
+    DELETE FROM messages
+    WHERE id IN (
+      SELECT id FROM messages
+      ORDER BY id DESC
+      LIMIT 5
+    );
+  `;
+  db.run(query, (error) => {
+    if (error) {
+      console.error("Error deleting messages:", error.message);
+    } else {
+      console.log("Successfully deleted the last 5 messages.");
+    }
+  });
+}
 
+// deleteMessage()
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `
@@ -264,7 +282,7 @@ app.post("/update-profile", upload.single("profile_image"), (req, res) => {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve the client files
-const PORT = process.env.PORT || 42069;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

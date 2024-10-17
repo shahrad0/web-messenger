@@ -19,8 +19,9 @@ const input    = document.getElementById('input');
 const messages = document.getElementById("messages")
 const menu     = document.getElementById("menu")
 socket.on('chat message', (msg) => {
-  // Append the message to the chat without refreshing the page
+  console.log(messages.scrollHeight,messages.scrollTop + messages.offsetHeight)
   messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
+  if (messages.scrollHeight-100 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 // end this is for updating 
 // divider
@@ -218,7 +219,11 @@ moreButton.addEventListener("click",()=>{
   }
 })
 // add hover 
-
+document.addEventListener("mousemove",e=>{
+  // console.log(Math.random() *1000)
+  e.x = Math.random() *1000
+  // console.log(e.movementX)
+})
 // setting 
 function settingButtonSetup(){
   settingButton = document.getElementById("setting-button")
@@ -361,13 +366,78 @@ function updatePreWrittenText(chatInput){
   const preWrittenText = document.querySelectorAll(".pre-written-text")
   preWrittenText.forEach(element => {
     element.addEventListener(`click`,()=>{
-      if (document.getElementById('send-immediately').checked)  {
-        // chatInput.value += element.innerHTML;
-        sendMessage(element.innerHTML)
-      }
+      if (document.getElementById('send-immediately').checked)  sendMessage(element.innerHTML)
       else chatInput.value += element.innerHTML
-      
     })
   });
 }
 // end pre written text
+
+// right click
+document.addEventListener("contextmenu", function (e) {
+  e.preventDefault(); // Prevent the default context menu from appearing
+  let selectedText = window.getSelection().toString().trim();
+  console.log(selectedText)
+  // Only show context menu if there is selected text
+  if (selectedText) contextMenu(e)
+  else if (input === document.activeElement) contextMenu(e)
+  else alert("No text selected to show context menu.");
+});
+
+// Show custom context menu
+function contextMenu(event) {
+  // Remove existing context menu if present
+  const existingMenu = document.getElementById("context-menu");
+  if (existingMenu) existingMenu.remove();
+
+  // Create the context menu
+  const menu = document.createElement("div");
+  menu.id = "context-menu";
+  menu.innerHTML = `
+      <div class="right-click-item" id="copy"  onclick="copy()">Copy</div>
+      <div class="right-click-item" id="cut"   onclick="cut()">Cut</div>
+      <div class="right-click-item" id="paste" onclick="paste()">Paste</div>`
+  document.body.appendChild(menu);
+  // Position the context menu
+  const x = Math.min(event.pageX, window.innerWidth - menu.offsetWidth);
+  const y = Math.min(event.pageY, window.innerHeight - menu.offsetHeight);
+  
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
+
+  // Close the context menu when clicking anywhere else
+  document.addEventListener("click", function () {menu.remove();}, { once: true }); // Remove the listener after it executes
+}
+
+// Copy 
+async function copy() {
+  console.log(getSelectedText())
+  try {if (getSelectedText()) await navigator.clipboard.writeText(getSelectedText())} 
+  catch (err) {    console.log("Failed to copy text", err);}
+}
+
+// Cut 
+async function cut() {
+    try {
+        await copy()
+        const textarea = document.getElementById('editableText');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, start) + textarea.value.substring(end);
+    } catch (err) {    alert('Failed to cut text');}
+}
+
+// Paste 
+async function paste() {
+    try {
+        const text = await navigator.clipboard.readText();
+        const textarea = document.getElementById('editableText');
+        const start = textarea.selectionStart;
+        textarea.setRangeText(text, start, start, 'end');
+    } catch (err) {
+        alert('Failed to paste text');
+    }
+}
+
+// Get selected text
+function getSelectedText() {return window.getSelection().toString().trim();}
