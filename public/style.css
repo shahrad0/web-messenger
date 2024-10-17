@@ -385,24 +385,3 @@ svg:active{g path{fill: var(--border-focus);}}
 #scroll-down:active{
     box-shadow: 0 0 25px 5px var(--main-blur);
 }
-#context-menu{
-    width: 100px;
-    background-color: var(--secondary-background);
-    border-radius: 15px;
-    border: var(--border-focus) solid 1px;
-    overflow: hidden;
-    position: absolute;
-}
-.right-click-item{
-    border-bottom: 1px solid var(--main-border) ;
-    padding: 5% 0 ;
-    padding-left: 20%;
-    transition: all 100ms;
-}
-.right-click-item:hover{
-    background-color: var(--third-background);
-    cursor: pointer;
-}
-.message-text p {
-    overflow-wrap: break-word;
-}
