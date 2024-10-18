@@ -377,71 +377,63 @@ function updatePreWrittenText(chatInput){
 }
 // end pre written text
 
-// right click
+let selectedRange = null;
+
 document.addEventListener("contextmenu", function (e) {
-  e.preventDefault(); // Prevent the default context menu from appearing
-  let selectedText = window.getSelection().toString().trim();
-  console.log(selectedText)
-  // Only show context menu if there is selected text
-  if (selectedText) contextMenu(e)
-  else if (input === document.activeElement) contextMenu(e)
-  else alert("No text selected to show context menu.");
+  e.preventDefault(); // Prevent the default context menu
+  const selection = window.getSelection();
+  let selectedText = selection.toString().trim();
+
+  // Store the current selection range if text is selected
+  if (selectedText) selectedRange = selection.getRangeAt(0);
+
+  if (selectedText || input === document.activeElement) {
+    contextMenu(e);  // Call your custom context menu
+  }
 });
 
-// Show custom context menu
 function contextMenu(event) {
   // Remove existing context menu if present
   const existingMenu = document.getElementById("context-menu");
-  if (existingMenu) existingMenu.remove();
+  if (existingMenu) existingMenu.remove();  // Avoid multiple menus
 
-  // Create the context menu
+  // Create the custom context menu
   const menu = document.createElement("div");
   menu.id = "context-menu";
   menu.innerHTML = `
-      <div class="right-click-item" id="copy"  onclick="copy()">Copy</div>
-      <div class="right-click-item" id="cut"   onclick="cut()">Cut</div>
-      <div class="right-click-item" id="paste" onclick="paste()">Paste</div>`
-  document.body.appendChild(menu);
-  // Position the context menu
-  const x = Math.min(event.pageX, window.innerWidth - menu.offsetWidth);
-  const y = Math.min(event.pageY, window.innerHeight - menu.offsetHeight);
+    <div class="right-click-item" id="copy"  onclick="copy()">Copy</div>
+    <div class="right-click-item" id="cut"   onclick="cut()">Cut</div>
+    <div class="right-click-item" id="paste" onclick="paste()">Paste</div>
+  `;
   
-  menu.style.left = `${x}px`;
-  menu.style.top = `${y}px`;
+  document.body.appendChild(menu);
 
-  // Close the context menu when clicking anywhere else
-  document.addEventListener("click", function () {menu.remove();}, { once: true }); // Remove the listener after it executes
+  // Adjust the position of the menu within the viewport
+  menu.style.left = `${Math.min(event.pageX, window.innerWidth - menu.offsetWidth)}px`;
+  menu.style.top = `${Math.min(event.pageY, window.innerHeight - menu.offsetHeight)}px`;
+
+  // Remove the menu when clicking outside
+  document.addEventListener("click", function () {
+    menu.remove();
+  }, { once: true });
 }
 
-// Copy 
 async function copy() {
-  console.log(getSelectedText())
-  try {if (getSelectedText()) await navigator.clipboard.writeText(getSelectedText())} 
-  catch (err) {    console.log("Failed to copy text", err);}
-}
-
-// Cut 
-async function cut() {
-    try {
-        await copy()
-        const textarea = document.getElementById('editableText');
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        textarea.value = textarea.value.substring(0, start) + textarea.value.substring(end);
-    } catch (err) {    alert('Failed to cut text');}
-}
-
-// Paste 
-async function paste() {
-    try {
-        const text = await navigator.clipboard.readText();
-        const textarea = document.getElementById('editableText');
-        const start = textarea.selectionStart;
-        textarea.setRangeText(text, start, start, 'end');
-    } catch (err) {
-        alert('Failed to paste text');
+  try {
+    const selection = window.getSelection();
+    if (selectedRange) {
+      selection.removeAllRanges();
+      selection.addRange(selectedRange);  // Restore selected range
     }
+    if (selection.toString()) {
+      await navigator.clipboard.writeText(selection.toString());
+      selection.removeAllRanges();  // Clear the selection after copying
+    }
+  } catch (err) {
+    console.log("Failed to copy text", err);
+  }
 }
-
-// Get selected text
-function getSelectedText() {return window.getSelection().toString().trim();}
+async function paste() {
+  const read = await navigator.clipboard.readText()
+  input.value = read
+}
