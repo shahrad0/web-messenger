@@ -37,6 +37,7 @@ db.run(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   message TEXT NOT NULL,
   user_id INTEGER NOT NULL,
+  reply_id INTEGER DEFAULT NULL,
   FOREIGN KEY(user_id) REFERENCES users(id)
 )`,
   (err) => {

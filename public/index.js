@@ -13,17 +13,19 @@ document.addEventListener('DOMContentLoaded', function() {
   if (!authorized) window.location.href = '/Authorize/'
 })
 
-let socket = io();
-const form     = document.getElementById('form');
-const input    = document.getElementById('input');
-const messages = document.getElementById("messages")
-const menu     = document.getElementById("menu")
+let socket = io()
+const form             = document.getElementById('form');
+const input            = document.getElementById('input');
+const messages         = document.getElementById("messages")
+const menu             = document.getElementById("menu")
+const messageContainer = document.getElementById("messages")
+const chatContainer    = document.getElementById("chat")
 socket.on('chat message', (msg) => {
   console.log(messages.scrollHeight,messages.scrollTop + messages.offsetHeight)
   messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
   if (messages.scrollHeight-100 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
-// end this is for updating 
+
 // divider
 const divider = document.getElementById("divider")
 divider.addEventListener("mousedown",()=>{
@@ -32,6 +34,7 @@ divider.addEventListener("mousedown",()=>{
   })
 })
 //end divider
+
 // auto scroll down and scroll down button
 messages.addEventListener('scroll', () => {
   if       (messages.scrollTop < messages.scrollHeight-1000 && document.getElementById("scroll-down").style.display != `block`) {
@@ -223,11 +226,6 @@ moreButton.addEventListener("click",()=>{
   }
 })
 // add hover 
-document.addEventListener("mousemove",e=>{
-  // console.log(Math.random() *1000)
-  e.x = Math.random() *1000
-  // console.log(e.movementX)
-})
 // setting 
 function settingButtonSetup(){
   settingButton = document.getElementById("setting-button")
@@ -239,10 +237,8 @@ function settingButtonSetup(){
       }},)
       
       .then(response => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        return response.json();  // Attempt to parse JSON only if the response is okay
+        if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+        return response.json()  // Attempt to parse JSON only if the response is okay
       })
       .then(user => {
         if (user) {
@@ -386,7 +382,7 @@ document.addEventListener("contextmenu", function (e) {
   
   // right click on message
   if (e.target.matches('.message-container') || e.target.matches('.message-profile') || e.target.matches('.message-content')){
-    contextMenu(event,['copy','reply'])
+    contextMenu(event,[`copyMessage`,'reply'])
 
   }
   // right click when user select a text
@@ -407,10 +403,11 @@ function contextMenu(event,features) {
 
   // add element depending on where user right clicks
   features.forEach(element => {
-    if (element == "copy")  menu.innerHTML += `<div class="right-click-item" id="copy "   onclick="copy() ">Copy </div>`
-    if (element == "cut")   menu.innerHTML += `<div class="right-click-item" id="cut  "   onclick="cut()  ">cut  </div>`
-    if (element == "reply") menu.innerHTML += `<div class="right-click-item" id="reply"   onclick="reply()">reply</div>`
-    if (element == "paste") menu.innerHTML += `<div class="right-click-item" id="paste"   onclick="paste()">paste</div>`
+    if (element == "copyMessage")  menu.innerHTML += `<div class="right-click-item" id="copy-message "   onclick="copyMessage() ">Copy </div>`
+    if (element == "copy")         menu.innerHTML += `<div class="right-click-item" id="copy         "   onclick="copy()        ">Copy </div>`
+    if (element == "cut")          menu.innerHTML += `<div class="right-click-item" id="cut          "   onclick="cut()         ">cut  </div>`
+    if (element == "reply")        menu.innerHTML += `<div class="right-click-item" id="reply        "   onclick="reply()       ">reply</div>`
+    if (element == "paste")        menu.innerHTML += `<div class="right-click-item" id="paste        "   onclick="paste()       ">paste</div>`
  
   });
   document.body.appendChild(menu);
@@ -438,6 +435,31 @@ async function paste() {
   const read = await navigator.clipboard.readText()
   input.value += read
 }
+// not complete 
+async function copyMessage() {
+  // await navigator.clipboard.writeText(e.target.toString());
+  
+}
 function reply(){
-
+  input.style.transition = "all 0s"
+  messageContainer.style.height = `81%`
+  input.style.borderTopLeftRadius  = "0px"
+  input.style.borderTopRightRadius = "0px"
+  const reply = document.createElement('div');
+  reply.id = "reply-container";
+  chatContainer.appendChild(reply);
+  const closeReply = document.createElement("button")
+  closeReply.id = "close-reply"
+  closeReply.innerHTML = `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"/><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/><g id="SVGRepo_iconCarrier"> <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
+  closeReply.addEventListener("click",()=>{removeReply()})
+  reply.appendChild(closeReply)
+  setTimeout(() => {input.style.transition = "all 500ms";scrollToBottom()}, 100)
+  input.focus()
+  
+}
+function removeReply(){
+  messageContainer.style.height = `88%`
+  input.style.borderTopLeftRadius  = "20px"
+  input.style.borderTopRightRadius = "20px"
+  document.getElementById("reply-container").remove()
 }
