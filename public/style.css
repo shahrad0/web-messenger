@@ -85,25 +85,13 @@ button{
     box-shadow: 0 0 20px 10px var(--blur-focus);
     outline: none;
 }
-#send{
-    height: 100%;
-    border-radius: 10px;
-    background-color: transparent;
-    border: none;
-    margin-left: 1%;
-}
-#send-img {
-    width:  fit-content;
-    transition: all 500ms;
-    height: 80%;
-}
-#send-img:hover{
+svg:hover{
     path{
         fill: var(--main-border) !important; 
         transition: all 500ms;
     }
 }
-#send-img:active{
+svg:active{
     path{
         transition: 200ms;
         fill: var(--border-focus) !important; 
@@ -221,10 +209,6 @@ svg g g path{
 }
 svg:hover {g g path{fill: var(--main-border );}}
 svg:active{g g path{fill: var(--border-focus);}}
-#turn-off{
-    width: 3%;
-    margin:1% 0 0 1%;
-}
 #off{
     display: none;
     position: absolute;
@@ -234,9 +218,7 @@ svg:active{g g path{fill: var(--border-focus);}}
     background-color: black;
 }
 #more{
-    margin:0 0 0  1%;
     rotate: 90deg;
-    width: 3.5%;
 }
 svg g path{
     fill: var(--main-color);
@@ -405,4 +387,20 @@ svg:active{g path{fill: var(--border-focus);}}
 }
 .message-text p {
     overflow-wrap: break-word;
+}
+#reply-container{
+    width: 100%;
+    height: 69px;
+    position: absolute;
+    background-color: aqua;
+    top: 5%;
+}
+.form-button{
+    transition: all 300ms;
+    width : 4vw;
+    height: 4vw;
+}
+.form-button svg{
+    width : 80%;
+    height: 80%;
 }

@@ -380,46 +380,50 @@ function updatePreWrittenText(chatInput){
 let selectedRange = null;
 
 document.addEventListener("contextmenu", function (e) {
-  e.preventDefault(); // Prevent the default context menu
+  e.preventDefault()
   const selection = window.getSelection();
   let selectedText = selection.toString().trim();
-
-  // Store the current selection range if text is selected
-  if (selectedText) selectedRange = selection.getRangeAt(0);
-
-  if (selectedText || input === document.activeElement) {
-    contextMenu(e);  // Call your custom context menu
-  }
-});
-
-function contextMenu(event) {
-  // Remove existing context menu if present
-  const existingMenu = document.getElementById("context-menu");
-  if (existingMenu) existingMenu.remove();  // Avoid multiple menus
-
-  // Create the custom context menu
-  const menu = document.createElement("div");
-  menu.id = "context-menu";
-  menu.innerHTML = `
-    <div class="right-click-item" id="copy"  onclick="copy()">Copy</div>
-    <div class="right-click-item" id="cut"   onclick="cut()">Cut</div>
-    <div class="right-click-item" id="paste" onclick="paste()">Paste</div>
-  `;
   
+  // right click on message
+  if (e.target.matches('.message-container') || e.target.matches('.message-profile') || e.target.matches('.message-content')){
+    contextMenu(event,['copy','reply'])
+
+  }
+  // right click when user select a text
+  if (selectedText){ 
+    selectedRange = selection.getRangeAt(0)
+    contextMenu(event,['copy'])
+  }
+  // right click on input
+  if (input === document.activeElement) contextMenu(e)
+})
+
+function contextMenu(event,features) {
+  const existingMenu = document.getElementById("context-menu")
+  if (existingMenu) existingMenu.remove()
+
+  const menu = document.createElement("div");
+  menu.id = "context-menu"
+
+  // add element depending on where user right clicks
+  features.forEach(element => {
+    if (element == "copy")  menu.innerHTML += `<div class="right-click-item" id="copy "   onclick="copy() ">Copy </div>`
+    if (element == "cut")   menu.innerHTML += `<div class="right-click-item" id="cut  "   onclick="cut()  ">cut  </div>`
+    if (element == "reply") menu.innerHTML += `<div class="right-click-item" id="reply"   onclick="reply()">reply</div>`
+    if (element == "paste") menu.innerHTML += `<div class="right-click-item" id="paste"   onclick="paste()">paste</div>`
+ 
+  });
   document.body.appendChild(menu);
 
   // Adjust the position of the menu within the viewport
-  menu.style.left = `${Math.min(event.pageX, window.innerWidth - menu.offsetWidth)}px`;
-  menu.style.top = `${Math.min(event.pageY, window.innerHeight - menu.offsetHeight)}px`;
+  menu.style.left = `${Math.min(event.pageX, window.innerWidth  - menu.offsetWidth )}px`
+  menu.style.top  = `${Math.min(event.pageY, window.innerHeight - menu.offsetHeight)}px`
 
   // Remove the menu when clicking outside
-  document.addEventListener("click", function () {
-    menu.remove();
-  }, { once: true });
+  document.addEventListener("click", function () {menu.remove()} , { once: true })
 }
 
 async function copy() {
-  try {
     const selection = window.getSelection();
     if (selectedRange) {
       selection.removeAllRanges();
@@ -429,11 +433,11 @@ async function copy() {
       await navigator.clipboard.writeText(selection.toString());
       selection.removeAllRanges();  // Clear the selection after copying
     }
-  } catch (err) {
-    console.log("Failed to copy text", err);
-  }
 }
 async function paste() {
   const read = await navigator.clipboard.readText()
-  input.value = read
+  input.value += read
+}
+function reply(){
+
 }
