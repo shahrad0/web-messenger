@@ -13,6 +13,12 @@
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
     --third-background      : rgb(50,50,50);
+
+
+
+    /* --reply-background      : ;  */
+    --reply-username-color  : rgb(57, 127, 255);
+    --reply-color           : rgb(131, 174, 255)
 }
 
 input:focus{
@@ -75,7 +81,7 @@ button{
     color: var(--input-color) ;
     background-color: var(--secondary-background);
     border: solid 2px var(--input-border);
-    border-radius: 20px;
+    border-radius: 69420px;
     box-shadow: 0 0 15px 5px var(--input-blur);
     margin-left: 11.25px; 
     transition: all 500ms;
@@ -393,7 +399,7 @@ svg:active{g path{fill: var(--border-focus);}}
     width: 63%;
     border: solid 2px var(--border-focus);
     border-bottom: 0;
-    border-radius: 20px;
+    border-radius: 69420px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;   
     height: 7%;
@@ -417,4 +423,10 @@ svg:active{g path{fill: var(--border-focus);}}
 .form-button svg{
     width : 80%;
     height: 80%;
+}
+.reply-username{
+    color: var(--reply-username-color);
+}
+.reply-text{
+    color: var(--reply-color);
 }

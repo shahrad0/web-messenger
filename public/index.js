@@ -373,18 +373,24 @@ function updatePreWrittenText(chatInput){
 }
 // end pre written text
 
-let selectedRange = null;
-
+let selectedRange 
+let targetedElement
+// setInterval(() => {
+//   console.log(targetedElement)
+// }, 100);
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
   const selection = window.getSelection();
   let selectedText = selection.toString().trim();
-  
-  // right click on message
-  if (e.target.matches('.message-container') || e.target.matches('.message-profile') || e.target.matches('.message-content')){
-    contextMenu(event,[`copyMessage`,'reply'])
 
+  targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
+
+  if (targetedElement) {
+    const messageText = targetedElement.querySelector('.message-text p').innerText;
+    contextMenu(event, [`copyMessage`, 'reply']);
+    console.log(messageText)
   }
+
   // right click when user select a text
   if (selectedText){ 
     selectedRange = selection.getRangeAt(0)
@@ -408,7 +414,6 @@ function contextMenu(event,features) {
     if (element == "cut")          menu.innerHTML += `<div class="right-click-item" id="cut          "   onclick="cut()         ">cut  </div>`
     if (element == "reply")        menu.innerHTML += `<div class="right-click-item" id="reply        "   onclick="reply()       ">reply</div>`
     if (element == "paste")        menu.innerHTML += `<div class="right-click-item" id="paste        "   onclick="paste()       ">paste</div>`
- 
   });
   document.body.appendChild(menu);
 
@@ -447,19 +452,27 @@ function reply(){
   input.style.borderTopRightRadius = "0px"
   const reply = document.createElement('div');
   reply.id = "reply-container";
-  chatContainer.appendChild(reply);
   const closeReply = document.createElement("button")
   closeReply.id = "close-reply"
   closeReply.innerHTML = `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"/><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/><g id="SVGRepo_iconCarrier"> <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
   closeReply.addEventListener("click",()=>{removeReply()})
-  reply.appendChild(closeReply)
   setTimeout(() => {input.style.transition = "all 500ms";scrollToBottom()}, 100)
   input.focus()
+  const replyUsername     = document.createElement("p")
+  const replyText         = document.createElement("p")
+  replyUsername.className = "reply-username"
+  replyText.className     = "reply-text"
+  replyUsername.innerText = "replying to " + targetedElement.querySelector('.username').innerText
+  replyText.innerText     = targetedElement.querySelector('.message-text p').innerText
   
+  chatContainer.appendChild(reply)
+  reply.appendChild(closeReply)
+  reply.appendChild(replyUsername)
+  reply.appendChild(replyText)
 }
 function removeReply(){
   messageContainer.style.height = `88%`
-  input.style.borderTopLeftRadius  = "20px"
-  input.style.borderTopRightRadius = "20px"
+  input.style.borderTopLeftRadius  = "69420px"
+  input.style.borderTopRightRadius = "69420px"
   document.getElementById("reply-container").remove()
 }
