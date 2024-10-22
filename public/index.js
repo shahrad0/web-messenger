@@ -14,19 +14,19 @@ document.addEventListener('DOMContentLoaded', function() {
 })
 
 let socket = io()
-const form             = document.getElementById('form');
-const input            = document.getElementById('input');
+const form             = document.getElementById('form')
+// const root = document.querySelector(':root')
+const input            = document.getElementById('input')
 const messages         = document.getElementById("messages")
 const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 socket.on('chat message', (msg) => {
-  console.log(messages.scrollHeight,messages.scrollTop + messages.offsetHeight)
   messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
   if (messages.scrollHeight-100 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 
-// divider
+// divider not complete 
 const divider = document.getElementById("divider")
 divider.addEventListener("mousedown",()=>{
   divider.addEventListener("mousemove",()=>{
@@ -375,20 +375,15 @@ function updatePreWrittenText(chatInput){
 
 let selectedRange 
 let targetedElement
-// setInterval(() => {
-//   console.log(targetedElement)
-// }, 100);
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
   const selection = window.getSelection();
   let selectedText = selection.toString().trim();
 
-  targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
-
-  if (targetedElement) {
-    const messageText = targetedElement.querySelector('.message-text p').innerText;
-    contextMenu(event, [`copyMessage`, 'reply']);
-    console.log(messageText)
+  if (e.target.closest('.message-container')) {
+    contextMenu(event, [`copyMessage`, 'reply'])
+    targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
+    targetedElement.classList.add("message-container-selected")
   }
 
   // right click when user select a text
@@ -402,7 +397,10 @@ document.addEventListener("contextmenu", function (e) {
 
 function contextMenu(event,features) {
   const existingMenu = document.getElementById("context-menu")
-  if (existingMenu) existingMenu.remove()
+  if (existingMenu) {
+    targetedElement.classList.remove("message-container-selected")
+    existingMenu.remove()
+  }
 
   const menu = document.createElement("div");
   menu.id = "context-menu"
@@ -422,7 +420,10 @@ function contextMenu(event,features) {
   menu.style.top  = `${Math.min(event.pageY, window.innerHeight - menu.offsetHeight)}px`
 
   // Remove the menu when clicking outside
-  document.addEventListener("click", function () {menu.remove()} , { once: true })
+  document.addEventListener("click", function () {
+    targetedElement.classList.remove("message-container-selected")
+    menu.remove()
+  } , { once: true })
 }
 
 async function copy() {
@@ -440,32 +441,45 @@ async function paste() {
   const read = await navigator.clipboard.readText()
   input.value += read
 }
-// not complete 
 async function copyMessage() {
-  // await navigator.clipboard.writeText(e.target.toString());
+  await navigator.clipboard.writeText(targetedElement.querySelector(".message-text p").innerText)
+}
+function replyStyle(replyContainer){
+  input.setSelectionRange(input.value.length, input.value.length);
+  input.style.transition            = "all 0s"
+  input.style.borderTopLeftRadius   = "0px"
+  input.style.borderTopRightRadius  = "0px"
+  input.style.padding               = `0 3%` 
+  input.style.width                 = `77%` 
+  messageContainer.style.height     = `81%`
+  input.addEventListener('focus', function() {
+    replyContainer.style.border = `solid 2px var(--border-focus)`
+    replyContainer.style.borderBottom = 0
+  });
   
+  input.addEventListener('blur', function() {
+      replyContainer.style.border = `solid 2px var(--input-border)` 
+      replyContainer.style.borderBottom = 0
+  })
+  window.addEventListener("resize", ()=>{replyContainer.style.width = getComputedStyle(input).width })
 }
 function reply(){
-  input.style.transition = "all 0s"
-  messageContainer.style.height = `81%`
-  input.style.borderTopLeftRadius  = "0px"
-  input.style.borderTopRightRadius = "0px"
-  const reply = document.createElement('div');
-  reply.id = "reply-container";
-  const closeReply = document.createElement("button")
-  closeReply.id = "close-reply"
-  closeReply.innerHTML = `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"/><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/><g id="SVGRepo_iconCarrier"> <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
+
+  const reply = document.createElement('div')
+  reply.id    = "reply-container"
+  replyStyle(reply)
+  reply.style.width = getComputedStyle(input).width;
+  const closeReply      = document.createElement("button")
+  closeReply.id         = "close-reply"
+  closeReply.innerHTML  = `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"/><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/><g id="SVGRepo_iconCarrier"> <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
   closeReply.addEventListener("click",()=>{removeReply()})
   setTimeout(() => {input.style.transition = "all 500ms";scrollToBottom()}, 100)
   input.focus()
-  const replyUsername     = document.createElement("p")
-  const replyText         = document.createElement("p")
-  replyUsername.className = "reply-username"
-  replyText.className     = "reply-text"
-  replyUsername.innerText = "replying to " + targetedElement.querySelector('.username').innerText
-  replyText.innerText     = targetedElement.querySelector('.message-text p').innerText
+
+  const replyUsername     = createCustomElement("p","class","reply-username","Replying to " + targetedElement.querySelector('.username').innerText)
+  const replyText         = createCustomElement("p","class","reply-text"    ,targetedElement.querySelector('.message-text p').innerText)
   
-  chatContainer.appendChild(reply)
+  form.appendChild(reply)
   reply.appendChild(closeReply)
   reply.appendChild(replyUsername)
   reply.appendChild(replyText)
@@ -474,5 +488,14 @@ function removeReply(){
   messageContainer.style.height = `88%`
   input.style.borderTopLeftRadius  = "69420px"
   input.style.borderTopRightRadius = "69420px"
+  input.style.padding               = `0 2%` 
+  input.style.width                 = `80%` 
   document.getElementById("reply-container").remove()
+}
+function createCustomElement(elementType,classOrId,classOrIdName,elementText){
+  const element     = document.createElement(elementType)
+  element.innerText = elementText
+  if (classOrId == "class") element.className = classOrIdName
+  else                      element.id        = classOrIdName
+  return element
 }

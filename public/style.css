@@ -13,12 +13,14 @@
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
     --third-background      : rgb(50,50,50);
+    --reply-username-color  : rgb(0, 121, 26);
+    --reply-color           : rgb(26, 255, 44);
+    --selected-message-bg   : rgb(11, 34, 16);
+    --selected-message-blur : rgb(45 164 45);
 
-
-
-    /* --reply-background      : ;  */
-    --reply-username-color  : rgb(57, 127, 255);
-    --reply-color           : rgb(131, 174, 255)
+    /* probably not gonna be used  */
+    /* --reply-username-color  : rgb(57, 127, 255);
+    --reply-color           : rgb(131, 174, 255) */
 }
 
 input:focus{
@@ -39,6 +41,9 @@ button{
     background-color: transparent;
     border: none;
     cursor: pointer;
+}
+input{
+    caret-color: green !important;
 }
 .main-container{
     display: flex;
@@ -84,6 +89,7 @@ button{
     border-radius: 69420px;
     box-shadow: 0 0 15px 5px var(--input-blur);
     margin-left: 11.25px; 
+    font-size: 16px;
     transition: all 500ms;
 }
 #input:focus{
@@ -114,6 +120,7 @@ svg:active{
 }
 .message-container{
     display: flex;
+    transition: all 200ms;
 }
 .message{
     margin: 2% 0;
@@ -396,16 +403,16 @@ svg:active{g path{fill: var(--border-focus);}}
 #reply-container{
     position: absolute;
     background-color: var(--secondary-background);
-    width: 63%;
     border: solid 2px var(--border-focus);
     border-bottom: 0;
     border-radius: 69420px;
-    border-bottom-left-radius: 0;
+    border-bottom-left-radius : 0;
     border-bottom-right-radius: 0;   
-    height: 7%;
-    top: 83%;
-    left: calc(11.25px + 20% + 0.2%);
-    padding: 0 2%;
+    height: 100%;
+    top: -100%;
+    margin-left: 11.25px ;
+    padding: 0 3%;
+    transition: all 500ms;
 }
 #close-reply{
     width : 2.5%;
@@ -426,7 +433,13 @@ svg:active{g path{fill: var(--border-focus);}}
 }
 .reply-username{
     color: var(--reply-username-color);
+    margin-top: 0.8%;
 }
 .reply-text{
+    margin-top: 0.3%;
     color: var(--reply-color);
+}
+.message-container-selected{
+    box-shadow: 0 0 15px var(--selected-message-blur);
+    background-color: var(--selected-message-bg);
 }
