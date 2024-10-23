@@ -13,10 +13,10 @@
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
     --third-background      : rgb(50,50,50);
-    --reply-username-color  : rgb(0, 121, 26);
-    --reply-color           : rgb(26, 255, 44);
+    /* --reply-username-color  : rgb(0, 121, 26);
+    --reply-color           : rgb(26, 255, 44); */
     --selected-message-bg   : rgb(11, 34, 16);
-    --selected-message-blur : rgb(45 164 45);
+    --selected-message-blur : rgb(17, 65, 17);
 
     /* probably not gonna be used  */
     /* --reply-username-color  : rgb(57, 127, 255);
@@ -86,7 +86,7 @@ input{
     color: var(--input-color) ;
     background-color: var(--secondary-background);
     border: solid 2px var(--input-border);
-    border-radius: 69420px;
+    border-radius: 50px;
     box-shadow: 0 0 15px 5px var(--input-blur);
     margin-left: 11.25px; 
     font-size: 16px;
@@ -380,6 +380,8 @@ svg:active{g path{fill: var(--border-focus);}}
     box-shadow: 0 0 25px 5px var(--main-blur);
 }
 #context-menu{
+    transition: all 100ms;
+    scale: 0;
     width: 100px;
     background-color: var(--secondary-background);
     border-radius: 15px;
@@ -402,10 +404,10 @@ svg:active{g path{fill: var(--border-focus);}}
 }
 #reply-container{
     position: absolute;
-    background-color: var(--secondary-background);
+    background-color: var(--third-background);
     border: solid 2px var(--border-focus);
     border-bottom: 0;
-    border-radius: 69420px;
+    border-radius: 50px;
     border-bottom-left-radius : 0;
     border-bottom-right-radius: 0;   
     height: 100%;
@@ -432,14 +434,13 @@ svg:active{g path{fill: var(--border-focus);}}
     height: 80%;
 }
 .reply-username{
-    color: var(--reply-username-color);
+    color: var(--username);
     margin-top: 0.8%;
 }
 .reply-text{
-    margin-top: 0.3%;
-    color: var(--reply-color);
+    margin-top: 0.3%;   
 }
 .message-container-selected{
-    box-shadow: 0 0 15px var(--selected-message-blur);
+    box-shadow: 0 0 25px var(--selected-message-blur);
     background-color: var(--selected-message-bg);
 }
