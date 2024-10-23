@@ -82,7 +82,7 @@ io.on("connection", (socket) => {
 
 // Handle message submission and save to database
 app.post("/submit-message", (req, res) => {
-  const { message, userId } = req.body;
+  const { message, userId, replyId } = req.body;
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Extract the token after 'Bearer'
 
@@ -99,11 +99,12 @@ app.post("/submit-message", (req, res) => {
           console.error("Error fetching user data:", err.message);
           return res.status(500).send("Error fetching user data");
         }
+        console.log(message,replyId)
         if (!user) return res.status(400).send("User not found");
 
         db.run(
-          "INSERT INTO messages (message, user_id) VALUES (?, ?)",
-          [message, user.userId],
+          "INSERT INTO messages (message, user_id,reply_id) VALUES (?, ?, ?)",
+          [message,user.userId,replyId || null],
           function (err) {
             if (err) {
               console.error("Error inserting message:", err.message);
@@ -114,12 +115,15 @@ app.post("/submit-message", (req, res) => {
               username: user.username,
               profileImage: user.profile_image,
               id: user.userId,
+              messageId : this.lastID,
             })
+            console.log(this.lastID)
             res.status(200).json({
               message,
               username: user.username,
               profileImage: user.profile_image,
               userId,
+              messageId : this.lastID,
             });
           }
         );
@@ -149,7 +153,7 @@ function deleteMessage() {
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `
-    SELECT messages.message, users.username, users.profile_image, users.id
+    SELECT messages.message, messages.id AS messageId, users.username, users.profile_image, users.id AS userId
     FROM messages
     INNER JOIN users ON messages.user_id = users.id
     ORDER BY messages.id DESC
@@ -160,8 +164,15 @@ app.get("/get-messages", (req, res) => {
       console.error("Error fetching messages:", err.message);
       return res.status(500).send("Error fetching messages");
     }
+    const messages = rows.reverse().map(row => ({
+      message: row.message,
+      username: row.username,
+      profileImage: row.profile_image,
+      userId: row.userId,          // for data-id
+      messageId: row.messageId,    // for data-id
+    }))
     // Reverse the order so the latest message is at the bottom
-    res.json(rows.reverse());
+    res.json(messages);
   });
 });
 
@@ -304,3 +315,16 @@ function generateToken(user, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
+// const addReplyIdColumn = () => {
+//   const sql = `ALTER TABLE messages ADD COLUMN reply_id INTEGER DEFAULT NULL`;
+
+//   db.run(sql, function(err) {
+//       if (err) {
+//           return console.error(err.message);
+//       }
+//       console.log('Column reply_id added to messages table.');
+//   });
+// };
+
+// Call the function to add the column
+// addReplyIdColumn();

@@ -13,14 +13,8 @@
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
     --third-background      : rgb(50,50,50);
-    /* --reply-username-color  : rgb(0, 121, 26);
-    --reply-color           : rgb(26, 255, 44); */
     --selected-message-bg   : rgb(11, 34, 16);
     --selected-message-blur : rgb(17, 65, 17);
-
-    /* probably not gonna be used  */
-    /* --reply-username-color  : rgb(57, 127, 255);
-    --reply-color           : rgb(131, 174, 255) */
 }
 
 input:focus{

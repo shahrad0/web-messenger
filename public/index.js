@@ -15,15 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 let socket = io()
 const form             = document.getElementById('form')
-// const root = document.querySelector(':root')
 const input            = document.getElementById('input')
 const messages         = document.getElementById("messages")
 const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
-socket.on('chat message', (msg) => {
-  messages.innerHTML += messageTemplate(msg.message, msg.username, msg.profileImage,msg.id);
-  if (messages.scrollHeight-100 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
+let replyId
+socket.on('chat message', (message) => {
+  messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage,message.id,message.messageId);
+  if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 
 // divider not complete 
@@ -54,7 +54,7 @@ function scrollToBottom(){
 // handle user input to db
 form.addEventListener('submit', function(e) {
   e.preventDefault();
-  sendMessage(input.value)
+  sendMessage(input.value,replyId)
 });
 
 // end handle user input to db 
@@ -66,7 +66,8 @@ function loadMessages() {
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
-        messages.innerHTML+= messageTemplate(message.message,message.username, message.profile_image,message.id);
+        messages.innerHTML+= messageTemplate(message.message,message.username, message.profile_image,message.userId,message.messageId);
+        console.log(message.messageId, message.userId)
       });
     setTimeout(() => {scrollToBottom()},10)
     })
@@ -78,52 +79,54 @@ document.addEventListener('DOMContentLoaded', loadMessages);
 
 
 // message func
-function messageTemplate(message,username,profileImage,id){
+function messageTemplate(message,username,profileImage,id,messageId){
   return`<div class="message">
     <div class="message-container">
       <div class="message-profile">
         <img src="uploads/${profileImage}" alt="npc" class="user-profile">
       </div>
       <div class="message-content">
-        <div class="username" data-id="${id}">${username}</div>
-        <div class="message-text"  ><p>${message}</p></div>
+        <div class="username" data-user-id="${id}">${username}</div>
+        <div class="message-text" data-message-id="${messageId}" ><p>${message}</p></div>
         <div class="message-detail"></div>
       </div>
     </div>
   </div>`
 }
-function sendMessage(userMessage){
-  const message = userMessage.trim();
-  if (message === '') {
-    console.error('Empty message, nothing to send.');
-    return;
-  }
+function sendMessage(userMessage, replyId = null) {
+  const message = userMessage.trim()
+  if (message === '') return 
+
   fetch('/submit-message', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
-    body: JSON.stringify({message: message}),
+    body: JSON.stringify({
+      message: message,
+      replyId: replyId 
+    }),
   })
   .then(response => {
     if (!response.ok) throw new Error('Failed to submit message');
-    setTimeout(() => {scrollToBottom()},10)
+    setTimeout(() => {scrollToBottom()}, 10);
     return response.json();
   })
   .then(data => {
-    // Clear the input field after success
-    input.value = '';
+    input.value = ''
+    if (document.getElementById('reply-container')) removeReply()
   })
-  .catch(error => console.error('Error:', error));  
+  .catch(error => console.error('Error:', error));
 }
+
 // end message func
 // black screen
 
 const blackScreen = document.getElementById("black-screen")
 document.addEventListener("click", function(event) {
   if (event.target.classList.contains('username')) {
-    const id = event.target.getAttribute('data-id'); // Get the username from the clicked element
+    const id = event.target.getAttribute('data-user-id'); // Get the username from the clicked element
     
     fetch(`/user-details-v2?id=${encodeURIComponent(id)}`)
     .then(response => {
@@ -162,18 +165,27 @@ document.addEventListener("click", function(event) {
     });
   }
 });
-let toggleOff = false 
-// turn off button 
-document.getElementById("turn-off").addEventListener("click",()=>{
-    document.getElementById("off").style.display="block"
-    // document.body.style.cursor = `none`
-    toggleOff = true 
+let toggleOff  = false 
+let altPressed 
+function turnOffSetup (){
+  if (toggleOff) {
+    document.body.style.cursor = "default"
+    document.getElementById("off").style.display = "none"
+    toggleOff = false;
+  } 
+  else {
+    document.getElementById("off").style.display = "block"
+    document.body.style.cursor = "none"
+    toggleOff = true
+    
     document.getElementById("off").addEventListener("click",()=>{
       document.body.style.cursor = `default`
       document.getElementById("off").style.display="none"
       toggleOff = false 
-  })})
-let altPressed
+    })}
+}
+// turn off button 
+document.getElementById("turn-off").addEventListener("click",() => turnOffSetup())
 document.addEventListener("keydown", function (event) {
   if (event.keyCode === 18)  altPressed = true; // Alt key is pressed
   if (event.key === "/") {
@@ -181,27 +193,10 @@ document.addEventListener("keydown", function (event) {
       event.preventDefault()
       input.focus()
     }}
+  // Alt + .
+  if (altPressed && event.keyCode === 190)   turnOffSetup()
 
-  if (altPressed && event.keyCode === 190) { // Alt + .
-    if (toggleOff) {
-      document.body.style.cursor = "default";
-      document.getElementById("off").style.display = "none";
-      toggleOff = false;
-    } else {
-      document.getElementById("off").style.display = "block";
-      document.body.style.cursor = "none";
-      toggleOff = true;
-      // document.addEventListener("mousemove",()=>{
-      //   document.getElementById("mouse-lock").requestPointerLock()
-      //   console.log(document.getElementById("mouse-lock"))
-      // })
-      document.getElementById("off").addEventListener("click",()=>{
-        document.body.style.cursor = `default`
-        document.getElementById("off").style.display="none"
-        toggleOff = false 
-    })
-  }
-}});
+});
 // Track when Alt is released
 document.addEventListener("keyup", function (event) {
   if (event.keyCode === 18) {
@@ -313,34 +308,17 @@ preWrittenMenu.addEventListener("click",()=>{
   updatePreWrittenText(input)
 
   // actual main functionality
-  document.getElementById("submit-pre-written-text").addEventListener(`submit`,function(e){
+  document.getElementById("submit-pre-written-text").addEventListener('submit', function(e) {
     e.preventDefault();
-    let preWrittenTextInput = document.getElementById("submit-text") 
-    let preWrittenText = preWrittenTextInput.value
-    let tempArray = []
-    let tempText = ''
-    for (let i = 0;i < preWrittenText.length;i++){
-      if(preWrittenText[i] == `,` || i > preWrittenText.length-2){
-        if(i > preWrittenText.length-2){
-          tempText+= preWrittenText[i]
-          tempArray.push(tempText)
-          tempText= ''
-          preWrittenTextInput.value = ''
-          let savedPreWrittenText = JSON.parse(localStorage.getItem('preWrittenText'))
-          if (savedPreWrittenText){
-            let newSavedPreWrittenText = tempArray.concat(savedPreWrittenText)
-            localStorage.setItem('preWrittenText', JSON.stringify(newSavedPreWrittenText))
-            setTimeout(() => {updatePreWrittenText(input)}, 50);
-          }
-          else localStorage.setItem('preWrittenText', JSON.stringify(tempArray))
-        }
-        else{
-        tempArray.push(tempText)
-        tempText= ''
-      }
-      }
-      else if (preWrittenText[i] != `,`  ) tempText+= preWrittenText[i]
-    }
+  
+    const preWrittenTextInput    = document.getElementById("submit-text");
+    const preWrittenText         = preWrittenTextInput.value.trim();
+    const tempArray              = preWrittenText.split(',').map(text => text.trim()).filter(Boolean); // Split by commas and trim spaces    idk wtf is this but its useful
+    preWrittenTextInput.value    = ''
+    let savedPreWrittenText      = JSON.parse(localStorage.getItem('preWrittenText')) || []
+    const newSavedPreWrittenText = tempArray.concat(savedPreWrittenText)
+    localStorage.setItem('preWrittenText', JSON.stringify(newSavedPreWrittenText))
+    setTimeout(() => { updatePreWrittenText(input); }, 50);
   })
   // closing menu button 
   const closeMenu = document.getElementById("close-menu")
@@ -366,7 +344,7 @@ function updatePreWrittenText(chatInput){
   const preWrittenText = document.querySelectorAll(".pre-written-text")
   preWrittenText.forEach(element => {
     element.addEventListener(`click`,()=>{
-      if (document.getElementById('send-immediately').checked)  sendMessage(element.innerHTML)
+      if (document.getElementById('send-immediately').checked)  sendMessage(element.innerHTML,replyId)
       else chatInput.value += element.innerHTML
     })
   });
@@ -480,7 +458,7 @@ function reply(){
 
   const replyUsername     = createCustomElement("p","class","reply-username","Replying to " + targetedElement.querySelector('.username').innerText)
   const replyText         = createCustomElement("p","class","reply-text"    ,targetedElement.querySelector('.message-text p').innerText)
-  
+  replyId = targetedElement.querySelector('.message-text').getAttribute('data-message-id')
   form.appendChild(reply)
   reply.appendChild(closeReply)
   reply.appendChild(replyUsername)
@@ -488,10 +466,11 @@ function reply(){
 }
 function removeReply(){
   messageContainer.style.height     = `88%`
-  input.style.borderTopLeftRadius   = "69420px"
-  input.style.borderTopRightRadius  = "69420px"
+  input.style.borderTopLeftRadius   = "50px"
+  input.style.borderTopRightRadius  = "50px"
   input.style.padding               = `0 2%` 
   input.style.width                 = `80%` 
+  replyId                           = null
   document.getElementById("reply-container").remove()
 }
 function createCustomElement(elementType,classOrId,classOrIdName,elementText){
