@@ -15,6 +15,7 @@
     --third-background      : rgb(50,50,50);
     --selected-message-bg   : rgb(11, 34, 16);
     --selected-message-blur : rgb(17, 65, 17);
+    --reply-background  :rgb(27, 51, 33);
 }
 
 input:focus{
@@ -122,8 +123,8 @@ svg:active{
 .message-content{
     background-color:var(--secondary-background) ;
     border: solid 1px var(--main-border);
-    width: fit-content;
-    max-width:50%;
+    /* width: fit-content; */
+    max-width:90%;
     padding: 1%;
     border-radius: 15px;
     border-bottom-left-radius: 0;
@@ -437,4 +438,18 @@ svg:active{g path{fill: var(--border-focus);}}
 .message-container-selected{
     box-shadow: 0 0 25px var(--selected-message-blur);
     background-color: var(--selected-message-bg);
+}
+.replied-message-container{
+    cursor: pointer;
+    background-color: var(--reply-background);
+    border-radius: 15px;
+    padding: 10px;
+}
+.replied-username{
+    color: var(--username);
+    min-width: 100px;
+    margin-bottom: 4%;
+}
+.replied-text{
+    overflow-wrap: break-word;
 }

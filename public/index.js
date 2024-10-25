@@ -8,9 +8,8 @@ const authToken = getCookie("auth_token")
 
 // check for cookie and authorization
 document.addEventListener('DOMContentLoaded', function() {
-  if ( !authToken) window.location.href = '../login/login.html';
-  const authorized =  localStorage.getItem('authorized');
-  if (!authorized) window.location.href = '/Authorize/'
+  if ( !authToken) window.location.href = '../login/login.html'
+  if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 })
 
 let socket = io()
@@ -22,7 +21,7 @@ const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 let replyId
 socket.on('chat message', (message) => {
-  messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage,message.id,message.messageId);
+  messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername)
   if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 
@@ -66,10 +65,9 @@ function loadMessages() {
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
-        messages.innerHTML+= messageTemplate(message.message,message.username, message.profile_image,message.userId,message.messageId);
-        console.log(message.messageId, message.userId)
+        messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername)
       });
-    setTimeout(() => {scrollToBottom()},10)
+      setTimeout(() => { scrollToBottom() }, 10);
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
@@ -77,22 +75,34 @@ function loadMessages() {
 // Call loadMessages when the page loads
 document.addEventListener('DOMContentLoaded', loadMessages);
 
+// Updated message template function
+function messageTemplate(message, username, profileImage, id, messageId, replyId = null, repliedMessage = null, repliedUsername = null) {
+  let replySection = ''
 
-// message func
-function messageTemplate(message,username,profileImage,id,messageId){
-  return`<div class="message">
-    <div class="message-container">
-      <div class="message-profile">
-        <img src="uploads/${profileImage}" alt="npc" class="user-profile">
+  // If the message is a reply, generate the reply section
+  if (replyId && repliedMessage && repliedUsername) 
+    replySection = `
+    <div class="replied-message-container" data-reply-id="${replyId}">
+      <div class="replied-username">${repliedUsername}</div>
+      <div class="replied-text"><p>${repliedMessage}</p></div>
+    </div>`;
+
+  return `
+    <div class="message">
+      <div class="message-container">
+        <div class="message-profile">
+          <img src="uploads/${profileImage}" alt="npc" class="user-profile">
+        </div>
+        <div class="message-content">
+          <div class="username" data-user-id="${id}">${username}</div>
+          ${replySection}
+          <div class="message-text" data-message-id="${messageId}"><p>${message}</p></div>
+          <div class="message-detail"></div>
+        </div>
       </div>
-      <div class="message-content">
-        <div class="username" data-user-id="${id}">${username}</div>
-        <div class="message-text" data-message-id="${messageId}" ><p>${message}</p></div>
-        <div class="message-detail"></div>
-      </div>
-    </div>
-  </div>`
+    </div>`
 }
+
 function sendMessage(userMessage, replyId = null) {
   const message = userMessage.trim()
   if (message === '') return 

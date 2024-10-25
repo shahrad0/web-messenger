@@ -92,45 +92,81 @@ app.post("/submit-message", (req, res) => {
     if (err) return res.sendStatus(403); // If the token is invalid, return forbidden
 
     db.get(
-      "SELECT username, profile_image,id FROM users WHERE id = ?",
+      "SELECT username, profile_image FROM users WHERE id = ?",
       [user.userId],
-      (err, _) => {
+      (err, currentUser) => {
         if (err) {
           console.error("Error fetching user data:", err.message);
           return res.status(500).send("Error fetching user data");
         }
-        console.log(message,replyId)
-        if (!user) return res.status(400).send("User not found");
+        if (!currentUser) return res.status(400).send("User not found");
 
+        // Insert the new message
         db.run(
-          "INSERT INTO messages (message, user_id,reply_id) VALUES (?, ?, ?)",
-          [message,user.userId,replyId || null],
+          "INSERT INTO messages (message, user_id, reply_id) VALUES (?, ?, ?)",
+          [message, user.userId, replyId || null],
           function (err) {
             if (err) {
               console.error("Error inserting message:", err.message);
               return res.status(500).send("Error inserting message");
             }
-            io.emit("chat message", {
-              message,
-              username: user.username,
-              profileImage: user.profile_image,
-              id: user.userId,
-              messageId : this.lastID,
-            })
-            console.log(this.lastID)
-            res.status(200).json({
-              message,
-              username: user.username,
-              profileImage: user.profile_image,
-              userId,
-              messageId : this.lastID,
-            });
+
+            const messageId = this.lastID;
+
+            // If replyId exists, fetch the replied message and user information
+            if (replyId) {
+              db.get(
+                `SELECT messages.message AS repliedMessage, users.username AS repliedUsername 
+                 FROM messages 
+                 JOIN users ON messages.user_id = users.id 
+                 WHERE messages.id = ?`,
+                [replyId],
+                (err, repliedData) => {
+                  if (err) {
+                    console.error("Error fetching replied message:", err.message);
+                    return res.status(500).send("Error fetching replied message");
+                  }
+
+                  // Emit message data with reply info to the client
+                  io.emit("chat message", {
+                    message,
+                    username: currentUser.username,
+                    profileImage: currentUser.profile_image,
+                    id: user.userId,
+                    messageId,
+                    replyId,
+                    repliedMessage: repliedData ? repliedData.repliedMessage : null,
+                    repliedUsername: repliedData ? repliedData.repliedUsername : null
+                  })
+
+                  // with relpy
+                  res.status(200).json({message,username: currentUser.username,profileImage: currentUser.profile_image,userId: user.userId,messageId,replyId,repliedMessage: repliedData ? repliedData.repliedMessage : null,repliedUsername: repliedData ? repliedData.repliedUsername : null
+                  })
+                }
+              )
+            } else {
+              // no reply 
+              io.emit("chat message", {
+                message,
+                username: currentUser.username,
+                profileImage: currentUser.profile_image,
+                id: user.userId,
+                messageId,
+                replyId: null,
+                repliedMessage: null,
+                repliedUsername: null
+              })
+
+              res.status(200).json({message,username: currentUser.username,profileImage: currentUser.profile_image,userId: user.userId,messageId,replyId: null,repliedMessage: null,repliedUsername: null
+              })
+            }
           }
-        );
+        )
       }
-    );
-  });
-});
+    )
+  })
+})
+
 function deleteMessage() {
   const query = `
     DELETE FROM messages
@@ -153,28 +189,44 @@ function deleteMessage() {
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `
-    SELECT messages.message, messages.id AS messageId, users.username, users.profile_image, users.id AS userId
+    SELECT 
+      messages.message, 
+      messages.id AS messageId, 
+      users.username, 
+      users.profile_image, 
+      users.id AS userId,
+      messages.reply_id,
+      repliedMessages.message AS repliedMessage,
+      repliedUsers.username AS repliedUsername
     FROM messages
     INNER JOIN users ON messages.user_id = users.id
+    LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
+    LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
     ORDER BY messages.id DESC
     LIMIT 50
   `;
+  
   db.all(query, [], (err, rows) => {
     if (err) {
       console.error("Error fetching messages:", err.message);
       return res.status(500).send("Error fetching messages");
     }
+    
     const messages = rows.reverse().map(row => ({
       message: row.message,
       username: row.username,
       profileImage: row.profile_image,
       userId: row.userId,          // for data-id
       messageId: row.messageId,    // for data-id
-    }))
-    // Reverse the order so the latest message is at the bottom
+      replyId: row.reply_id,       // The ID of the replied-to message (null if not a reply)
+      repliedMessage: row.repliedMessage, // The content of the message being replied to (null if not a reply)
+      repliedUsername: row.repliedUsername // The username of the user being replied to (null if not a reply)
+    }));
+
     res.json(messages);
   });
 });
+
 
 
 // Handle user registration (sign up)
