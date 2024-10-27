@@ -83,63 +83,39 @@ io.on("connection", (socket) => {
 });
 
 // Handle message submission and save to database
-app.post("/submit-message",upload.single("file"), (req, res) => {
+app.post("/submit-message", upload.single("file"), (req, res) => {
   const { message, replyId } = req.body;
   const filePath = req.file ? req.file.filename : null;
-  console.log(filePath)
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   const query = `INSERT INTO messages (message, user_id, reply_id, file_path) VALUES (?, ?, ?, ?)`;
-
-  if (!token) return res.sendStatus(401); // Unauthorized if no token
+  if (!token) return res.sendStatus(401);
 
   jwt.verify(token, secretKey, (err, user) => {
-    if (err) return res.sendStatus(403); // Forbidden if token is invalid
+    if (err) return res.sendStatus(403);
 
     db.get("SELECT username, profile_image FROM users WHERE id = ?", [user.userId], (err, currentUser) => {
-      if (err) {
-        console.error("Error fetching user data:", err.message);
-        return res.status(500).send("Error fetching user data");
-      }
+      if (err) return res.status(500).send("Error fetching user data");
       if (!currentUser) return res.status(400).send("User not found");
 
-      // Check that at least one of message or filePath is provided
       if (!message && !filePath) {
         return res.status(400).send("Either a message or a file must be provided.");
       }
 
-      // Insert the new message or file into the database
       db.run(query, [message || null, user.userId, replyId || null, filePath], function (err) {
-        if (err) {
-          console.error("Error inserting message:", err.message);
-          return res.status(500).send("Error inserting message");
-        }
+        if (err) return res.status(500).send("Error inserting message");
 
         const messageId = this.lastID;
 
         if (replyId) {
-          // If there is a reply, fetch replied message details
           db.get(
             `SELECT messages.message AS repliedMessage, users.username AS repliedUsername 
              FROM messages 
              JOIN users ON messages.user_id = users.id 
              WHERE messages.id = ?`, [replyId], (err, repliedData) => {
-              if (err) {
-                console.error("Error fetching replied message:", err.message);
-                return res.status(500).send("Error fetching replied message");
-              }
+              if (err) return res.status(500).send("Error fetching replied message");
 
-              // Emit message with reply info
-              io.emit("chat message", {
-                message,
-                username: currentUser.username,
-                profileImage: currentUser.profile_image,
-                id: user.userId,
-                messageId,
-                replyId,
-                repliedMessage: repliedData ? repliedData.repliedMessage : null,
-                repliedUsername: repliedData ? repliedData.repliedUsername : null
-              });
+              io.emit("chat message", {message,username: currentUser.username,profileImage: currentUser.profile_image,id: user.userId,messageId,replyId,repliedMessage: repliedData ? repliedData.repliedMessage : null,repliedUsername: repliedData ? repliedData.repliedUsername : null,filePath});
 
               res.status(200).json({
                 message,
@@ -149,12 +125,12 @@ app.post("/submit-message",upload.single("file"), (req, res) => {
                 messageId,
                 replyId,
                 repliedMessage: repliedData ? repliedData.repliedMessage : null,
-                repliedUsername: repliedData ? repliedData.repliedUsername : null
+                repliedUsername: repliedData ? repliedData.repliedUsername : null,
+                filePath
               });
             }
           );
         } else {
-          // No reply case
           io.emit("chat message", {
             message,
             username: currentUser.username,
@@ -163,7 +139,8 @@ app.post("/submit-message",upload.single("file"), (req, res) => {
             messageId,
             replyId: null,
             repliedMessage: null,
-            repliedUsername: null
+            repliedUsername: null,
+            filePath
           });
 
           res.status(200).json({
@@ -174,13 +151,15 @@ app.post("/submit-message",upload.single("file"), (req, res) => {
             messageId,
             replyId: null,
             repliedMessage: null,
-            repliedUsername: null
+            repliedUsername: null,
+            filePath
           });
         }
       });
     });
   });
 });
+
 
 
 function deleteMessage() {
@@ -212,6 +191,7 @@ app.get("/get-messages", (req, res) => {
       users.profile_image, 
       users.id AS userId,
       messages.reply_id,
+      messages.file_path,
       repliedMessages.message AS repliedMessage,
       repliedUsers.username AS repliedUsername
     FROM messages
@@ -232,16 +212,18 @@ app.get("/get-messages", (req, res) => {
       message: row.message,
       username: row.username,
       profileImage: row.profile_image,
-      userId: row.userId,          // for data-id
-      messageId: row.messageId,    // for data-id
-      replyId: row.reply_id,       // The ID of the replied-to message (null if not a reply)
-      repliedMessage: row.repliedMessage, // The content of the message being replied to (null if not a reply)
-      repliedUsername: row.repliedUsername // The username of the user being replied to (null if not a reply)
+      userId: row.userId,
+      messageId: row.messageId,
+      replyId: row.reply_id,
+      repliedMessage: row.repliedMessage,
+      repliedUsername: row.repliedUsername,
+      filePath: row.file_path // Include the file path for rendering
     }));
 
     res.json(messages);
   });
 });
+
 
 
 

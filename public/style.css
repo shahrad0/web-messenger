@@ -131,7 +131,7 @@ button{
 .message-content{
     background-color:var(--secondary-background) ;
     border: solid 1px var(--main-border);
-    max-width:90%;
+    max-width:80%;
     padding: 1%;
     border-radius: 15px;
     border-bottom-left-radius: 0;
@@ -406,6 +406,10 @@ button{
 .replied-text{
     overflow-wrap: break-word;
 }
+.sent-image{
+    max-width: 100%;
+    margin-bottom: 1%;
+}
 /* edit profile (combine in future) */
 #editProfileForm{
     margin: auto;
@@ -418,7 +422,6 @@ button{
     border: solid 2px var(--main-border);
     border-radius: 30px;
     position: relative;
-    /* display: grid; */
 }
 #edit-profile-header{
     color: var(--username);

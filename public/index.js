@@ -21,7 +21,7 @@ const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 socket.on('chat message', (message) => {
-  messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername)
+  messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername,message.filePath)
   if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 
@@ -74,7 +74,7 @@ function loadMessages() {
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
-        messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername)
+        messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername,message.filePath)
       });
       setTimeout(() => { scrollToBottom() }, 10);
     })
@@ -98,10 +98,11 @@ function messageTemplate(message, username, profileImage, id, messageId, replyId
     // file
   if (filePath){
     const fileExt = filePath.split('.').pop().toLowerCase();
-    if (['jpeg', 'jpg', 'png'].includes(fileExt)) fileDisplay = `<img            src="uploads/${filePath}" alt="Sent image" class="sent-image">`
-    else if (fileExt === 'pdf')                   fileDisplay = `<a             href="uploads/${filePath}" target="_blank">View PDF</a>`
-    else if (['mp4', 'avi'].includes(fileExt))    fileDisplay = `<video controls src="uploads/${filePath}" class="sent-video"></video>`
-    // add rar and music 
+    if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${filePath}" class="sent-image">`
+    else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${filePath}" class="sent-video"></video>`
+    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${filePath}" class="sent-pdf" width="800px" height="600px"></object>`
+    // temp solution add rar and music 
+    else  file = `<a href="uploads/${filePath}">free robux</a>`
   }
 
 // message
@@ -114,10 +115,10 @@ function messageTemplate(message, username, profileImage, id, messageId, replyId
         <div class="message-content">
           <div class="username" data-user-id="${id}">${username}</div>
           ${replySection}
-          <div class="message-text" data-message-id="${messageId}"><p>
           ${file}
-          ${message}
-          </p></div>
+          <div class="message-text" data-message-id="${messageId}">
+          <p>${message}</p>
+          </div>
           <div class="message-detail"></div>
         </div>
       </div>
@@ -129,7 +130,7 @@ function sendMessage(userMessage, replyId = null) {
   const fileInput = document.getElementById('file-input')
   const hasFile = fileInput && fileInput.files.length > 0
 
-  if (message === '' || !hasFile) return
+  if (message === '' && !hasFile) return
   
   let fetchOptions;
   if (hasFile) {
