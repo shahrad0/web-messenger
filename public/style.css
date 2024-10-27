@@ -1,4 +1,5 @@
 :root{
+    /* need big naming changes  */
     --main-blur             : rgb(13, 65, 0);
     --main-border           : rgb(0, 138, 53);
     --border-focus          : rgb(0, 199, 76);
@@ -7,9 +8,7 @@
     --main-color            : rgb(199, 199, 199);
     --secondary-color       : rgb(0,0,0);
     --secondary-background  : rgb(31, 31, 31);
-    --input-color           : rgb(201, 201, 201);
     --input-border          : rgb(0, 138, 53);
-    --input-blur            : rgb(13, 65, 0);
     --username              : rgb(0, 168, 36);
     --text-hover            : rgb(0, 209, 45); 
     --third-background      : rgb(50,50,50);
@@ -18,8 +17,29 @@
     --reply-background  :rgb(27, 51, 33);
 }
 
+
+input{
+    caret-color: rgb(107, 177, 107)             !important;
+    background-color: var(--secondary-background) !important;
+    border: solid 2px var(--main-border)          !important;
+    box-shadow: 0 0 15px 5px var(--main-blur)     !important;
+    transition: all 500ms                         !important;
+    display: block;
+}
 input:focus{
     outline: none;
+    border: solid 2px var(--border-focus)      !important;
+    box-shadow: 0 0 20px 5px var(--blur-focus) !important;
+}
+svg path {
+    fill: var(--main-color) ; 
+    transition: all 200ms;
+}
+svg:hover path{
+    fill: var(--main-border) !important; 
+}
+svg:active path{
+    fill: var(--border-focus) !important; 
 }
 *{
     margin: 0;
@@ -37,8 +57,18 @@ button{
     border: none;
     cursor: pointer;
 }
-input{
-    caret-color: green !important;
+.generic-button{
+    border-radius: 50px;
+    border: solid 1px var(--main-border);
+    background-color: var(--secondary-background);
+    transition: all 200ms;
+}
+.generic-button:hover{
+    color: var(--text-hover);
+    box-shadow: 0 0 15px var(--main-blur);
+}
+.generic-button:active{
+    box-shadow: 0 0 25px 5px var(--main-blur);
 }
 .main-container{
     display: flex;
@@ -65,7 +95,6 @@ input{
     background-color: var(--border-focus);
     width: 0.3%;
     box-shadow: 0 0 25px 10px var(--blur-focus);
-
 }
 #form{
     position: absolute;
@@ -78,30 +107,9 @@ input{
     padding: 0 2%;
     width: 80%;
     height: 100%;
-    color: var(--input-color) ;
-    background-color: var(--secondary-background);
-    border: solid 2px var(--input-border);
     border-radius: 50px;
-    box-shadow: 0 0 15px 5px var(--input-blur);
     margin-left: 11.25px; 
     font-size: 16px;
-    transition: all 500ms;
-}
-#input:focus{
-    border: solid 2px var(--border-focus);
-    box-shadow: 0 0 20px 10px var(--blur-focus);
-}
-svg:hover{
-    path{
-        fill: var(--main-border) !important; 
-        transition: all 500ms;
-    }
-}
-svg:active{
-    path{
-        transition: 200ms;
-        fill: var(--border-focus) !important; 
-    }
 }
 #messages{
     width: 100%;
@@ -123,7 +131,6 @@ svg:active{
 .message-content{
     background-color:var(--secondary-background) ;
     border: solid 1px var(--main-border);
-    /* width: fit-content; */
     max-width:90%;
     padding: 1%;
     border-radius: 15px;
@@ -159,18 +166,6 @@ svg:active{
     position: fixed;
     z-index: 10;
     display: none;
-}
-#close-black-screen svg path{
-        fill: var(--main-color) ; 
-        transition: all 500ms;
-}
-#close-black-screen:hover svg path{
-        fill: var(--main-border) ; 
-        transition: all 500ms;
-}
-#close-black-screen:active svg path{
-        fill: var(--border-focus) ; 
-        transition: all 200ms;
 }
 #close-black-screen{
     width:  5%;
@@ -210,12 +205,6 @@ svg:active{
     padding: 1%;
     font-size: 20px;
 }
-svg g g path{
-    fill: var(--main-color);
-    transition: all 500ms;
-}
-svg:hover {g g path{fill: var(--main-border );}}
-svg:active{g g path{fill: var(--border-focus);}}
 #off{
     display: none;
     position: absolute;
@@ -227,12 +216,6 @@ svg:active{g g path{fill: var(--border-focus);}}
 #more{
     rotate: 90deg;
 }
-svg g path{
-    fill: var(--main-color);
-    transition: all 500ms;
-}
-svg:hover {g path{fill: var(--main-border );}}
-svg:active{g path{fill: var(--border-focus);}}
 #more-menu{
     background-color: var(--secondary-background);
     width:200px ;
@@ -251,36 +234,14 @@ svg:active{g path{fill: var(--border-focus);}}
     margin: 5% 0 0 6%;
     width: 15%;
     transition: all 200ms;    
-    svg path{
-        transition: all 500ms;
-        fill: var(--main-color);
-}}
+}
 #setting-button:hover{
     rotate: 45deg;
-    svg path{
-        transition: all 500ms;
-        fill: var(--main-border);
-    }
 }
-#setting-button:active{   svg path{   fill: var(--border-focus);}}
-#edit-profile{
+#edit-profile-button{
     margin-right: 2%;
     width: 7.5%;
     transition: all 500ms;
-    svg path{
-        transition: all 500ms;
-        fill: var(--main-color);}}
-#edit-profile:hover{
-    svg path{
-        transition: all 500ms;
-        fill: var(--main-border);
-    }
-}
-#edit-profile:active{
-    svg path{
-        transition: all 200ms;
-        fill: var(--border-focus);
-    }
 }
 #pre-written-text-menu-container{
     background-color: var(--secondary-background);
@@ -292,14 +253,7 @@ svg:active{g path{fill: var(--border-focus);}}
     margin: 5% 0 0 5%;
     padding: 2%;
     background-color: var(--third-background);
-    border-radius: 152222px;
-    border: solid 2px var(--main-border);
-    box-shadow: 0 0 15px var(--main-blur);
-    transition: all 500ms;
-}
-#submit-text:focus{
-    box-shadow: 0 0 25px var(--blur-focus);
-    border-color: var(--border-focus) ;
+    border-radius: 69420px;
 }
 #submit-pre-written-text-button{
     background-color: var(--third-background);
@@ -362,7 +316,6 @@ svg:active{g path{fill: var(--border-focus);}}
     border: solid 1px var(--main-border);
     top: 80%;
     right: 1.2%;
-    color: var(--main-color);
     font-size: 24px;
     background-color: var(--main-background-color);
     transition: all 200ms;
@@ -453,3 +406,40 @@ svg:active{g path{fill: var(--border-focus);}}
 .replied-text{
     overflow-wrap: break-word;
 }
+/* edit profile (combine in future) */
+#editProfileForm{
+    margin: auto;
+    margin-top: 5%;
+    padding: 1%;
+    width: 40%;
+    height: 75%;
+    background-color: var(--secondary-background);
+    box-shadow: 0 0 50px  var(--main-blur);
+    border: solid 2px var(--main-border);
+    border-radius: 30px;
+    position: relative;
+    /* display: grid; */
+}
+#edit-profile-header{
+    color: var(--username);
+    text-align: center;
+    margin: 2% 0;
+}
+.new-profile-input{
+    margin: 2% 0;
+    border-radius: 50px;
+    height: fit-content;
+    width: 95%;
+    padding: 2%;
+}
+#update-profile{
+    padding: 2%;
+    bottom: 5%;
+    left: 3%;
+    position: absolute;
+}
+.profile-preview{
+    margin-top: 2%;
+    width: 22%;
+}
+/* end edit profile (combine in future) */

@@ -1,9 +1,11 @@
+*{
+    margin : 0;
+    padding: 0;
+}
 body{
     background-color: black;
     font-size: 20px;
     color: rgb(194, 194, 194) !important;
-    height: 100vh;
-    width: 100vw;
     overflow: hidden;
 }
 input{
@@ -15,11 +17,7 @@ input{
     width: 95%;
     padding: 2% ;
     color: inherit;
-    position: absolute;
-    
-}
-input button{
-    background-color: aqua;
+    margin: 2.5% 0;
 }
 input:focus{
     box-shadow: 0 0 20px  red;
@@ -45,6 +43,8 @@ button{
     width: 10%;
     cursor: pointer;
     transition: all 200ms;
+    width: fit-content;
+    padding: 2%;
 }
 button:hover{
     border: 1px solid red;
@@ -54,15 +54,6 @@ button:active{
     box-shadow: 0 0 20px rgb(255, 0, 0);
     border: solid 1px rgb(255, 62, 62);
 }
-.separate{
-    height: 10%;
-    margin:1% 0  ;
-    position: relative;
-}
-label{
-    display: flex;
-    width: 10%;
-}
 .profile-preview{
     margin-top: 2%;
     width: 22%;
@@ -70,11 +61,11 @@ label{
 #submit{
     position: absolute;
     bottom: 5%;
-    padding: 2%;
+    left : 3%;
 }
 h1{
     text-align: center;
-    margin-top: 2%;
+    margin: 2% 0;
     transition: all 400ms;
 }
 h1:hover{
@@ -83,7 +74,5 @@ h1:hover{
 #login-redirect{
     position: absolute;
     bottom: 5%;
-    padding: 2%;
     right: 3%;
-    width: fit-content;
 }

@@ -1,16 +1,11 @@
 function previewFile() {
-    var preview = document.querySelector('img');
-    var file    = document.querySelector('input[type=file]').files[0];
-    var reader  = new FileReader();
-    reader.onloadend = function () {
-      preview.src = reader.result;
-    }
-  
+    let preview = document.querySelector('img')
+    let file    = document.querySelector('input[type=file]').files[0]
+    let reader  = new FileReader()
+    reader.onloadend = function () {  preview.src = reader.result}
     if (file) reader.readAsDataURL(file);
     else preview.src = "";
-    
-  }
-//   new 
+}
 const form = document.getElementById("form")
 form.addEventListener('submit', function(e) {
   e.preventDefault();
@@ -33,6 +28,5 @@ form.addEventListener('submit', function(e) {
   console.error('Error:', error);
   alert(error.message);
 }); 
-  
 });
 document.getElementById("login-redirect").addEventListener("click",()=>{setTimeout(()=>{window.location.href = '../login/login.html'},1)})
