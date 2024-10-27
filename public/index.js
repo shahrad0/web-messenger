@@ -104,31 +104,55 @@ function messageTemplate(message, username, profileImage, id, messageId, replyId
 }
 
 function sendMessage(userMessage, replyId = null) {
-  const message = userMessage.trim()
-  if (message === '') return 
+  const message = userMessage.trim();
+  const fileInput = document.getElementById('file-input');
+  const hasFile = fileInput && fileInput.files.length > 0;
 
-  fetch('/submit-message', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`
-    },
-    body: JSON.stringify({
-      message: message,
-      replyId: replyId 
-    }),
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('Failed to submit message');
-    setTimeout(() => {scrollToBottom()}, 10);
-    return response.json();
-  })
-  .then(data => {
-    input.value = ''
-    if (document.getElementById('reply-container')) removeReply()
-  })
-  .catch(error => console.error('Error:', error));
+  if (message === '' || !hasFile) return;
+  
+  let fetchOptions;
+  if (hasFile) {
+    const formData = new FormData();
+    formData.append('message', message)
+    formData.append('replyId', replyId)
+    formData.append('file', fileInput.files[0])
+
+    fetchOptions = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: formData
+    };
+  } else {
+    fetchOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        message: message,
+        replyId: replyId
+      })
+    };
+  }
+
+  fetch('/submit-message', fetchOptions)
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to submit message');
+      setTimeout(() => { scrollToBottom(); }, 10);
+      return response.json();
+    })
+    .then(data => {
+      document.getElementById('input').value = '';  // Clear the input field
+      if (fileInput) fileInput.value = '';  // Clear the file input if a file was sent
+      if (document.getElementById('reply-container')) removeReply(); // Remove reply UI if present
+    })
+    .catch(error => console.error('Error:', error));
 }
+
+
 
 // end message func
 // black screen
@@ -455,6 +479,7 @@ function replyStyle(replyContainer){
   window.addEventListener("resize", ()=>{replyContainer.style.width = getComputedStyle(input).width })
 }
 function reply(){
+  if (document.getElementById('reply-container')) removeReply()
   const reply = document.createElement('div')
   reply.id    = "reply-container"
   replyStyle(reply)

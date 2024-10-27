@@ -38,6 +38,7 @@ db.run(
   message TEXT NOT NULL,
   user_id INTEGER NOT NULL,
   reply_id INTEGER DEFAULT NULL,
+  file_path  TEXT DEFAULT NULL,
   FOREIGN KEY(user_id) REFERENCES users(id)
 )`,
   (err) => {
@@ -62,12 +63,13 @@ db.run(
 // File upload setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "./uploads");
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+})
 const upload = multer({ storage: storage });
 
 io.on("connection", (socket) => {
@@ -81,91 +83,105 @@ io.on("connection", (socket) => {
 });
 
 // Handle message submission and save to database
-app.post("/submit-message", (req, res) => {
-  const { message, userId, replyId } = req.body;
+app.post("/submit-message",upload.single("file"), (req, res) => {
+  const { message, replyId } = req.body;
+  const filePath = req.file ? req.file.filename : null;
+  console.log(filePath)
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Extract the token after 'Bearer'
+  const token = authHeader && authHeader.split(" ")[1];
+  const query = `INSERT INTO messages (message, user_id, reply_id, file_path) VALUES (?, ?, ?, ?)`;
 
-  if (!token) return res.sendStatus(401); // If there's no token, return unauthorized
+  if (!token) return res.sendStatus(401); // Unauthorized if no token
 
   jwt.verify(token, secretKey, (err, user) => {
-    if (err) return res.sendStatus(403); // If the token is invalid, return forbidden
+    if (err) return res.sendStatus(403); // Forbidden if token is invalid
 
-    db.get(
-      "SELECT username, profile_image FROM users WHERE id = ?",
-      [user.userId],
-      (err, currentUser) => {
+    db.get("SELECT username, profile_image FROM users WHERE id = ?", [user.userId], (err, currentUser) => {
+      if (err) {
+        console.error("Error fetching user data:", err.message);
+        return res.status(500).send("Error fetching user data");
+      }
+      if (!currentUser) return res.status(400).send("User not found");
+
+      // Check that at least one of message or filePath is provided
+      if (!message && !filePath) {
+        return res.status(400).send("Either a message or a file must be provided.");
+      }
+
+      // Insert the new message or file into the database
+      db.run(query, [message || null, user.userId, replyId || null, filePath], function (err) {
         if (err) {
-          console.error("Error fetching user data:", err.message);
-          return res.status(500).send("Error fetching user data");
+          console.error("Error inserting message:", err.message);
+          return res.status(500).send("Error inserting message");
         }
-        if (!currentUser) return res.status(400).send("User not found");
 
-        // Insert the new message
-        db.run(
-          "INSERT INTO messages (message, user_id, reply_id) VALUES (?, ?, ?)",
-          [message, user.userId, replyId || null],
-          function (err) {
-            if (err) {
-              console.error("Error inserting message:", err.message);
-              return res.status(500).send("Error inserting message");
-            }
+        const messageId = this.lastID;
 
-            const messageId = this.lastID;
+        if (replyId) {
+          // If there is a reply, fetch replied message details
+          db.get(
+            `SELECT messages.message AS repliedMessage, users.username AS repliedUsername 
+             FROM messages 
+             JOIN users ON messages.user_id = users.id 
+             WHERE messages.id = ?`, [replyId], (err, repliedData) => {
+              if (err) {
+                console.error("Error fetching replied message:", err.message);
+                return res.status(500).send("Error fetching replied message");
+              }
 
-            // If replyId exists, fetch the replied message and user information
-            if (replyId) {
-              db.get(
-                `SELECT messages.message AS repliedMessage, users.username AS repliedUsername 
-                 FROM messages 
-                 JOIN users ON messages.user_id = users.id 
-                 WHERE messages.id = ?`,
-                [replyId],
-                (err, repliedData) => {
-                  if (err) {
-                    console.error("Error fetching replied message:", err.message);
-                    return res.status(500).send("Error fetching replied message");
-                  }
-
-                  // Emit message data with reply info to the client
-                  io.emit("chat message", {
-                    message,
-                    username: currentUser.username,
-                    profileImage: currentUser.profile_image,
-                    id: user.userId,
-                    messageId,
-                    replyId,
-                    repliedMessage: repliedData ? repliedData.repliedMessage : null,
-                    repliedUsername: repliedData ? repliedData.repliedUsername : null
-                  })
-
-                  // with relpy
-                  res.status(200).json({message,username: currentUser.username,profileImage: currentUser.profile_image,userId: user.userId,messageId,replyId,repliedMessage: repliedData ? repliedData.repliedMessage : null,repliedUsername: repliedData ? repliedData.repliedUsername : null
-                  })
-                }
-              )
-            } else {
-              // no reply 
+              // Emit message with reply info
               io.emit("chat message", {
                 message,
                 username: currentUser.username,
                 profileImage: currentUser.profile_image,
                 id: user.userId,
                 messageId,
-                replyId: null,
-                repliedMessage: null,
-                repliedUsername: null
-              })
+                replyId,
+                repliedMessage: repliedData ? repliedData.repliedMessage : null,
+                repliedUsername: repliedData ? repliedData.repliedUsername : null
+              });
 
-              res.status(200).json({message,username: currentUser.username,profileImage: currentUser.profile_image,userId: user.userId,messageId,replyId: null,repliedMessage: null,repliedUsername: null
-              })
+              res.status(200).json({
+                message,
+                username: currentUser.username,
+                profileImage: currentUser.profile_image,
+                userId: user.userId,
+                messageId,
+                replyId,
+                repliedMessage: repliedData ? repliedData.repliedMessage : null,
+                repliedUsername: repliedData ? repliedData.repliedUsername : null
+              });
             }
-          }
-        )
-      }
-    )
-  })
-})
+          );
+        } else {
+          // No reply case
+          io.emit("chat message", {
+            message,
+            username: currentUser.username,
+            profileImage: currentUser.profile_image,
+            id: user.userId,
+            messageId,
+            replyId: null,
+            repliedMessage: null,
+            repliedUsername: null
+          });
+
+          res.status(200).json({
+            message,
+            username: currentUser.username,
+            profileImage: currentUser.profile_image,
+            userId: user.userId,
+            messageId,
+            replyId: null,
+            repliedMessage: null,
+            repliedUsername: null
+          });
+        }
+      });
+    });
+  });
+});
+
 
 function deleteMessage() {
   const query = `
@@ -368,7 +384,7 @@ function generateToken(user, res) {
   });
 }
 // const addReplyIdColumn = () => {
-//   const sql = `ALTER TABLE messages ADD COLUMN reply_id INTEGER DEFAULT NULL`;
+//   const sql = `ALTER TABLE messages ADD COLUMN file_path  TEXT DEFAULT NULL`;
 
 //   db.run(sql, function(err) {
 //       if (err) {
