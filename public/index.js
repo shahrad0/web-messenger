@@ -16,6 +16,8 @@ let socket = io()
 let replyId
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
+const fileInput        = document.getElementById('file-input')
+const replyContainer   = document.getElementById('reply-container')
 const messages         = document.getElementById("messages")
 const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
@@ -45,19 +47,21 @@ function previewFile() {
 
 // auto scroll down and scroll down button
 messages.addEventListener('scroll', () => {
-  if       (messages.scrollTop < messages.scrollHeight-1000 && document.getElementById("scroll-down").style.display != `block`) {
+  if       (messages.scrollTop < messages.scrollHeight-700 ) {
     document.getElementById("scroll-down").style.display = `block`
     setTimeout(() => {document.getElementById("scroll-down").style.opacity = `1`}, 200); 
   }
-  else if  (messages.scrollTop > messages.scrollHeight-1000 && document.getElementById("scroll-down").style.opacity != `0`){
+  else if  (messages.scrollTop > messages.scrollHeight-700 ){
     document.getElementById("scroll-down").style.opacity = `0`
     setTimeout(() => {document.getElementById("scroll-down").style.display = `none`}, 200);
 }})
-function scrollToBottom(){
-  document.getElementById("messages").scrollTo({
-    top: document.getElementById("messages").scrollHeight,
+function scrollToBottom() {
+  const messagesContainer = document.getElementById("messages")
+  messagesContainer.scrollTo({
+    top: messagesContainer.scrollHeight,
     behavior: "smooth"
-})}
+  })
+}
 // end auto scroll down and scroll down button
 // handle user input to db
 form.addEventListener('submit', function(e) {
@@ -76,7 +80,7 @@ function loadMessages() {
       data.forEach(message => {
         messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername,message.filePath)
       });
-      setTimeout(() => { scrollToBottom() }, 10);
+      setTimeout(() => { scrollToBottom() }, 100);
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
@@ -127,79 +131,146 @@ function messageTemplate(message, username, profileImage, id, messageId, replyId
 
 function sendMessage(userMessage, replyId = null) {
   const message = userMessage.trim();
-  const fileInput = document.getElementById('file-input')
-  const hasFile = fileInput && fileInput.files.length > 0
+  const hasFile = fileInput && fileInput.files.length > 0;
 
-  if (message === '' && !hasFile) return
-  
-  let fetchOptions;
+  // Exit if there is no message and no file
+  if (message === '' && !hasFile) return;
+
+  const fetchOptions = {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  };
+
   if (hasFile) {
+    // Add data to FormData when a file is present
     const formData = new FormData();
-    formData.append('message', message)
-    formData.append('replyId', replyId)
-    formData.append('file', fileInput.files[0])
-
-    fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`
-      },
-      body: formData
-    };
+    formData.append('message', message);
+    formData.append('replyId', replyId);
+    formData.append('file', fileInput.files[0]);
+    fetchOptions.body = formData;
   } else {
-    fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
-      body: JSON.stringify({
-        message: message,
-        replyId: replyId
-      })
-    };
+    // Add JSON data when no file is present
+    fetchOptions.headers['Content-Type'] = 'application/json';
+    fetchOptions.body = JSON.stringify({ message, replyId });
   }
 
   fetch('/submit-message', fetchOptions)
     .then(response => {
       if (!response.ok) throw new Error('Failed to submit message');
-      setTimeout(() => { scrollToBottom(); }, 10);
+      scrollToBottom()
       return response.json();
     })
     .then(data => {
-      document.getElementById('input').value = '';  // Clear the input field
-      if (fileInput) fileInput.value = '';  // Clear the file input if a file was sent
-      if (document.getElementById('reply-container')) removeReply(); // Remove reply UI if present
+      input.value = ''  
+      if (hasFile) fileInput.value = '' 
+      if (replyContainer) removeReply() 
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => console.error('Error submitting message:', error));
 }
-
-
 
 // end message func
 // black screen
 
 const blackScreen = document.getElementById("black-screen")
-document.addEventListener("click", function(event) {
+const moreButton = document.getElementById("more")
+const moreMenu = document.getElementById("more-menu")
+const offElement = document.getElementById("off")
+let toggleOff = false
+let moreMenuToggle = false
+let altPressed = false
+
+// Toggle display for blackScreen
+function toggleBlackScreen(content = '') {
+  blackScreen.style.display = content ? 'block' : 'none';
+  blackScreen.innerHTML = content;
+}
+
+// Close button setup
+function addCloseButton(parent) {
+  const button = document.createElement("button");
+  button.id = "close-black-screen";
+  button.innerHTML = '<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>'
+  button.addEventListener("click", () => toggleBlackScreen());
+  parent.appendChild(button);
+}
+
+// Fetch and display user details
+document.addEventListener("click", async (event) => {
   if (event.target.classList.contains('username')) {
-    const id = event.target.getAttribute('data-user-id'); // Get the username from the clicked element
-    
-    fetch(`/user-details-v2?id=${encodeURIComponent(id)}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-      return response.json();  // Attempt to parse JSON only if the response is okay
-    })
-    .then(user => {
-      if (user) {
-        // Display the user details (e.g., in a modal or a separate section)
-        blackScreen.style.display = 'block';
-        blackScreen.innerHTML = `
-        <div class="user-profile-detail">
+    const userId = event.target.getAttribute('data-user-id');
+    try {
+      const response = await fetch(`/users-details?id=${encodeURIComponent(userId)}`)
+      if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
+      const user = await response.json();
+      
+      toggleBlackScreen(`
+        <div class="menu">
           <div class="user-info">
-            <p>User Info</p>
-            <button id="close-black-screen"><svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
+            <h1>User Info</h1>
+          </div>
+          <div class="user-info-container">
+            <img class="user-image" src="/uploads/${user.profile_image}" alt="">
+            <div style="width: 100%;">
+              <p class="user-detail">${user.username}</p>
+              <p class="user-detail">User ID: ${user.id}</p>
+              <p class="user-detail">User Role: ${user.role}</p>
+            </div>
+          </div>`)
+      addCloseButton(blackScreen)
+    } catch (error) {
+      console.error('Error fetching user details:', error)
+    }
+  }
+});
+
+// Toggle Off functionality
+function toggleOffSetup() {
+  offElement.style.display = toggleOff ? "none" : "block"
+  document.body.style.cursor = toggleOff ? "default" : "none"
+  toggleOff = !toggleOff
+}
+
+document.getElementById("turn-off").addEventListener("click", toggleOffSetup);
+
+document.addEventListener("keydown", (event) => {
+  altPressed = event.keyCode === 18;
+  if (event.key === "/" && document.activeElement !== input) {
+    event.preventDefault();
+    input.focus();
+  }
+  if (altPressed && (event.keyCode === 190 || event.keyCode === 88)) {
+    toggleOffSetup();
+  }
+});
+
+document.addEventListener("keyup", (event) => {
+  if (event.keyCode === 18) altPressed = false;
+});
+
+// More Menu toggle
+moreButton.addEventListener("click", () => {
+  moreMenu.style.display = moreMenuToggle ? 'none' : 'block';
+  moreMenu.style.opacity = moreMenuToggle ? '0' : '1';
+  moreMenuToggle = !moreMenuToggle;
+  if (!moreMenuToggle) setTimeout(() => { moreMenu.style.display = 'none'; }, 200);
+});
+
+// Settings Button Setup
+async function settingButtonSetup() {
+  const settingButton = document.getElementById("setting-button");
+  settingButton.addEventListener("click", async () => {
+    try {
+      const response = await fetch(`/user-details`, {
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      });
+      if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+      const user = await response.json();
+      
+      toggleBlackScreen(`
+        <div class="menu">
+          <div class="user-info">
+            <h1>Profile</h1>
+            <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
           </div>
           <div class="user-info-container">
             <img class="user-image" src="/uploads/${user.profile_image}" alt="">
@@ -209,131 +280,29 @@ document.addEventListener("click", function(event) {
               <p class="user-detail">User Role: ${user.role}</p>
             </div>
           </div>
-        `;
-        const closeBlackScreen = document.getElementById("close-black-screen");
-        closeBlackScreen.addEventListener("click", () => {
-          blackScreen.style.display = `none`;
-        });
-      }
-    })
-    .catch(error => {
+      `);
+      addCloseButton(blackScreen);
+
+      document.getElementById("edit-profile-button").addEventListener("click", () => {
+        toggleBlackScreen(`
+          <form action="/update-profile" class="menu" method="POST" enctype="multipart/form-data">
+            <h1 id="edit-profile-header">Edit Profile</h1>
+            <input type="text" name="username" class="new-profile-input" placeholder="Enter new name" required />
+            <input type="hidden" name="userId" value="${user.id}" />
+            <input type="file" onchange="previewFile()" name="profile_image" accept="image/*" class="new-profile-input" />
+            <img src="" class="profile-preview" alt="Image preview...">
+            <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
+          </form>
+        `);
+        addCloseButton(blackScreen);
+      });
+    } catch (error) {
       console.error('Error fetching user details:', error);
-    });
-  }
-});
-let toggleOff  = false 
-let altPressed 
-function turnOffSetup (){
-  if (toggleOff) {
-    document.body.style.cursor = "default"
-    document.getElementById("off").style.display = "none"
-    toggleOff = false;
-  } 
-  else {
-    document.getElementById("off").style.display = "block"
-    document.body.style.cursor = "none"
-    toggleOff = true
-    
-    document.getElementById("off").addEventListener("click",()=>{
-      document.body.style.cursor = `default`
-      document.getElementById("off").style.display="none"
-      toggleOff = false 
-    })}
+    }
+  });
 }
-// turn off button 
-document.getElementById("turn-off").addEventListener("click",() => turnOffSetup())
-document.addEventListener("keydown", function (event) {
-  if (event.keyCode === 18)  altPressed = true; // Alt key is pressed
-  if (event.key === "/") {
-    if (document.activeElement !== input) { 
-      event.preventDefault()
-      input.focus()
-    }}
-  // Alt + .
-  if (altPressed && event.keyCode === 190)   turnOffSetup()
-  if (altPressed && event.keyCode ===  88)   turnOffSetup()
+settingButtonSetup();
 
-});
-// Track when Alt is released
-document.addEventListener("keyup", function (event) {
-  if (event.keyCode === 18)   altPressed = false; // Reset Alt key state when released
-})
-// end turn off button 
-
-const moreButton = document.getElementById("more")
-const moreMenu = document.getElementById("more-menu")
-let moreMenuToggle = false 
-moreButton.addEventListener("click",()=>{
-  if (!moreMenuToggle){
-    moreMenu.style.display = 'block'
-    moreMenu.style.opacity = `1` 
-    moreMenuToggle = true
-  }
-  else{
-    moreMenu.style.opacity = `0`  
-    setTimeout(() => {moreMenu.style.display = 'none' }, 200);
-    moreMenuToggle = false
-  }
-})
-// add hover 
-// setting 
-function settingButtonSetup(){
-  settingButton = document.getElementById("setting-button")
-  settingButton.addEventListener("click",()=>{
-      fetch(`/user-details`,  {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      }},)
-      
-      .then(response => {
-        if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
-        return response.json()  // Attempt to parse JSON only if the response is okay
-      })
-      .then(user => {
-        if (user) {
-          // Display the user details (e.g., in a modal or a separate section)
-          blackScreen.style.display = 'block';
-          blackScreen.innerHTML = `
-          <div class="user-profile-detail">
-            <div class="user-info">
-              <p>Profile</p>
-              <button id="edit-profile-button"><svg  viewBox="0 0 24 24" id="_24x24_On_Light_Edit" data-name="24x24/On Light/Edit" xmlns="http://www.w3.org/2000/svg"><rect id="view-box" width="24" height="24" fill="none"/><path id="Shape" d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z" transform="translate(3.25 3.25)" fill="#141124"/></svg></button>
-              <button id="close-black-screen"><svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
-            </div>
-            <div class="user-info-container">
-              <img class="user-image" src="/uploads/${user.profile_image}" alt="">
-              <div style="width: 100%;">
-                <p class="user-detail">${user.username}</p>
-                <p class="user-detail">User ID: ${user.id}</p>
-                <p class="user-detail">User Role: ${user.role}</p>
-              </div>
-            </div>
-          `;
-          const closeBlackScreen = document.getElementById("close-black-screen");
-          closeBlackScreen.addEventListener("click", () => {
-            blackScreen.style.display = `none`;
-          });
-          // edit profile 
-          const editProfile = document.getElementById("edit-profile-button")
-          editProfile.addEventListener("click",()=>{
-            blackScreen.innerHTML = `
-            <form action="/update-profile" id="editProfileForm" method="POST" enctype="multipart/form-data">
-              <h1 id="edit-profile-header">Edit Profile</h1>
-                <input type="text"   name="username" class="new-profile-input"  placeholder="Enter new name" required />
-                <input type="hidden" name="userId"   value="${user.id}" />
-                <input type="file" onchange="previewFile()"  name="profile_image" accept="image/*" class="new-profile-input" />
-                <img src="" class="profile-preview" alt="Image preview...">
-              <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
-            </form>`
-          })
-          // end edit profile 
-      }})
-      .catch(error => {
-        console.error('Error fetching user details:', error)
-      })
-    })
-}
 settingButtonSetup()
 // end setting 
 

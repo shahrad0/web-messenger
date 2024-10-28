@@ -300,7 +300,7 @@ app.get("/user-details", (req, res) => {
 });
 
 // Serve user details
-app.get("/user-details-v2", (req, res) => {
+app.get("/users-details", (req, res) => {
   const { id } = req.query;
   db.get(
     "SELECT username, profile_image, role, id FROM users WHERE id = ?",
