@@ -47,18 +47,17 @@ function previewFile() {
 
 // auto scroll down and scroll down button
 messages.addEventListener('scroll', () => {
-  if       (messages.scrollTop < messages.scrollHeight-700 ) {
+  if       (messages.scrollTop < messages.scrollHeight-1000 ) {
     document.getElementById("scroll-down").style.display = `block`
     setTimeout(() => {document.getElementById("scroll-down").style.opacity = `1`}, 200); 
   }
-  else if  (messages.scrollTop > messages.scrollHeight-700 ){
+  else if  (messages.scrollTop > messages.scrollHeight-1000 ){
     document.getElementById("scroll-down").style.opacity = `0`
     setTimeout(() => {document.getElementById("scroll-down").style.display = `none`}, 200);
 }})
 function scrollToBottom() {
-  const messagesContainer = document.getElementById("messages")
-  messagesContainer.scrollTo({
-    top: messagesContainer.scrollHeight,
+  document.getElementById("messages").scrollTo({
+    top: document.getElementById("messages").scrollHeight,
     behavior: "smooth"
   })
 }
@@ -131,8 +130,7 @@ function messageTemplate(message, username, profileImage, id, messageId, replyId
 
 function sendMessage(userMessage, replyId = null) {
   const message = userMessage.trim();
-  const hasFile = fileInput && fileInput.files.length > 0;
-
+  const hasFile = fileInput && fileInput.files.length > 0
   // Exit if there is no message and no file
   if (message === '' && !hasFile) return;
 
@@ -174,23 +172,20 @@ function sendMessage(userMessage, replyId = null) {
 const blackScreen = document.getElementById("black-screen")
 const moreButton = document.getElementById("more")
 const moreMenu = document.getElementById("more-menu")
-const offElement = document.getElementById("off")
-let toggleOff = false
 let moreMenuToggle = false
-let altPressed = false
 
 // Toggle display for blackScreen
-function toggleBlackScreen(content = '') {
-  blackScreen.style.display = content ? 'block' : 'none';
-  blackScreen.innerHTML = content;
+function toggleBlackScreen(content = '',element) {
+  element.style.display = content ? 'block' : 'none';
+  element.innerHTML = content;
 }
 
 // Close button setup
-function addCloseButton(parent) {
+function addCloseButton(parent,removableElement) {
   const button = document.createElement("button");
   button.id = "close-black-screen";
   button.innerHTML = '<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>'
-  button.addEventListener("click", () => toggleBlackScreen());
+  button.addEventListener("click", () => toggleBlackScreen('',removableElement));
   parent.appendChild(button);
 }
 
@@ -205,7 +200,7 @@ document.addEventListener("click", async (event) => {
       
       toggleBlackScreen(`
         <div class="menu">
-          <div class="user-info">
+          <div id="user-info">
             <h1>User Info</h1>
           </div>
           <div class="user-info-container">
@@ -215,8 +210,8 @@ document.addEventListener("click", async (event) => {
               <p class="user-detail">User ID: ${user.id}</p>
               <p class="user-detail">User Role: ${user.role}</p>
             </div>
-          </div>`)
-      addCloseButton(blackScreen)
+          </div>`,blackScreen)
+      addCloseButton(document.getElementById("user-info"),blackScreen)
     } catch (error) {
       console.error('Error fetching user details:', error)
     }
@@ -224,23 +219,24 @@ document.addEventListener("click", async (event) => {
 });
 
 // Toggle Off functionality
+let altPressed = false
+let toggleOff = false
 function toggleOffSetup() {
-  offElement.style.display = toggleOff ? "none" : "block"
-  document.body.style.cursor = toggleOff ? "default" : "none"
+  document.getElementById("off").style.display   = toggleOff ? "none" : "block"
+  document.body.style.cursor                     = toggleOff ? "default" : "none"
   toggleOff = !toggleOff
 }
 
-document.getElementById("turn-off").addEventListener("click", toggleOffSetup);
+document.getElementById("turn-off").addEventListener("click", ()=>toggleOffSetup())
 
 document.addEventListener("keydown", (event) => {
-  altPressed = event.keyCode === 18;
+  if (!altPressed) altPressed = event.keyCode === 18
   if (event.key === "/" && document.activeElement !== input) {
     event.preventDefault();
     input.focus();
   }
-  if (altPressed && (event.keyCode === 190 || event.keyCode === 88)) {
-    toggleOffSetup();
-  }
+  if (altPressed && (event.keyCode === 190 || event.keyCode === 88))   toggleOffSetup()
+  
 });
 
 document.addEventListener("keyup", (event) => {
@@ -268,7 +264,7 @@ async function settingButtonSetup() {
       
       toggleBlackScreen(`
         <div class="menu">
-          <div class="user-info">
+          <div id="user-info">
             <h1>Profile</h1>
             <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
           </div>
@@ -280,8 +276,8 @@ async function settingButtonSetup() {
               <p class="user-detail">User Role: ${user.role}</p>
             </div>
           </div>
-      `);
-      addCloseButton(blackScreen);
+      `,blackScreen);
+      addCloseButton(document.getElementById("user-info"),blackScreen);
 
       document.getElementById("edit-profile-button").addEventListener("click", () => {
         toggleBlackScreen(`
@@ -301,8 +297,6 @@ async function settingButtonSetup() {
     }
   });
 }
-settingButtonSetup();
-
 settingButtonSetup()
 // end setting 
 
