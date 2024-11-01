@@ -1,5 +1,4 @@
 const express = require("express");
-const http = require("http");
 const socketIo = require("socket.io");
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
@@ -7,13 +6,29 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
-// handling images
+// handling files
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const secretKey = 'C3%ke$lctd^eqcO7-xqxZSj%sca:^lu[FB#4e=9G@JyS?N<>VTLRYi:MD0"brK=';
 const app = express();
-const server = http.createServer(app);
+
+// https
+// open cmd in the main directory and enter this command openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
+
+// const https   = require('https');
+// const fs      = require('fs');
+// const options = {
+//   key: fs.readFileSync('key.pem'),
+//   cert: fs.readFileSync('cert.pem'),
+// };
+// const server = https.createServer(options, app).listen(443)
+
+// http
+
+const http   = require("http");
+const server = http.createServer(app).listen(80) 
+
 const io = socketIo(server);
 
 app.use(express.static("public"));
@@ -95,18 +110,14 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
     if (err) return res.sendStatus(403);
 
     db.get("SELECT username, profile_image FROM users WHERE id = ?", [user.userId], (err, currentUser) => {
-      if (err) return res.status(500).send("Error fetching user data");
-      if (!currentUser) return res.status(400).send("User not found");
-
-      if (!message && !filePath) {
-        return res.status(400).send("Either a message or a file must be provided.");
-      }
+      if (err) return res.status(500).send("Error fetching user data")
+      if (!currentUser) return res.status(400).send("User not found")
+      if (!message && !filePath) return res.status(400).send("Either a message or a file must be provided.")
 
       db.run(query, [message || null, user.userId, replyId || null, filePath], function (err) {
         if (err) return res.status(500).send("Error inserting message");
 
-        const messageId = this.lastID;
-
+        const messageId = this.lastID
         if (replyId) {
           db.get(
             `SELECT messages.message AS repliedMessage, users.username AS repliedUsername 
@@ -115,7 +126,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
              WHERE messages.id = ?`, [replyId], (err, repliedData) => {
               if (err) return res.status(500).send("Error fetching replied message");
 
-              io.emit("chat message", {message,username: currentUser.username,profileImage: currentUser.profile_image,id: user.userId,messageId,replyId,repliedMessage: repliedData ? repliedData.repliedMessage : null,repliedUsername: repliedData ? repliedData.repliedUsername : null,filePath});
+              io.emit("chat message", {message,username: currentUser.username,profileImage: currentUser.profile_image,userId: user.userId,messageId,replyId,repliedMessage: repliedData ? repliedData.repliedMessage : null,repliedUsername: repliedData ? repliedData.repliedUsername : null,filePath});
 
               res.status(200).json({
                 message,
@@ -135,7 +146,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
             message,
             username: currentUser.username,
             profileImage: currentUser.profile_image,
-            id: user.userId,
+            userId: user.userId,
             messageId,
             replyId: null,
             repliedMessage: null,
@@ -217,7 +228,7 @@ app.get("/get-messages", (req, res) => {
       replyId: row.reply_id,
       repliedMessage: row.repliedMessage,
       repliedUsername: row.repliedUsername,
-      filePath: row.file_path // Include the file path for rendering
+      filePath: row.file_path 
     }));
 
     res.json(messages);
@@ -341,14 +352,8 @@ app.post("/update-profile", upload.single("profile_image"), (req, res) => {
 });
 
 // Serve uploads
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
-// Serve the client files
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-// new 
 function generateToken(user, res) {
   const tokenData = {
       userId: user.userId,
