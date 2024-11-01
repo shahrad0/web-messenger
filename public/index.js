@@ -24,6 +24,13 @@ const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 socket.on('chat message', (message) => {
   messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername,message.filePath)
+document.getElementById("notify").style.display = 'block';
+setTimeout(() => {document.getElementById("notify").style.opacity = '1'}, 10)
+setTimeout(() => {
+  document.getElementById("notify").style.opacity = '0'
+  // 200ms delay for animation
+  setTimeout(() => {document.getElementById("notify").style.display = 'none'}, 200)
+}, 400)
   if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 
@@ -62,15 +69,12 @@ function scrollToBottom() {
   })
 }
 // end auto scroll down and scroll down button
-// handle user input to db
+
+// sending message
 form.addEventListener('submit', function(e) {
   e.preventDefault();
   sendMessage(input.value,replyId)
-});
-
-// end handle user input to db 
-
-// handing db data to client
+})
 
 function loadMessages() {
   fetch('/get-messages')
@@ -188,6 +192,7 @@ function addCloseButton(parent,removableElement) {
   button.addEventListener("click", () => toggleBlackScreen('',removableElement));
   parent.appendChild(button);
 }
+// add create menu function later !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // Fetch and display user details
 document.addEventListener("click", async (event) => {
@@ -200,9 +205,7 @@ document.addEventListener("click", async (event) => {
       
       toggleBlackScreen(`
         <div class="menu">
-          <div id="user-info">
-            <h1>User Info</h1>
-          </div>
+          <div id="menu-toolbar">User Info</div>
           <div class="user-info-container">
             <img class="user-image" src="/uploads/${user.profile_image}" alt="">
             <div style="width: 100%;">
@@ -211,7 +214,7 @@ document.addEventListener("click", async (event) => {
               <p class="user-detail">User Role: ${user.role}</p>
             </div>
           </div>`,blackScreen)
-      addCloseButton(document.getElementById("user-info"),blackScreen)
+      addCloseButton(document.getElementById("menu-toolbar"),blackScreen)
     } catch (error) {
       console.error('Error fetching user details:', error)
     }
@@ -264,8 +267,7 @@ async function settingButtonSetup() {
       
       toggleBlackScreen(`
         <div class="menu">
-          <div id="user-info">
-            <h1>Profile</h1>
+          <div id="menu-toolbar"> Profile
             <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
           </div>
           <div class="user-info-container">
@@ -277,20 +279,20 @@ async function settingButtonSetup() {
             </div>
           </div>
       `,blackScreen);
-      addCloseButton(document.getElementById("user-info"),blackScreen);
+      addCloseButton(document.getElementById("menu-toolbar"),blackScreen);
 
       document.getElementById("edit-profile-button").addEventListener("click", () => {
         toggleBlackScreen(`
           <form action="/update-profile" class="menu" method="POST" enctype="multipart/form-data">
-            <h1 id="edit-profile-header">Edit Profile</h1>
+            <div id="menu-toolbar">Edit Profile</div>
             <input type="text" name="username" class="new-profile-input" placeholder="Enter new name" required />
             <input type="hidden" name="userId" value="${user.id}" />
             <input type="file" onchange="previewFile()" name="profile_image" accept="image/*" class="new-profile-input" />
             <img src="" class="profile-preview" alt="Image preview...">
             <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
           </form>
-        `);
-        addCloseButton(blackScreen);
+        `,blackScreen)
+        addCloseButton(document.getElementById("menu-toolbar"),blackScreen);
       });
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -307,24 +309,37 @@ preWrittenMenu.addEventListener("click",()=>{
   menu.innerHTML = `
       <div id="pre-written-text-menu-container">
       <div> 
+        <div class="side-menu-toolbar">
+          <button id="close-menu" type="button"><svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
+          <button id="config-button"><svg  xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 50 50" >    <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg></button>
+        </div>
         <form action="" id="submit-pre-written-text" >
-          <div class="note"> <button id="close-menu" type="button"><svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
-          <p>Add more words at once by seprating words with ","</p>
-          </div>
           <input  id="submit-text" type="text" placeholder="submit-text">
           <button id="submit-pre-written-text-button"> add </button>
-          <input type="checkbox" id="send-immediately">
-          <label for="send-immediately">send immediately</label>
         </form>
       </div>
       <div id="pre-written-text-container">
       </div>
-    </div>
-  `
+    </div>`
+  document.getElementById("config-button").addEventListener("click",()=>{
+    toggleBlackScreen(`
+      <div class="menu">
+        <div id="menu-toolbar">Configuration</div>
+        <div class="note-contianer">
+          <p class="note">Add more words at once by seprating words with ","</p>
+        </div>
+        <div class="config-container">
+          <label for="send-immediately">send immediately</label>
+          <input type="checkbox" id="send-immediately">
+          it doesnt work for now
+        </div>
+      </form>
+    `,blackScreen);
+    addCloseButton(document.getElementById("menu-toolbar"),blackScreen);
+  })
   moreMenu.style.opacity = `0`  
   moreMenuToggle = false
   updatePreWrittenText(input)
-
   // actual main functionality
   document.getElementById("submit-pre-written-text").addEventListener('submit', function(e) {
     e.preventDefault();
@@ -343,9 +358,7 @@ preWrittenMenu.addEventListener("click",()=>{
   closeMenu.addEventListener(`click`,()=>{
     menu.innerHTML = `
       <div>
-        <button id="setting-button">
-          <svg  xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 50 50" >    <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg>
-        </button>
+        <button id="setting-button"><svg  xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 50 50" >    <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg></button>
       </div>`
     settingButtonSetup()
   })
@@ -448,8 +461,7 @@ function replyStyle(replyContainer){
   input.style.transition            = "all 0s"
   input.style.borderTopLeftRadius   = "0px"
   input.style.borderTopRightRadius  = "0px"
-  input.style.padding               = `0 3%` 
-  input.style.width                 = `77%` 
+  input.style.padding               = `0 2%`
   messageContainer.style.height     = `81%`
   input.addEventListener('focus', function() {
     replyContainer.style.border = `solid 2px var(--border-focus)`
@@ -466,8 +478,8 @@ function reply(){
   if (document.getElementById('reply-container')) removeReply()
   const reply = document.createElement('div')
   reply.id    = "reply-container"
-  replyStyle(reply)
-  reply.style.width     = getComputedStyle(input).width;
+  replyStyle(reply) 
+  reply.style.width     = getComputedStyle(input).width
   const closeReply      = document.createElement("button")
   closeReply.id         = "close-reply"
   closeReply.innerHTML  = `<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
