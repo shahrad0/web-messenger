@@ -135,8 +135,7 @@ function messageTemplate(message, username, profileImage, id, messageId, replyId
 function sendMessage(userMessage, replyId = null) {
   const message = userMessage.trim();
   const hasFile = fileInput && fileInput.files.length > 0
-  // Exit if there is no message and no file
-  if (message === '' && !hasFile) return;
+  if (message === '') return; // return if message is empty
 
   const fetchOptions = {
     method: 'POST',
@@ -178,13 +177,11 @@ const moreButton = document.getElementById("more")
 const moreMenu = document.getElementById("more-menu")
 let moreMenuToggle = false
 
-// Toggle display for blackScreen
+// creating menu 
 function toggleBlackScreen(content = '',element) {
   element.style.display = content ? 'block' : 'none';
   element.innerHTML = content;
 }
-
-// Close button setup
 function addCloseButton(parent,removableElement) {
   const button = document.createElement("button");
   button.id = "close-black-screen";
@@ -192,8 +189,11 @@ function addCloseButton(parent,removableElement) {
   button.addEventListener("click", () => toggleBlackScreen('',removableElement));
   parent.appendChild(button);
 }
-// add create menu function later !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+function createMenu(content){
+  mainContent = `<div class="menu">${content}</div>`
+  toggleBlackScreen(mainContent,blackScreen)
+  addCloseButton(document.getElementById("menu-toolbar"),blackScreen)
+}
 // Fetch and display user details
 document.addEventListener("click", async (event) => {
   if (event.target.classList.contains('username')) {
@@ -201,20 +201,16 @@ document.addEventListener("click", async (event) => {
     try {
       const response = await fetch(`/users-details?id=${encodeURIComponent(userId)}`)
       if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
-      const user = await response.json();
-      
-      toggleBlackScreen(`
-        <div class="menu">
-          <div id="menu-toolbar">User Info</div>
-          <div class="user-info-container">
-            <img class="user-image" src="/uploads/${user.profile_image}" alt="">
-            <div style="width: 100%;">
-              <p class="user-detail">${user.username}</p>
-              <p class="user-detail">User ID: ${user.id}</p>
-              <p class="user-detail">User Role: ${user.role}</p>
-            </div>
-          </div>`,blackScreen)
-      addCloseButton(document.getElementById("menu-toolbar"),blackScreen)
+      const user = await response.json()   
+      createMenu(`
+      <div id="menu-toolbar">User Info</div>
+        <div class="user-info-container">
+          <img class="user-image" src="/uploads/${user.profile_image}" alt="">
+          <div style="width: 100%;">
+            <p class="user-detail">${user.username}</p>
+            <p class="user-detail">User ID: ${user.id}</p>
+            <p class="user-detail">User Role: ${user.role}</p>
+      </div>`)
     } catch (error) {
       console.error('Error fetching user details:', error)
     }
@@ -265,34 +261,28 @@ async function settingButtonSetup() {
       if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
       const user = await response.json();
       
-      toggleBlackScreen(`
-        <div class="menu">
-          <div id="menu-toolbar"> Profile
+      createMenu(`          
+        <div id="menu-toolbar"> Profile
             <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
+        </div>
+        <div class="user-info-container">
+          <img class="user-image" src="/uploads/${user.profile_image}" alt="">
+          <div style="width: 100%;">
+            <p class="user-detail">${user.username}</p>
+            <p class="user-detail">User ID: ${user.id}</p>
+            <p class="user-detail">User Role: ${user.role}</p>
           </div>
-          <div class="user-info-container">
-            <img class="user-image" src="/uploads/${user.profile_image}" alt="">
-            <div style="width: 100%;">
-              <p class="user-detail">${user.username}</p>
-              <p class="user-detail">User ID: ${user.id}</p>
-              <p class="user-detail">User Role: ${user.role}</p>
-            </div>
-          </div>
-      `,blackScreen);
-      addCloseButton(document.getElementById("menu-toolbar"),blackScreen);
-
+        </div>`)
       document.getElementById("edit-profile-button").addEventListener("click", () => {
-        toggleBlackScreen(`
-          <form action="/update-profile" class="menu" method="POST" enctype="multipart/form-data">
+        createMenu(`          
+          <form action="/update-profile" method="POST" enctype="multipart/form-data">
             <div id="menu-toolbar">Edit Profile</div>
             <input type="text" name="username" class="new-profile-input" placeholder="Enter new name" required />
             <input type="hidden" name="userId" value="${user.id}" />
             <input type="file" onchange="previewFile()" name="profile_image" accept="image/*" class="new-profile-input" />
             <img src="" class="profile-preview" alt="Image preview...">
             <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
-          </form>
-        `,blackScreen)
-        addCloseButton(document.getElementById("menu-toolbar"),blackScreen);
+          </form>`)
       });
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -321,25 +311,33 @@ preWrittenMenu.addEventListener("click",()=>{
       <div id="pre-written-text-container">
       </div>
     </div>`
+  // pwt config
+  // add hotkey for accessing it with alt + c 
   document.getElementById("config-button").addEventListener("click",()=>{
-    toggleBlackScreen(`
-      <div class="menu">
-        <div id="menu-toolbar">Configuration</div>
-        <div class="note-contianer">
-          <p class="note">Add more words at once by seprating words with ","</p>
-        </div>
-        <div class="config-container">
-          <label for="send-immediately">send immediately</label>
-          <input type="checkbox" id="send-immediately">
-          it doesnt work for now
-        </div>
-      </form>
-    `,blackScreen);
-    addCloseButton(document.getElementById("menu-toolbar"),blackScreen);
+  createMenu(`
+    <div id="menu-toolbar">Configuration</div>
+      <div class="note-container">
+        <p class="note">Add more words at once by seprating words with ","</p>
+      </div>
+      <div class="config-container">
+      <input type="checkbox" id="send-immediately" class="checkbox custom-checkbox">
+      <label for="send-immediately">send immediately</label>
+      <br>
+      <input type="checkbox" id="add-space" class="checkbox custom-checkbox">
+      <label for="add-space">add space after each word</label>
+      </div>
+    </div>`)
+    setupCheckbox("send-immediately","pwtSendImmediately")
+    setupCheckbox("add-space"       ,"pwtAddSpace")
   })
+  function setupCheckbox(elementId, localStorageKey) {
+    const checkbox   = document.getElementById(elementId)
+    checkbox.checked = localStorage.getItem(localStorageKey) === "true"
+    checkbox.addEventListener("change", () => {localStorage.setItem(localStorageKey, checkbox.checked)})
+  }
   moreMenu.style.opacity = `0`  
   moreMenuToggle = false
-  updatePreWrittenText(input)
+  updatePreWrittenText()
   // actual main functionality
   document.getElementById("submit-pre-written-text").addEventListener('submit', function(e) {
     e.preventDefault();
@@ -351,7 +349,7 @@ preWrittenMenu.addEventListener("click",()=>{
     let savedPreWrittenText      = JSON.parse(localStorage.getItem('preWrittenText')) || []
     const newSavedPreWrittenText = tempArray.concat(savedPreWrittenText)
     localStorage.setItem('preWrittenText', JSON.stringify(newSavedPreWrittenText))
-    setTimeout(() => { updatePreWrittenText(input); }, 50);
+    setTimeout(() => { updatePreWrittenText(); }, 50);
   })
   // closing menu button 
   const closeMenu = document.getElementById("close-menu")
@@ -363,20 +361,22 @@ preWrittenMenu.addEventListener("click",()=>{
     settingButtonSetup()
   })
 })
-function updatePreWrittenText(chatInput){
+function updatePreWrittenText(){
   let savedPreWrittenText = JSON.parse(localStorage.getItem('preWrittenText'))
   document.getElementById("pre-written-text-container").innerHTML = ''
   if (savedPreWrittenText){
     savedPreWrittenText.forEach(element => {
       document.getElementById("pre-written-text-container").innerHTML += `          
-      <div class="pre-written-text">${element} </div>`
+      <div class="pre-written-text">${element}</div>`
     });
   }
   const preWrittenText = document.querySelectorAll(".pre-written-text")
   preWrittenText.forEach(element => {
     element.addEventListener(`click`,()=>{
-      if (document.getElementById('send-immediately').checked)  sendMessage(element.innerHTML,replyId)
-      else chatInput.value += element.innerHTML
+      let text = element.innerText
+      if (localStorage.getItem("pwtAddSpace")        === "true") text += " "
+      if (localStorage.getItem("pwtSendImmediately") === "true")  sendMessage(text,replyId)
+      else input.value += text
     })
   });
 }
@@ -437,7 +437,6 @@ function contextMenu(event,features) {
     menu.remove()
   } , { once: true })
 }
-
 async function copy() {
     const selection = window.getSelection();
     if (selectedRange) {

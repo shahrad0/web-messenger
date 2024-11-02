@@ -454,3 +454,14 @@ button{
     display: none;
     opacity: 0;
 }
+/* can add padding to menu to prevent repeating the same thing */
+.note-container{
+    padding: 2%;
+    font-style: italic;
+}
+.config-container{
+    padding: 2%;
+}
+.checkbox{
+    display: initial;
+}
