@@ -28,7 +28,6 @@ document.getElementById("notify").style.display = 'block';
 setTimeout(() => {document.getElementById("notify").style.opacity = '1'}, 10)
 setTimeout(() => {
   document.getElementById("notify").style.opacity = '0'
-  // 200ms delay for animation
   setTimeout(() => {document.getElementById("notify").style.display = 'none'}, 200)
 }, 400)
   if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
@@ -218,16 +217,17 @@ document.addEventListener("click", async (event) => {
 });
 
 // Toggle Off functionality
-let altPressed = false
 let toggleOff = false
 function toggleOffSetup() {
   document.getElementById("off").style.display   = toggleOff ? "none" : "block"
   document.body.style.cursor                     = toggleOff ? "default" : "none"
   toggleOff = !toggleOff
 }
-
 document.getElementById("turn-off").addEventListener("click", ()=>toggleOffSetup())
-
+// keys 
+let altPressed      = false
+let dotPressed      = false
+let backtickPressed = false
 document.addEventListener("keydown", (event) => {
   if (!altPressed) altPressed = event.keyCode === 18
   if (event.key === "/" && document.activeElement !== input) {
@@ -235,11 +235,14 @@ document.addEventListener("keydown", (event) => {
     input.focus();
   }
   if (altPressed && (event.keyCode === 190 || event.keyCode === 88))   toggleOffSetup()
-  
+  if (event.key === "`") backtickPressed = true
+  if (event.key === ".") dotPressed      = true
 });
 
 document.addEventListener("keyup", (event) => {
-  if (event.keyCode === 18) altPressed = false;
+  if (event.keyCode === 18) altPressed   = false
+  if (event.key === "`") backtickPressed = false
+  if (event.key === ".") dotPressed      = false
 });
 
 // More Menu toggle
@@ -291,10 +294,9 @@ async function settingButtonSetup() {
 }
 settingButtonSetup()
 // end setting 
-
-// pre written text  
-// for menu
-const preWrittenMenu = document.getElementById("pre-written")
+// pwt
+const preWrittenMenu  = document.getElementById("pre-written")
+let   pwtDeckNumber   = 0
 preWrittenMenu.addEventListener("click",()=>{
   menu.innerHTML = `
       <div id="pre-written-text-menu-container">
@@ -310,23 +312,23 @@ preWrittenMenu.addEventListener("click",()=>{
       </div>
       <div id="pre-written-text-container">
       </div>
-    </div>`
-  // pwt config
-  // add hotkey for accessing it with alt + c 
+      </div>`
+  // pwt config ---------> add hotkey for accessing it with alt + c 
   document.getElementById("config-button").addEventListener("click",()=>{
-  createMenu(`
-    <div id="menu-toolbar">Configuration</div>
-      <div class="note-container">
-        <p class="note">Add more words at once by seprating words with ","</p>
-      </div>
-      <div class="config-container">
-      <input type="checkbox" id="send-immediately" class="checkbox custom-checkbox">
-      <label for="send-immediately">send immediately</label>
-      <br>
-      <input type="checkbox" id="add-space" class="checkbox custom-checkbox">
-      <label for="add-space">add space after each word</label>
-      </div>
-    </div>`)
+    createMenu(`
+      <div id="menu-toolbar">Configuration</div>
+        <div class="note-container">
+          <p class="note">Add more words at once by seprating words with ","</p>
+          <p class="note">Press 0 to 9 to simulate clicking on the buttons </p>
+        </div>
+        <div class="config-container">
+        <input type="checkbox" id="send-immediately" class="checkbox custom-checkbox">
+        <label for="send-immediately">send immediately</label>
+        <br>
+        <input type="checkbox" id="add-space" class="checkbox custom-checkbox">
+        <label for="add-space">add space after each word</label>
+        </div>
+      </div>`)
     setupCheckbox("send-immediately","pwtSendImmediately")
     setupCheckbox("add-space"       ,"pwtAddSpace")
   })
@@ -337,21 +339,30 @@ preWrittenMenu.addEventListener("click",()=>{
   }
   moreMenu.style.opacity = `0`  
   moreMenuToggle = false
-  updatePreWrittenText()
-  // actual main functionality
-  document.getElementById("submit-pre-written-text").addEventListener('submit', function(e) {
-    e.preventDefault();
-  
-    const preWrittenTextInput    = document.getElementById("submit-text");
-    const preWrittenText         = preWrittenTextInput.value.trim();
-    const tempArray              = preWrittenText.split(',').map(text => text.trim()).filter(Boolean); // Split by commas and trim spaces    idk wtf is this but its useful
-    preWrittenTextInput.value    = ''
-    let savedPreWrittenText      = JSON.parse(localStorage.getItem('preWrittenText')) || []
-    const newSavedPreWrittenText = tempArray.concat(savedPreWrittenText)
-    localStorage.setItem('preWrittenText', JSON.stringify(newSavedPreWrittenText))
-    setTimeout(() => { updatePreWrittenText(); }, 50);
+  loadPWTEntries(pwtDeckNumber)
+  // hotkeys
+  document.addEventListener("keydown", (event) => {
+    const key = event.key
+    const isNumber = key >= "0" && key <= "9"
+    if (isNumber){
+      if ((dotPressed || backtickPressed)) {
+        pwtDeckNumber = key
+        loadPWTEntries(pwtDeckNumber)
+      }
+      else if ((document.activeElement !== input)){   
+        if (document.getElementById(`pwt-${key}`))  document.getElementById(`pwt-${key}`).click()
+      }
+    }
   })
-  // closing menu button 
+  document.getElementById("submit-pre-written-text").addEventListener('submit', function(e) {
+    e.preventDefault()
+  
+    const preWrittenTextInput    = document.getElementById("submit-text")
+    savePWTEntry(preWrittenTextInput.value.trim(),pwtDeckNumber)
+    preWrittenTextInput.value    = ''
+    setTimeout(() => { loadPWTEntries(pwtDeckNumber) }, 50)
+  })
+  // closing menu button  ----------------> make this a function
   const closeMenu = document.getElementById("close-menu")
   closeMenu.addEventListener(`click`,()=>{
     menu.innerHTML = `
@@ -361,24 +372,33 @@ preWrittenMenu.addEventListener("click",()=>{
     settingButtonSetup()
   })
 })
-function updatePreWrittenText(){
-  let savedPreWrittenText = JSON.parse(localStorage.getItem('preWrittenText'))
-  document.getElementById("pre-written-text-container").innerHTML = ''
-  if (savedPreWrittenText){
-    savedPreWrittenText.forEach(element => {
-      document.getElementById("pre-written-text-container").innerHTML += `          
-      <div class="pre-written-text">${element}</div>`
-    });
-  }
-  const preWrittenText = document.querySelectorAll(".pre-written-text")
-  preWrittenText.forEach(element => {
-    element.addEventListener(`click`,()=>{
+function savePWTEntry(text, pwtDeckId) {
+  let decks = JSON.parse(localStorage.getItem('preWrittenText')) || {}
+  if (!decks[pwtDeckId])   decks[pwtDeckId] = []
+  decks[pwtDeckId].push({ text: text, deckId: pwtDeckId })
+  localStorage.setItem('preWrittenText', JSON.stringify(decks))
+}
+
+function loadPWTEntries(pwtDeckId) {
+  // Retrieve the decks object from localStorage
+  const decks = JSON.parse(localStorage.getItem('preWrittenText')) || {}
+  const entries = decks[pwtDeckId] || []
+  const container = document.getElementById("pre-written-text-container")
+  container.innerHTML = `<h3 id="pwt-deck">deck ${pwtDeckNumber}</h3>`
+
+  // Render each entry in the container
+  entries.forEach((entry,index) => {
+    container.innerHTML += `<div class="pre-written-text" id="pwt-${index}">${entry.text}</div>`
+  })
+  let currentPWT = document.querySelectorAll(".pre-written-text")
+  currentPWT.forEach(element =>{
+    element.addEventListener("click",()=>{
       let text = element.innerText
-      if (localStorage.getItem("pwtAddSpace")        === "true") text += " "
+      if (localStorage.getItem("pwtAddSpace")        === "true")  text += " "
       if (localStorage.getItem("pwtSendImmediately") === "true")  sendMessage(text,replyId)
       else input.value += text
     })
-  });
+  })
 }
 // end pre written text
 
