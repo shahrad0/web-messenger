@@ -1,3 +1,10 @@
+// thing to add 
+// alt + c for config menu 
+// hiding message 
+// pwt hot key for opening its menu
+// pressing escape to get out of a menu
+// renaming and polishing the code (for css too)
+// add pagination and after that complete reply 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -225,24 +232,34 @@ function toggleOffSetup() {
 }
 document.getElementById("turn-off").addEventListener("click", ()=>toggleOffSetup())
 // keys 
-let altPressed      = false
-let dotPressed      = false
-let backtickPressed = false
+const keyState = {
+  altPressed      : false,
+  enterPressed    : false,
+  dotPressed      : false,
+  backtickPressed : false
+}
 document.addEventListener("keydown", (event) => {
-  if (!altPressed) altPressed = event.keyCode === 18
-  if (event.key === "/" && document.activeElement !== input) {
-    event.preventDefault();
-    input.focus();
+  const { key, keyCode } = event
+
+  keyState.altPressed      ||= keyCode === 18
+  keyState.enterPressed    ||= keyCode === 13
+  keyState.backtickPressed ||= key === "`"
+  keyState.dotPressed      ||= key === "."
+  if (key === "/" && document.activeElement !== input) {
+    event.preventDefault()
+    input.focus()
   }
-  if (altPressed && (event.keyCode === 190 || event.keyCode === 88))   toggleOffSetup()
-  if (event.key === "`") backtickPressed = true
-  if (event.key === ".") dotPressed      = true
-});
+  // turn off screen when alt + (x || .) is pressed or when enter + . is pressed 
+  if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed))  toggleOffSetup()
+})
 
 document.addEventListener("keyup", (event) => {
-  if (event.keyCode === 18) altPressed   = false
-  if (event.key === "`") backtickPressed = false
-  if (event.key === ".") dotPressed      = false
+  const { key, keyCode } = event
+
+  if (keyCode === 18) keyState.altPressed   = false
+  if (keyCode === 13) keyState.enterPressed = false
+  if (key === "`") keyState.backtickPressed = false
+  if (key === ".") keyState.dotPressed      = false
 });
 
 // More Menu toggle
@@ -320,6 +337,7 @@ preWrittenMenu.addEventListener("click",()=>{
         <div class="note-container">
           <p class="note">Add more words at once by seprating words with ","</p>
           <p class="note">Press 0 to 9 to simulate clicking on the buttons </p>
+          <p class="note">Press 0 to 9 while holding . or \` to switch between decks</p>
         </div>
         <div class="config-container">
         <input type="checkbox" id="send-immediately" class="checkbox custom-checkbox">
@@ -338,6 +356,8 @@ preWrittenMenu.addEventListener("click",()=>{
     checkbox.addEventListener("change", () => {localStorage.setItem(localStorageKey, checkbox.checked)})
   }
   moreMenu.style.opacity = `0`  
+  const pwtForm  = document.getElementById("submit-pre-written-text")
+  const pwtInput = document.getElementById("submit-text")
   moreMenuToggle = false
   loadPWTEntries(pwtDeckNumber)
   // hotkeys
@@ -345,22 +365,21 @@ preWrittenMenu.addEventListener("click",()=>{
     const key = event.key
     const isNumber = key >= "0" && key <= "9"
     if (isNumber){
-      if ((dotPressed || backtickPressed)) {
+      if ((keyState.dotPressed || keyState.backtickPressed)) {
         pwtDeckNumber = key
         loadPWTEntries(pwtDeckNumber)
       }
-      else if ((document.activeElement !== input)){   
+      else if ((document.activeElement !== input || pwtInput)){   
         if (document.getElementById(`pwt-${key}`))  document.getElementById(`pwt-${key}`).click()
       }
     }
   })
-  document.getElementById("submit-pre-written-text").addEventListener('submit', function(e) {
+  pwtForm.addEventListener('submit', function(e) {
     e.preventDefault()
-  
-    const preWrittenTextInput    = document.getElementById("submit-text")
-    savePWTEntry(preWrittenTextInput.value.trim(),pwtDeckNumber)
-    preWrittenTextInput.value    = ''
-    setTimeout(() => { loadPWTEntries(pwtDeckNumber) }, 50)
+    if (pwtInput.value === "") return
+    savePWTEntry(pwtInput.value.trim(),pwtDeckNumber)
+    pwtInput.value    = ''
+    loadPWTEntries(pwtDeckNumber) 
   })
   // closing menu button  ----------------> make this a function
   const closeMenu = document.getElementById("close-menu")
@@ -378,7 +397,6 @@ function savePWTEntry(text, pwtDeckId) {
   decks[pwtDeckId].push({ text: text, deckId: pwtDeckId })
   localStorage.setItem('preWrittenText', JSON.stringify(decks))
 }
-
 function loadPWTEntries(pwtDeckId) {
   // Retrieve the decks object from localStorage
   const decks = JSON.parse(localStorage.getItem('preWrittenText')) || {}
