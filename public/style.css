@@ -334,7 +334,7 @@ button{
 #context-menu{
     transition: all 100ms;
     scale: 0;
-    width: 100px;
+    min-width: 100px;
     background-color: var(--secondary-background);
     border-radius: 15px;
     border: var(--border-focus) solid 1px;
@@ -344,8 +344,7 @@ button{
 }
 .right-click-item{
     border-bottom: 1px solid var(--main-border) ;
-    padding: 5% 0 ;
-    padding-left: 20%;
+    padding: 5% 10% ;
     transition: all 100ms;
 }
 .right-click-item:hover{

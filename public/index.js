@@ -1,10 +1,14 @@
-// thing to add 
+// things to add 
 // alt + c for config menu 
 // hiding message 
 // pwt hot key for opening its menu
 // pressing escape to get out of a menu
 // renaming and polishing the code (for css too)
 // add pagination and after that complete reply 
+// add notification and add toggle for it 
+// complete the left menu (add main chat, archives and games)
+// fix the ui for sending file and allow sending multiple files
+
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -29,15 +33,17 @@ const messages         = document.getElementById("messages")
 const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
+
 socket.on('chat message', (message) => {
-  messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername,message.filePath)
-document.getElementById("notify").style.display = 'block';
-setTimeout(() => {document.getElementById("notify").style.opacity = '1'}, 10)
-setTimeout(() => {
-  document.getElementById("notify").style.opacity = '0'
-  setTimeout(() => {document.getElementById("notify").style.display = 'none'}, 200)
-}, 400)
-  if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
+  messages.innerHTML += messageTemplate(message)
+  document.getElementById("notify").style.display = 'block';
+  setTimeout(() => {document.getElementById("notify").style.opacity = '1'}, 10)
+  setTimeout(() => {
+    document.getElementById("notify").style.opacity = '0'
+    setTimeout(() => {
+      document.getElementById("notify").style.display = 'none'}, 200)
+  }, 400)
+    if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
 })
 
 // divider not complete 
@@ -60,13 +66,13 @@ function previewFile() {
 
 // auto scroll down and scroll down button
 messages.addEventListener('scroll', () => {
-  if       (messages.scrollTop < messages.scrollHeight-1000 ) {
+  if (messages.scrollTop < messages.scrollHeight-1000 ) {
     document.getElementById("scroll-down").style.display = `block`
-    setTimeout(() => {document.getElementById("scroll-down").style.opacity = `1`}, 200); 
+    setTimeout(() => { document.getElementById("scroll-down").style.opacity = `1` }, 200)
   }
-  else if  (messages.scrollTop > messages.scrollHeight-1000 ){
+  else if (messages.scrollTop > messages.scrollHeight-1000 ){
     document.getElementById("scroll-down").style.opacity = `0`
-    setTimeout(() => {document.getElementById("scroll-down").style.display = `none`}, 200);
+    setTimeout(() => { document.getElementById("scroll-down").style.display = `none` }, 200)
 }})
 function scrollToBottom() {
   document.getElementById("messages").scrollTo({
@@ -87,7 +93,7 @@ function loadMessages() {
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
-        messages.innerHTML += messageTemplate(message.message, message.username, message.profileImage, message.userId, message.messageId, message.replyId, message.repliedMessage, message.repliedUsername,message.filePath)
+        messages.innerHTML += messageTemplate(message)
       });
       setTimeout(() => { scrollToBottom() }, 100);
     })
@@ -98,39 +104,40 @@ function loadMessages() {
 document.addEventListener('DOMContentLoaded', loadMessages);
 
 // Updated message template function
-function messageTemplate(message, username, profileImage, id, messageId, replyId = null, repliedMessage = null, repliedUsername = null,filePath = null) {
+function messageTemplate(message) {
   // reply
   let replySection = ''
   let file = ''
-  if (replyId && repliedMessage && repliedUsername) 
+  if (message.replyId && message.repliedMessage && message.repliedUsername) 
     replySection = `
-    <div class="replied-message-container" data-reply-id="${replyId}">
-      <div class="replied-username">${repliedUsername}</div>
-      <div class="replied-text"><p>${repliedMessage}</p></div>
-    </div>`;
-    // file
-  if (filePath){
-    const fileExt = filePath.split('.').pop().toLowerCase();
-    if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${filePath}" class="sent-image">`
-    else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${filePath}" class="sent-video"></video>`
-    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${filePath}" class="sent-pdf" width="800px" height="600px"></object>`
+    <div class="replied-message-container" data-reply-id="${message.replyId}">
+      <div class="replied-username">${message.repliedUsername}</div>
+      <div class="replied-text"><p>${message.repliedMessage}</p></div>
+    </div>`
+
+  // files
+  if (message.filePath){
+    const fileExt = message.filePath.split('.').pop().toLowerCase();
+    if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${message.filePath}" class="sent-image">`
+    else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent-video"></video>`
+    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent-pdf" width="800px" height="600px"></object>`
     // temp solution add rar and music 
     else  file = `<a href="uploads/${filePath}">free robux</a>`
   }
 
-// message
+  // message
   return `
     <div class="message">
       <div class="message-container">
         <div class="message-profile">
-          <img src="uploads/${profileImage}" alt="npc" class="user-profile">
+          <img src="uploads/${message.profileImage}" alt="npc" class="user-profile">
         </div>
         <div class="message-content">
-          <div class="username" data-user-id="${id}">${username}</div>
+          <div class="username" data-user-id="${message.userId}">${message.username}</div>
           ${replySection}
           ${file}
-          <div class="message-text" data-message-id="${messageId}">
-          <p>${message}</p>
+          <div class="message-text" data-message-id="${message.messageId}">
+          <p>${message.message}</p>
           </div>
           <div class="message-detail"></div>
         </div>
@@ -310,8 +317,11 @@ async function settingButtonSetup() {
   });
 }
 settingButtonSetup()
-// end setting 
-// pwt
+
+// END setting 
+
+// START PWT
+
 const preWrittenMenu  = document.getElementById("pre-written")
 let   pwtDeckNumber   = 0
 preWrittenMenu.addEventListener("click",()=>{
@@ -418,7 +428,7 @@ function loadPWTEntries(pwtDeckId) {
     })
   })
 }
-// end pre written text
+// END PWT
 
 let selectedRange 
 let targetedElement
@@ -428,7 +438,7 @@ document.addEventListener("contextmenu", function (e) {
   let selectedText = selection.toString().trim();
 
   if (e.target.closest('.message-container')) {
-    contextMenu(event, [`copyMessage`, 'reply'])
+    contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage'])
     targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
     targetedElement.classList.add("message-container-selected")
   }
@@ -456,11 +466,12 @@ function contextMenu(event,features) {
   menu.id    = "context-menu"
   // add element depending on where user right clicks
   features.forEach(element => {
-    if (element == "copyMessage")  menu.innerHTML += `<div class="right-click-item" id="copy-message "   onclick="copyMessage() ">Copy </div>`
-    if (element == "copy")         menu.innerHTML += `<div class="right-click-item" id="copy         "   onclick="copy()        ">Copy </div>`
-    if (element == "cut")          menu.innerHTML += `<div class="right-click-item" id="cut          "   onclick="cut()         ">cut  </div>`
-    if (element == "reply")        menu.innerHTML += `<div class="right-click-item" id="reply        "   onclick="reply()       ">reply</div>`
-    if (element == "paste")        menu.innerHTML += `<div class="right-click-item" id="paste        "   onclick="paste()       ">paste</div>`
+    if (element == "copyMessage") menu.innerHTML += `<div class="right-click-item" id="copy-message" onclick="copyMessage()">Copy</div>`
+    if (element == "hideMessage") menu.innerHTML += `<div class="right-click-item" id="hide-message" onclick="hideMessage()">Hide</div>`
+    if (element == "copy")        menu.innerHTML += `<div class="right-click-item" id="copy"  onclick="copy()">Copy</div>`
+    if (element == "cut")         menu.innerHTML += `<div class="right-click-item" id="cut"   onclick="cut()">Cut</div>`
+    if (element == "reply")       menu.innerHTML += `<div class="right-click-item" id="reply" onclick="reply()">Reply</div>`
+    if (element == "paste")       menu.innerHTML += `<div class="right-click-item" id="paste" onclick="paste()">Paste</div>`
   });
   document.body.appendChild(menu);
   
@@ -475,6 +486,8 @@ function contextMenu(event,features) {
     menu.remove()
   } , { once: true })
 }
+
+// START right click functions
 async function copy() {
     const selection = window.getSelection();
     if (selectedRange) {
@@ -486,13 +499,16 @@ async function copy() {
       selection.removeAllRanges();  // Clear the selection after copying
     }
 }
+
 async function paste() {
   const read = await navigator.clipboard.readText()
   input.value += read
 }
+
 async function copyMessage() {
   await navigator.clipboard.writeText(targetedElement.querySelector(".message-text p").innerText)
 }
+
 function replyStyle(replyContainer){
   input.setSelectionRange(input.value.length, input.value.length);
   input.style.transition            = "all 0s"
@@ -511,6 +527,7 @@ function replyStyle(replyContainer){
   })
   window.addEventListener("resize", ()=>{replyContainer.style.width = getComputedStyle(input).width })
 }
+
 function reply(){
   if (document.getElementById('reply-container')) removeReply()
   const reply = document.createElement('div')
@@ -520,7 +537,7 @@ function reply(){
   const closeReply      = document.createElement("button")
   closeReply.id         = "close-reply"
   closeReply.innerHTML  = `<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
-  closeReply.addEventListener("click",()=>{removeReply()})
+  closeReply.addEventListener( "click" , ()=>{ removeReply() } )
   setTimeout(() => {input.style.transition = "all 500ms";scrollToBottom()}, 100)
   input.focus()
 
@@ -532,6 +549,7 @@ function reply(){
   reply.appendChild(replyUsername)
   reply.appendChild(replyText)
 }
+
 function removeReply(){
   messageContainer.style.height     = `88%`
   input.style.borderTopLeftRadius   = "50px"
@@ -541,6 +559,7 @@ function removeReply(){
   replyId                           = null
   document.getElementById("reply-container").remove()
 }
+
 function createCustomElement(elementType,classOrId,classOrIdName,elementText){
   const element     = document.createElement(elementType)
   element.innerText = elementText
@@ -548,3 +567,7 @@ function createCustomElement(elementType,classOrId,classOrIdName,elementText){
   else                      element.id        = classOrIdName
   return element
 }
+
+function hideMessage(){ messages.removeChild(targetedElement.parentElement) }
+
+// END right click functions
