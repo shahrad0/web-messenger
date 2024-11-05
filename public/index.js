@@ -1,13 +1,13 @@
 // things to add 
-// alt + c for config menu 
-// hiding message 
 // pwt hot key for opening its menu
-// pressing escape to get out of a menu
 // renaming and polishing the code (for css too)
 // add pagination and after that complete reply 
 // add notification and add toggle for it 
 // complete the left menu (add main chat, archives and games)
 // fix the ui for sending file and allow sending multiple files
+// add deleting messages
+// add user role 
+// add command depending on user role 
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -28,7 +28,6 @@ let replyId
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const fileInput        = document.getElementById('file-input')
-const replyContainer   = document.getElementById('reply-container')
 const messages         = document.getElementById("messages")
 const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
@@ -177,7 +176,7 @@ function sendMessage(userMessage, replyId = null) {
     .then(data => {
       input.value = ''  
       if (hasFile) fileInput.value = '' 
-      if (replyContainer) removeReply() 
+      if (document.getElementById("reply-container")) removeReply() 
     })
     .catch(error => console.error('Error submitting message:', error));
 }
@@ -190,11 +189,12 @@ const moreButton = document.getElementById("more")
 const moreMenu = document.getElementById("more-menu")
 let moreMenuToggle = false
 
-// creating menu 
+// START creating menu 
 function toggleBlackScreen(content = '',element) {
   element.style.display = content ? 'block' : 'none';
   element.innerHTML = content;
 }
+
 function addCloseButton(parent,removableElement) {
   const button = document.createElement("button");
   button.id = "close-black-screen";
@@ -202,11 +202,18 @@ function addCloseButton(parent,removableElement) {
   button.addEventListener("click", () => toggleBlackScreen('',removableElement));
   parent.appendChild(button);
 }
+
 function createMenu(content){
   mainContent = `<div class="menu">${content}</div>`
   toggleBlackScreen(mainContent,blackScreen)
   addCloseButton(document.getElementById("menu-toolbar"),blackScreen)
+  document.addEventListener('keydown',(event)=>{
+    if (event.key === "Escape") toggleBlackScreen('',blackScreen)
+  })
 }
+
+// END creating menu 
+
 // Fetch and display user details
 document.addEventListener("click", async (event) => {
   if (event.target.classList.contains('username')) {
@@ -237,7 +244,7 @@ function toggleOffSetup() {
   document.body.style.cursor                     = toggleOff ? "default" : "none"
   toggleOff = !toggleOff
 }
-document.getElementById("turn-off").addEventListener("click", ()=>toggleOffSetup())
+document.getElementById("turn-off").addEventListener("click", ()=> toggleOffSetup() )
 // keys 
 const keyState = {
   altPressed      : false,
@@ -340,37 +347,55 @@ preWrittenMenu.addEventListener("click",()=>{
       <div id="pre-written-text-container">
       </div>
       </div>`
-  // pwt config ---------> add hotkey for accessing it with alt + c 
-  document.getElementById("config-button").addEventListener("click",()=>{
+
+  // START PWT config
+
+  document.getElementById("config-button").addEventListener( "click" , PWTConfigMenu )
+  document.addEventListener('keydown',(e)=>{
+    if (e.key === "c" && keyState.altPressed) PWTConfigMenu()
+  })
+
+  function setupCheckboxes(configs) {
+    configs.forEach(({ id, storageKey }) => {
+      const checkbox = document.getElementById(id);
+      checkbox.checked = localStorage.getItem(storageKey) === "true"
+      checkbox.addEventListener("change", () => {
+        localStorage.setItem(storageKey, checkbox.checked)
+      })
+    })
+  }
+
+  function PWTConfigMenu() {
     createMenu(`
       <div id="menu-toolbar">Configuration</div>
-        <div class="note-container">
-          <p class="note">Add more words at once by seprating words with ","</p>
-          <p class="note">Press 0 to 9 to simulate clicking on the buttons </p>
-          <p class="note">Press 0 to 9 while holding . or \` to switch between decks</p>
-        </div>
-        <div class="config-container">
+      <div class="note-container">
+        <p class="note">Add more words at once by separating words with ","</p>
+        <p class="note">Press 0 to 9 to simulate clicking on the buttons</p>
+        <p class="note">Press 0 to 9 while holding . or \` to switch between decks</p>
+      </div>
+      <div class="config-container">
         <input type="checkbox" id="send-immediately" class="checkbox custom-checkbox">
         <label for="send-immediately">send immediately</label>
         <br>
         <input type="checkbox" id="add-space" class="checkbox custom-checkbox">
         <label for="add-space">add space after each word</label>
-        </div>
       </div>`)
-    setupCheckbox("send-immediately","pwtSendImmediately")
-    setupCheckbox("add-space"       ,"pwtAddSpace")
-  })
-  function setupCheckbox(elementId, localStorageKey) {
-    const checkbox   = document.getElementById(elementId)
-    checkbox.checked = localStorage.getItem(localStorageKey) === "true"
-    checkbox.addEventListener("change", () => {localStorage.setItem(localStorageKey, checkbox.checked)})
+    
+    setupCheckboxes([
+      { id: "send-immediately", storageKey: "pwtSendImmediately" },
+      { id: "add-space", storageKey: "pwtAddSpace" }
+    ])
   }
+
+  // END PWT config
+  const PWTForm  = document.getElementById("submit-pre-written-text")
+  const PWTInput = document.getElementById("submit-text")
   moreMenu.style.opacity = `0`  
-  const pwtForm  = document.getElementById("submit-pre-written-text")
-  const pwtInput = document.getElementById("submit-text")
   moreMenuToggle = false
   loadPWTEntries(pwtDeckNumber)
-  // hotkeys
+
+  // START PWT hotkeys
+
   document.addEventListener("keydown", (event) => {
     const key = event.key
     const isNumber = key >= "0" && key <= "9"
@@ -379,16 +404,19 @@ preWrittenMenu.addEventListener("click",()=>{
         pwtDeckNumber = key
         loadPWTEntries(pwtDeckNumber)
       }
-      else if ((document.activeElement !== input || pwtInput)){   
+      else if ((document.activeElement !== (input || PWTInput))){   
         if (document.getElementById(`pwt-${key}`))  document.getElementById(`pwt-${key}`).click()
       }
     }
   })
-  pwtForm.addEventListener('submit', function(e) {
+
+  // END PWT hotkeys
+
+  PWTForm.addEventListener('submit', function(e) {
     e.preventDefault()
-    if (pwtInput.value === "") return
-    savePWTEntry(pwtInput.value.trim(),pwtDeckNumber)
-    pwtInput.value    = ''
+    if (PWTInput.value === "") return
+    savePWTEntry(PWTInput.value.trim(),pwtDeckNumber)
+    PWTInput.value    = ''
     loadPWTEntries(pwtDeckNumber) 
   })
   // closing menu button  ----------------> make this a function
@@ -529,7 +557,7 @@ function replyStyle(replyContainer){
 }
 
 function reply(){
-  if (document.getElementById('reply-container')) removeReply()
+  if (document.getElementById("reply-container")) removeReply()
   const reply = document.createElement('div')
   reply.id    = "reply-container"
   replyStyle(reply) 
