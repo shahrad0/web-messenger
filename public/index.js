@@ -1,13 +1,16 @@
 // things to add 
 // pwt hot key for opening its menu
 // renaming and polishing the code (for css too)
-// add pagination and after that complete reply 
+// complete reply 
 // add notification and add toggle for it 
 // complete the left menu (add main chat, archives and games)
 // fix the ui for sending file and allow sending multiple files
 // add deleting messages
 // add user role 
 // add command depending on user role 
+// add search
+// add who is online or offline and show it in server console
+// add customiztation
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -42,7 +45,8 @@ socket.on('chat message', (message) => {
     setTimeout(() => {
       document.getElementById("notify").style.display = 'none'}, 200)
   }, 400)
-    if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom()
+
+  if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom(true)
 })
 
 // divider not complete 
@@ -72,14 +76,16 @@ messages.addEventListener('scroll', () => {
   else if (messages.scrollTop > messages.scrollHeight-1000 ){
     document.getElementById("scroll-down").style.opacity = `0`
     setTimeout(() => { document.getElementById("scroll-down").style.display = `none` }, 200)
-}})
-function scrollToBottom() {
-  document.getElementById("messages").scrollTo({
-    top: document.getElementById("messages").scrollHeight,
-    behavior: "smooth"
+  }
+  if (messages.scrollTop == 0) setTimeout (()=> loadOlderMessages() , 100) 
+})
+
+function scrollToBottom(transition) {
+  messages.scrollTo({
+    top: messages.scrollHeight,
+    behavior: transition ? "smooth" : "instant"
   })
 }
-// end auto scroll down and scroll down button
 
 // sending message
 form.addEventListener('submit', function(e) {
@@ -94,7 +100,7 @@ function loadMessages() {
       data.forEach(message => {
         messages.innerHTML += messageTemplate(message)
       });
-      setTimeout(() => { scrollToBottom() }, 100);
+      setTimeout(() => scrollToBottom(false)  , 100)
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
@@ -121,7 +127,7 @@ function messageTemplate(message) {
     else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent-video"></video>`
     else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent-pdf" width="800px" height="600px"></object>`
     // temp solution add rar and music 
-    else  file = `<a href="uploads/${filePath}">free robux</a>`
+    else  file = `<a href="uploads/${message.filePath}">free robux</a>`
   }
 
   // message
@@ -170,7 +176,7 @@ function sendMessage(userMessage, replyId = null) {
   fetch('/submit-message', fetchOptions)
     .then(response => {
       if (!response.ok) throw new Error('Failed to submit message');
-      scrollToBottom()
+      scrollToBottom(true)
       return response.json();
     })
     .then(data => {
@@ -566,7 +572,6 @@ function reply(){
   closeReply.id         = "close-reply"
   closeReply.innerHTML  = `<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
   closeReply.addEventListener( "click" , ()=>{ removeReply() } )
-  setTimeout(() => {input.style.transition = "all 500ms";scrollToBottom()}, 100)
   input.focus()
 
   const replyUsername     = createCustomElement("p","class","reply-username","Replying to " + targetedElement.querySelector('.username').innerText)
@@ -599,3 +604,36 @@ function createCustomElement(elementType,classOrId,classOrIdName,elementText){
 function hideMessage(){ messages.removeChild(targetedElement.parentElement) }
 
 // END right click functions
+
+// START pagintion
+
+function loadOlderMessages() {
+  const oldestMessageID = parseInt(document.querySelector('[data-message-id]').getAttribute('data-message-id'))
+  if (oldestMessageID === 1)  return
+
+  const fetchOptions = {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ messageId: oldestMessageID })
+  }
+
+  fetch('/get-older-messages', fetchOptions)
+    .then(response => response.json())
+    .then(data => {
+      const oldScrollHeight = messages.scrollHeight
+
+      data.reverse().forEach(message => { messages.innerHTML = messageTemplate(message) + messages.innerHTML })
+      
+      messages.scrollTop = messages.scrollHeight - oldScrollHeight
+    })
+    .catch(error => console.error('Error fetching messages:', error))
+}
+
+// END pagintion
+
+// for making debug easier 
+function log(content = ""){
+  console.log(content ? content : "ass")
+}
