@@ -4,13 +4,17 @@
 // complete reply 
 // add notification and add toggle for it 
 // complete the left menu (add main chat, archives and games)
-// fix the ui for sending file and allow sending multiple files
+// allow sending multiple files
 // add deleting messages
 // add user role 
 // add command depending on user role 
 // add search
 // add who is online or offline and show it in server console
 // add customiztation
+// add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
+// add custom background image 
+// add exam mode 
+// add grid mode to PWT config
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -115,7 +119,7 @@ function messageTemplate(message) {
   let file = ''
   if (message.replyId && message.repliedMessage && message.repliedUsername) 
     replySection = `
-    <div class="replied-message-container" data-reply-id="${message.replyId}">
+    <div class="replied-message-container" data-reply-id="${message.replyId}" onclick="scrollToMessage(${message.replyId})">
       <div class="replied-username">${message.repliedUsername}</div>
       <div class="replied-text"><p>${message.repliedMessage}</p></div>
     </div>`
@@ -148,6 +152,17 @@ function messageTemplate(message) {
         </div>
       </div>
     </div>`
+}
+
+function scrollToMessage(replyId) {
+  const targetMessage = document.querySelector(`.message-text[data-message-id="${replyId}"]`)
+  if (targetMessage) {
+    targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const messageContainer = targetMessage.closest('.message').querySelector('.message-container');
+    messageContainer.classList.add('highlight');
+    
+    setTimeout(() => {  messageContainer.classList.remove('highlight') } , 1000)
+  }
 }
 
 function sendMessage(userMessage, replyId = null) {
@@ -474,7 +489,7 @@ document.addEventListener("contextmenu", function (e) {
   if (e.target.closest('.message-container')) {
     contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage'])
     targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
-    targetedElement.classList.add("message-container-selected")
+    targetedElement.classList.add("highlight")
   }
 
   // right click when user select a text
@@ -492,7 +507,7 @@ document.addEventListener("contextmenu", function (e) {
 function contextMenu(event,features) {
   const existingMenu = document.getElementById("context-menu")
   if (existingMenu) {
-    if (targetedElement) targetedElement.classList.remove("message-container-selected")
+    if (targetedElement) targetedElement.classList.remove("highlight")
     existingMenu.remove()
   }
 
@@ -516,7 +531,7 @@ function contextMenu(event,features) {
 
   // Remove the menu when clicking outside
   document.addEventListener("click", function () {
-    if (targetedElement)  targetedElement.classList.remove("message-container-selected")
+    if (targetedElement)  targetedElement.classList.remove("highlight")
     menu.remove()
   } , { once: true })
 }
@@ -552,12 +567,10 @@ function replyStyle(replyContainer){
   messageContainer.style.height     = `81%`
   input.addEventListener('focus', function() {
     replyContainer.style.border = `solid 2px var(--border-focus)`
-    replyContainer.style.borderBottom = 0
   });
   
   input.addEventListener('blur', function() {
-      replyContainer.style.border = `solid 2px var(--input-border)` 
-      replyContainer.style.borderBottom = 0
+    replyContainer.style.border = `solid 2px var(--main-border)`
   })
   window.addEventListener("resize", ()=>{replyContainer.style.width = getComputedStyle(input).width })
 }
@@ -634,6 +647,4 @@ function loadOlderMessages() {
 // END pagintion
 
 // for making debug easier 
-function log(content = ""){
-  console.log(content ? content : "ass")
-}
+function log(content = undefined){ console.log(content ? content : "ass") }
