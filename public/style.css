@@ -87,7 +87,7 @@ button{
 #chat{
     width: 80%;
     max-height: 100vh;
-    background-image: url(Images/Main/weed-neon-sign.jpg);
+    /* background-image: url(Images/Main/weed-neon-sign.jpg); */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

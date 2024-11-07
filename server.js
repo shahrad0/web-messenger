@@ -66,10 +66,9 @@ db.run(
   `CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,
+  role TEXT DEFAULT 'user', 
   profile_image TEXT,
-  password TEXT NOT NULL,
-  role TEXT
-)`,
+  password TEXT NOT NULL)`,
   (err) => {
     if (err) console.error("Error creating users table:", err.message);
   }
@@ -298,8 +297,8 @@ app.post("/register", upload.single("profileImage"), (req, res) => {
 
     // Store the user details along with the hashed password
     db.run(
-      "INSERT INTO users (username, password, profile_image, role) VALUES (?, ?, ?, ?)",
-      [username, hashedPassword, profileImage, "user"],
+      "INSERT INTO users (username, password, profile_image) VALUES (?, ?, ?, ?)",
+      [username, hashedPassword, profileImage],
       function (err) {
         if (err) {
           if (err.message.includes("UNIQUE constraint failed"))   return res.status(400).send("Username already taken")
@@ -415,6 +414,7 @@ function generateToken(user, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
+// START adding column
 // const addReplyIdColumn = () => {
 //   const sql = `ALTER TABLE messages ADD COLUMN file_path  TEXT DEFAULT NULL`;
 
@@ -425,6 +425,35 @@ function generateToken(user, res) {
 //       console.log('Column reply_id added to messages table.');
 //   });
 // };
-
-// Call the function to add the column
 // addReplyIdColumn();
+
+// END adding column
+
+// START updating column
+
+// const updateColumn = () => {
+//   const sql = `UPDATE users SET role = 'user' WHERE role IS NULL`
+
+//   db.run(sql, function(err) {
+//       if (err)    return console.error(err.message)
+//   })
+// }
+// updateColumn()
+
+// END updating column
+
+// START update user role
+
+const updateUserRole = (userId, newRole) => {
+  const sql = `UPDATE users SET role = ? WHERE id = ?`
+  
+  db.run(sql, [newRole, userId], function(err) {
+    if (err)   return console.error("Error updating user role:", err.message);
+
+    console.log(`User ${userId} role updated to ${newRole}`);
+  });
+};
+
+// updateUserRole(8, 'owner');
+
+// END update user role
