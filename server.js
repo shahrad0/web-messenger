@@ -13,7 +13,7 @@ const cookieParser = require("cookie-parser");
 const secretKey = 'C3%ke$lctd^eqcO7-xqxZSj%sca:^lu[FB#4e=9G@JyS?N<>VTLRYi:MD0"brK=';
 const app = express();
 
-// https
+// START https
 // open cmd in the main directory and enter this command openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
 
 // const https   = require('https');
@@ -24,10 +24,14 @@ const app = express();
 // };
 // const server = https.createServer(options, app).listen(443)
 
-// http
+// END https
+
+// START http
 
 const http   = require("http");
 const server = http.createServer(app).listen(80) 
+
+// END http
 
 const io = socketIo(server);
 

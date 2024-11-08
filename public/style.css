@@ -54,6 +54,8 @@ svg:active path{
     margin: 0;
     padding: 0;
     color: var(--main-color);
+    scrollbar-width: thin;
+    scrollbar-color: var(--main-border) var(--secondary-background);
 }
 body{
     background-color: var(--main-background-color);
@@ -80,6 +82,7 @@ button{
 }
 .main-container{
     display: flex;
+    height: 100vh;
 }
 #menu{
     width: 20%;
@@ -127,8 +130,6 @@ button{
     height: 88%;
     overflow-y: scroll;
     transition: all 400ms;
-    scrollbar-color: var(--main-border) var(--secondary-background);
-    scrollbar-width: thin;
 }
 .message-container{
     display: flex;
@@ -241,10 +242,6 @@ button{
     width: 6.5%;
     transition: all 200ms;
 }
-#pre-written-text-menu-container{
-    width: 100%;
-    height: 100%;
-}
 #submit-text{
     width: 75%;
     margin: 5% 0 0 5%;
@@ -266,11 +263,16 @@ button{
 #submit-pre-written-text-button:active{
     box-shadow: 0 0 15px var(--border-focus);
 }
-#pre-written-text-container{
+#PWT-container{
+    max-height: 80%;
     display: flex;
     flex-wrap: wrap;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 .pre-written-text{
+    max-width: 85%;
+    overflow-wrap: break-word;
     margin: 3% 0 0 5%;
     background-color: var(--secondary-background);
     border-radius: 15px;
@@ -455,10 +457,20 @@ button{
     width: 80%;
     height: 5%;
     background:linear-gradient(to top , rgba(44, 255, 125, 0.336) ,rgba(69, 255, 94, 0.568)) ;
-    transition: all 200ms;
     box-shadow: 0 0 25px var(--main-blur);
-    display: none;
     opacity: 0;
+    animation: fadeInAndOut 1s ease-in;
+}
+@keyframes fadeInAndOut {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
 }
 /* can add padding to menu to prevent repeating the same thing */
 .note-container{
@@ -478,4 +490,8 @@ button{
 }
 #file{
     display: none;
+}
+.block { display: block !important }
+#PWT-header{
+    height: 20%;
 }
