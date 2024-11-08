@@ -6,15 +6,14 @@
 // complete the left menu (add main chat, archives and games)
 // allow sending multiple files
 // add deleting messages
-// add user role 
-// add command depending on user role 
+// add command and right click options depending on user role 
 // add search
 // add who is online or offline and show it in server console
 // add customiztation
 // add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
 // add custom background image 
 // add exam mode 
-// add grid mode to PWT config
+// make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -34,7 +33,7 @@ let socket = io()
 let replyId
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
-const fileInput        = document.getElementById('file-input')
+const fileInput        = document.getElementById('file')
 const messages         = document.getElementById("messages")
 const menu             = document.getElementById("menu")
 const messageContainer = document.getElementById("messages")
@@ -42,13 +41,16 @@ const chatContainer    = document.getElementById("chat")
 
 socket.on('chat message', (message) => {
   messages.innerHTML += messageTemplate(message)
-  document.getElementById("notify").style.display = 'block';
-  setTimeout(() => {document.getElementById("notify").style.opacity = '1'}, 10)
-  setTimeout(() => {
-    document.getElementById("notify").style.opacity = '0'
-    setTimeout(() => {
-      document.getElementById("notify").style.display = 'none'}, 200)
-  }, 400)
+  let notify = document.getElementById("notify")
+  if (notify) {
+    clearTimeout(notifyTimeout) 
+    notify.remove()
+  }
+
+  notify = createCustomElement("div", { id: "notify"})
+  messages.appendChild(notify)
+
+  notifyTimeout = setTimeout(() => notify.remove() , 1000)
 
   if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom(true)
 })
@@ -354,8 +356,7 @@ const preWrittenMenu  = document.getElementById("pre-written")
 let   pwtDeckNumber   = 0
 preWrittenMenu.addEventListener("click",()=>{
   menu.innerHTML = `
-      <div id="pre-written-text-menu-container">
-      <div> 
+      <div id="PWT-header"> 
         <div class="side-menu-toolbar">
           <button id="close-menu" type="button"><svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
           <button id="config-button"><svg  xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 50 50" >    <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg></button>
@@ -365,24 +366,19 @@ preWrittenMenu.addEventListener("click",()=>{
           <button id="submit-pre-written-text-button"> add </button>
         </form>
       </div>
-      <div id="pre-written-text-container">
-      </div>
+      <div id="PWT-container">
       </div>`
 
   // START PWT config
 
   document.getElementById("config-button").addEventListener( "click" , PWTConfigMenu )
-  document.addEventListener('keydown',(e)=>{
-    if (e.key === "c" && keyState.altPressed) PWTConfigMenu()
-  })
+  document.addEventListener('keydown', (e) => { if (e.key === "c" && keyState.altPressed) PWTConfigMenu()})
 
   function setupCheckboxes(configs) {
     configs.forEach(({ id, storageKey }) => {
       const checkbox = document.getElementById(id);
       checkbox.checked = localStorage.getItem(storageKey) === "true"
-      checkbox.addEventListener("change", () => {
-        localStorage.setItem(storageKey, checkbox.checked)
-      })
+      checkbox.addEventListener("change", () => localStorage.setItem(storageKey, checkbox.checked))
     })
   }
 
@@ -400,17 +396,31 @@ preWrittenMenu.addEventListener("click",()=>{
         <br>
         <input type="checkbox" id="add-space" class="checkbox custom-checkbox">
         <label for="add-space">add space after each word</label>
+        <br>
+        <input type="checkbox" id="list-mode" class="checkbox custom-checkbox">
+        <label for="list-mode">list mode</label>
       </div>`)
     
     setupCheckboxes([
-      { id: "send-immediately", storageKey: "pwtSendImmediately" },
-      { id: "add-space", storageKey: "pwtAddSpace" }
+      { id: "send-immediately" , storageKey: "pwtSendImmediately" },
+      { id: "add-space" , storageKey: "pwtAddSpace" },
+      { id: "list-mode" , storageKey: "list-mode"}
     ])
+    const listModeCheckbox = document.getElementById("list-mode")
+    listModeCheckbox.addEventListener("change",()=>{
+      if (listModeCheckbox.checked) PWTContainer.classList.add("block")
+      else PWTContainer.classList.remove("block")
+    })
   }
 
   // END PWT config
+
   const PWTForm  = document.getElementById("submit-pre-written-text")
   const PWTInput = document.getElementById("submit-text")
+  const PWTContainer = document.getElementById("PWT-container")
+
+  if (localStorage.getItem("list-mode") === "true") PWTContainer.classList.add("block")
+
   moreMenu.style.opacity = `0`  
   moreMenuToggle = false
   loadPWTEntries(pwtDeckNumber)
@@ -425,58 +435,73 @@ preWrittenMenu.addEventListener("click",()=>{
         pwtDeckNumber = key
         loadPWTEntries(pwtDeckNumber)
       }
-      else if ((document.activeElement !== (input || PWTInput))){   
+      else if (document.activeElement !== input && document.activeElement !== PWTInput)
         if (document.getElementById(`pwt-${key}`))  document.getElementById(`pwt-${key}`).click()
-      }
     }
   })
 
   // END PWT hotkeys
 
-  PWTForm.addEventListener('submit', function(e) {
-    e.preventDefault()
-    if (PWTInput.value === "") return
-    savePWTEntry(PWTInput.value.trim(),pwtDeckNumber)
-    PWTInput.value    = ''
-    loadPWTEntries(pwtDeckNumber) 
-  })
-  // closing menu button  ----------------> make this a function
-  const closeMenu = document.getElementById("close-menu")
-  closeMenu.addEventListener(`click`,()=>{
-    menu.innerHTML = `
-      <div>
-        <button id="setting-button"><svg  xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 50 50" >    <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg></button>
-      </div>`
-    settingButtonSetup()
-  })
-})
-function savePWTEntry(text, pwtDeckId) {
-  let decks = JSON.parse(localStorage.getItem('preWrittenText')) || {}
-  if (!decks[pwtDeckId])   decks[pwtDeckId] = []
-  decks[pwtDeckId].push({ text: text, deckId: pwtDeckId })
-  localStorage.setItem('preWrittenText', JSON.stringify(decks))
+// Handle PWTForm submission
+PWTForm.addEventListener('submit', function(e) {
+  e.preventDefault()
+  const text = PWTInput.value.trim()
+  if (text === "") return
+
+  savePWTEntry(text, pwtDeckNumber)
+  PWTInput.value = ''
+  loadPWTEntries(pwtDeckNumber)
+});
+
+// Close menu button handler
+const closeMenuButton = document.getElementById("close-menu");
+closeMenuButton.addEventListener("click", closeMenu);
+
+// Close menu function
+function closeMenu() {
+  menu.innerHTML = `
+    <div>
+      <button id="setting-button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+          <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/>
+        </svg>
+      </button>
+    </div>`
+  settingButtonSetup()
 }
+
+// Save a PWT entry to local storage
+function savePWTEntry(text, pwtDeckId) {
+  let decks = JSON.parse(localStorage.getItem('preWrittenText')) || {};
+  if (!decks[pwtDeckId]) decks[pwtDeckId] = [];
+  
+  decks[pwtDeckId].push({ text: text, deckId: pwtDeckId });
+  localStorage.setItem('preWrittenText', JSON.stringify(decks));
+}
+
+// Load and render PWT entries
 function loadPWTEntries(pwtDeckId) {
-  // Retrieve the decks object from localStorage
   const decks = JSON.parse(localStorage.getItem('preWrittenText')) || {}
   const entries = decks[pwtDeckId] || []
-  const container = document.getElementById("pre-written-text-container")
-  container.innerHTML = `<h3 id="pwt-deck">deck ${pwtDeckNumber}</h3>`
+  const container = document.getElementById("PWT-container")
+  container.innerHTML = ""
+  container.appendChild(createCustomElement("h3", { id: "pwt-deck", text: `deck ${pwtDeckId}` }))
 
-  // Render each entry in the container
-  entries.forEach((entry,index) => {
-    container.innerHTML += `<div class="pre-written-text" id="pwt-${index}">${entry.text}</div>`
-  })
-  let currentPWT = document.querySelectorAll(".pre-written-text")
-  currentPWT.forEach(element =>{
-    element.addEventListener("click",()=>{
+  entries.forEach((entry, index) => 
+    container.appendChild(createCustomElement("div", { id: `pwt-${index}`, className: "pre-written-text", text: entry.text }))
+  )
+
+  // Set up click event for each PWT entry
+  document.querySelectorAll(".pre-written-text").forEach(element => {
+    element.addEventListener("click", () => {
       let text = element.innerText
-      if (localStorage.getItem("pwtAddSpace")        === "true")  text += " "
-      if (localStorage.getItem("pwtSendImmediately") === "true")  sendMessage(text,replyId)
-      else input.value += text
+      if (localStorage.getItem("pwtAddSpace")        === "true") text += " "
+      if (localStorage.getItem("pwtSendImmediately") === "true") sendMessage(text, replyId)
+      else   input.value += text
+      
     })
   })
-}
+}})
 // END PWT
 
 let selectedRange 
@@ -515,12 +540,12 @@ function contextMenu(event,features) {
   menu.id    = "context-menu"
   // add element depending on where user right clicks
   features.forEach(element => {
-    if (element == "copyMessage") menu.innerHTML += `<div class="right-click-item" id="copy-message" onclick="copyMessage()">Copy</div>`
-    if (element == "hideMessage") menu.innerHTML += `<div class="right-click-item" id="hide-message" onclick="hideMessage()">Hide</div>`
-    if (element == "copy")        menu.innerHTML += `<div class="right-click-item" id="copy"  onclick="copy()">Copy</div>`
-    if (element == "cut")         menu.innerHTML += `<div class="right-click-item" id="cut"   onclick="cut()">Cut</div>`
-    if (element == "reply")       menu.innerHTML += `<div class="right-click-item" id="reply" onclick="reply()">Reply</div>`
-    if (element == "paste")       menu.innerHTML += `<div class="right-click-item" id="paste" onclick="paste()">Paste</div>`
+    if (element == "copyMessage") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
+    if (element == "hideMessage") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: hideMessage,text : "Hide" }  ))
+    if (element == "copy")        menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
+    if (element == "cut")         menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
+    if (element == "reply")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
+    if (element == "paste")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
   });
   document.body.appendChild(menu);
   
@@ -584,33 +609,34 @@ function reply(){
   const closeReply      = document.createElement("button")
   closeReply.id         = "close-reply"
   closeReply.innerHTML  = `<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
-  closeReply.addEventListener( "click" , ()=>{ removeReply() } )
+  closeReply.addEventListener( "click" , ()=> removeReply())
   input.focus()
 
-  const replyUsername     = createCustomElement("p","class","reply-username","Replying to " + targetedElement.querySelector('.username').innerText)
-  const replyText         = createCustomElement("p","class","reply-text"    ,targetedElement.querySelector('.message-text p').innerText)
   replyId = targetedElement.querySelector('.message-text').getAttribute('data-message-id')
   form.appendChild(reply)
   reply.appendChild(closeReply)
-  reply.appendChild(replyUsername)
-  reply.appendChild(replyText)
+  reply.appendChild(createCustomElement("p", {className : "reply-username", text : "Replying to " + targetedElement.querySelector('.username').innerText} ))
+  reply.appendChild(createCustomElement("p", {className : "reply-text"    , text : targetedElement.querySelector('.message-text p').innerText }  ))
 }
 
 function removeReply(){
-  messageContainer.style.height     = `88%`
-  input.style.borderTopLeftRadius   = "50px"
-  input.style.borderTopRightRadius  = "50px"
-  input.style.padding               = `0 2%` 
-  input.style.width                 = `80%` 
-  replyId                           = null
+  messageContainer.style.height    = `88%`
+  input.style.borderTopLeftRadius  = "50px"
+  input.style.borderTopRightRadius = "50px"
+  input.style.padding              = `0 2%` 
+  input.style.width                = `80%` 
+  replyId                          = null
   document.getElementById("reply-container").remove()
 }
+function createCustomElement(elementType, { id = "", className = "", text = "", HTML = "",onClick = null} = {}) {
+  const element = document.createElement(elementType)
 
-function createCustomElement(elementType,classOrId,classOrIdName,elementText){
-  const element     = document.createElement(elementType)
-  element.innerText = elementText
-  if (classOrId == "class") element.className = classOrIdName
-  else                      element.id        = classOrIdName
+  if (typeof onClick === "function") element.onclick = onClick
+  if (text) element.innerText = text
+  if (id) element.id = id
+  if (className) element.className = className
+  if (HTML) element.innerHTML = HTML
+
   return element
 }
 
