@@ -8,7 +8,7 @@
 // add deleting messages
 // add command and right click options depending on user role 
 // add search
-// add who is online or offline and show it in server console
+// add who is online or offline with good UI
 // add customiztation
 // add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
 // add custom background image 
@@ -25,12 +25,13 @@ const authToken = getCookie("auth_token")
 
 // check for cookie and authorization
 document.addEventListener('DOMContentLoaded', function() {
-  if ( !authToken) window.location.href = '../login/login.html'
+  if (!authToken) window.location.href = '../login/login.html'
   if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 })
 
 let socket = io()
 let replyId
+const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const fileInput        = document.getElementById('file')
@@ -253,6 +254,7 @@ document.addEventListener("click", async (event) => {
             <p class="user-detail">${user.username}</p>
             <p class="user-detail">User ID: ${user.id}</p>
             <p class="user-detail">User Role: ${user.role}</p>
+            <p class="user-detail">User Status: ${user.status}</p>
       </div>`)
     } catch (error) {
       console.error('Error fetching user details:', error)
@@ -264,7 +266,7 @@ document.addEventListener("click", async (event) => {
 let toggleOff = false
 function toggleOffSetup() {
   document.getElementById("off").style.display   = toggleOff ? "none" : "block"
-  document.body.style.cursor                     = toggleOff ? "default" : "none"
+  body.style.cursor                     = toggleOff ? "default" : "none"
   toggleOff = !toggleOff
 }
 document.getElementById("turn-off").addEventListener("click", ()=> toggleOffSetup() )
@@ -328,6 +330,7 @@ async function settingButtonSetup() {
             <p class="user-detail">${user.username}</p>
             <p class="user-detail">User ID: ${user.id}</p>
             <p class="user-detail">User Role: ${user.role}</p>
+            <p class="user-detail">User Status: ${user.status}</p>
           </div>
         </div>`)
       document.getElementById("edit-profile-button").addEventListener("click", () => {
@@ -547,7 +550,7 @@ function contextMenu(event,features) {
     if (element == "reply")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
     if (element == "paste")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
   });
-  document.body.appendChild(menu);
+  body.appendChild(menu);
   
   // Adjust the position of the menu within the viewport
   menu.style.left  = `${Math.min(event.pageX, window.innerWidth  - menu.offsetWidth )}px`
@@ -672,5 +675,44 @@ function loadOlderMessages() {
 
 // END pagintion
 
-// for making debug easier 
+// START for debug 
 function log(content = undefined){ console.log(content ? content : "ass") }
+// END for debug 
+
+// START user status
+
+function updateConnectionStatus(status) {
+  const disconnectElement = document.getElementById("disconnected")
+  if (disconnectElement) {
+    disconnectElement.classList.add("connected")
+    disconnectElement.innerText = "connected"
+    setTimeout(() => disconnectElement.remove() , 5000)
+  }
+}
+
+function sendUserStatus(userStatus){
+  updateConnectionStatus(userStatus)
+
+  const fetchOptions = {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${authToken}`, 
+      'Content-Type' : 'application/json'  },
+    body: JSON.stringify({ status: userStatus })
+  }
+
+  fetch('/user-status', fetchOptions)
+  .then(response => {
+    if (!response.ok) console.error('Failed to update user status', response.statusText)
+  })
+  .catch(error => {
+    console.error('Error updating user status:', error);
+  })
+
+  if (userStatus === "offline") setTimeout(() => body.appendChild(createCustomElement( "h1" , {id:"disconnected",text: "disconnected"})), 1000)
+}
+
+socket.on("connect",    () => sendUserStatus("online") )
+socket.on("disconnect", () => sendUserStatus("offline"))
+
+// END user status

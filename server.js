@@ -72,7 +72,8 @@ db.run(
   username TEXT NOT NULL UNIQUE,
   role TEXT DEFAULT 'user', 
   profile_image TEXT,
-  password TEXT NOT NULL)`,
+  password TEXT NOT NULL,
+  status TEXT DEFAULT 'offline')`,
   (err) => {
     if (err) console.error("Error creating users table:", err.message);
   }
@@ -90,15 +91,34 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage: storage });
 
-io.on("connection", (socket) => {
-  console.log("A user connected");
-  socket.on("chat message", (msg) => {
-    io.emit("chat message", msg);
-  });
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-});
+// START user status
+
+app.post("/user-status", upload.single("file"), (req, res) => {
+  const authHeader = req.headers["authorization"]
+  const token = authHeader && authHeader.split(" ")[1]
+  if (!token) return res.sendStatus(401)
+  const query = `UPDATE users SET status = ? WHERE id = ?`
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) return res.sendStatus(403)
+    const { status } = req.body
+    if (status !== "online" && status !== "offline")   
+      return res.status(400).json({ message: "Invalid status" }) // Ensure status is valid | Not sure if its necessary
+
+    db.run(query,[status,user.userId],function(error) {
+      if (error) {
+        console.error('Error updating user status:', error);
+        return res.status(500).json({ message: 'Failed to update status in database' });
+      }
+
+      console.log(`User ${user.username} (${user.userId}) is now ${status}`)
+
+      res.sendStatus(204)
+    })
+  })
+})
+
+// END user status
 
 // Handle message submission and save to database
 app.post("/submit-message", upload.single("file"), (req, res) => {
@@ -344,7 +364,7 @@ app.get("/user-details", (req, res) => {
   jwt.verify(token, secretKey, (err, user) => {
     if (err) return res.sendStatus(403); // If the token is invalid, return forbidden
     db.get(
-      "SELECT username, profile_image, role, id FROM users WHERE id = ?",
+      "SELECT username, profile_image, role, status, id FROM users WHERE id = ?",
       [user.userId],
       (err, dbData) => {
         if (err) {
@@ -362,7 +382,7 @@ app.get("/user-details", (req, res) => {
 app.get("/users-details", (req, res) => {
   const { id } = req.query;
   db.get(
-    "SELECT username, profile_image, role, id FROM users WHERE id = ?",
+    "SELECT username, profile_image, role, status, id FROM users WHERE id = ?",
     [id],
     (err, dbData) => {
       if (err) {
@@ -420,7 +440,7 @@ function generateToken(user, res) {
 }
 // START adding column
 // const addReplyIdColumn = () => {
-//   const sql = `ALTER TABLE messages ADD COLUMN file_path  TEXT DEFAULT NULL`;
+//   const sql = `ALTER TABLE users ADD COLUMN status TEXT DEFAULT offline`;
 
 //   db.run(sql, function(err) {
 //       if (err) {
@@ -448,15 +468,15 @@ function generateToken(user, res) {
 
 // START update user role
 
-const updateUserRole = (userId, newRole) => {
-  const sql = `UPDATE users SET role = ? WHERE id = ?`
+// const updateUserRole = (userId, newRole) => {
+//   const sql = `UPDATE users SET role = ? WHERE id = ?`
   
-  db.run(sql, [newRole, userId], function(err) {
-    if (err)   return console.error("Error updating user role:", err.message);
+//   db.run(sql, [newRole, userId], function(err) {
+//     if (err)   return console.error("Error updating user role:", err.message);
 
-    console.log(`User ${userId} role updated to ${newRole}`);
-  });
-};
+//     console.log(`User ${userId} role updated to ${newRole}`);
+//   });
+// };
 
 // updateUserRole(8, 'owner');
 
