@@ -1,6 +1,6 @@
 // things to add 
+// (do this one since there is a lot of spaghetti)renaming and polishing the code (for css too)
 // pwt hot key for opening its menu
-// renaming and polishing the code (for css too)
 // complete reply 
 // add notification and add toggle for it 
 // complete the left menu (add main chat, archives and games)
@@ -13,6 +13,7 @@
 // add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
 // add custom background image 
 // add exam mode 
+// add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 
 function getCookie(name) {
@@ -130,9 +131,9 @@ function messageTemplate(message) {
   // files
   if (message.filePath){
     const fileExt = message.filePath.split('.').pop().toLowerCase();
-    if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${message.filePath}" class="sent-image">`
-    else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent-video"></video>`
-    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent-pdf" width="800px" height="600px"></object>`
+    if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${message.filePath}" class="sent image">`
+    else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent video"></video>`
+    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent pdf" width="800px" height="600px"></object>`
     // temp solution add rar and music 
     else  file = `<a href="uploads/${message.filePath}">free robux</a>`
   }
@@ -142,7 +143,7 @@ function messageTemplate(message) {
     <div class="message">
       <div class="message-container">
         <div class="message-profile">
-          <img src="uploads/${message.profileImage}" alt="npc" class="user-profile">
+          <img src="uploads/${message.profileImage}" alt="NPC" class="user-profile">
         </div>
         <div class="message-content">
           <div class="username" data-user-id="${message.userId}">${message.username}</div>
@@ -255,7 +256,8 @@ document.addEventListener("click", async (event) => {
             <p class="user-detail">User ID: ${user.id}</p>
             <p class="user-detail">User Role: ${user.role}</p>
             <p class="user-detail">User Status: ${user.status}</p>
-      </div>`)
+          </div>
+        </div>`)
     } catch (error) {
       console.error('Error fetching user details:', error)
     }
@@ -325,14 +327,78 @@ async function settingButtonSetup() {
             <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
         </div>
         <div class="user-info-container">
-          <img class="user-image" src="/uploads/${user.profile_image}" alt="">
-          <div style="width: 100%;">
+          <a href="/uploads/${user.profile_image}" id="user-profile-image">
+            <img class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
+          </a>
+          <div id="user-profile-detail">
             <p class="user-detail">${user.username}</p>
             <p class="user-detail">User ID: ${user.id}</p>
             <p class="user-detail">User Role: ${user.role}</p>
-            <p class="user-detail">User Status: ${user.status}</p>
           </div>
+
+
+          <form id="exam-mode-config">
+            <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
+            <label for="exam-mode">exam mode</label>
+            <br>
+            <br>
+            <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
+            <label for="exam-mode-gray-scale">gray scale</label>
+            <br>
+            <br>
+            <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
+            <label for="exam-mode-brightness">brightness</label>
+          </form>
         </div>`)
+
+      const examModeConfig = document.getElementById("exam-mode-config")
+      function applyFilters() {
+        const examMode = document.getElementById("exam-mode").checked
+        const grayScale = document.getElementById("exam-mode-gray-scale").checked
+        const brightness = document.getElementById("exam-mode-brightness").value
+        
+        if (examMode) {
+          const grayScaleFilter = grayScale ? "grayscale(1)" :  " ";
+          const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
+          body.style.filter = `${grayScaleFilter} ${brightnessFilter}`.trim()
+        } 
+        else   body.style.filter = ""
+        examConfig("set", { examMode:examMode, grayScale:grayScale, brightness:brightness } )
+      }
+      window.addEventListener("keypress",(e)=>{
+        let brightness = parseInt(localStorage.getItem("brightness"))
+        let grayScale  = (localStorage.getItem("grayScale") === "true" ? 1 : 0)
+  
+        if (e.key === "=" || e.key ==="+")  {
+          brightness += 50
+          localStorage.setItem("brightness", brightness)
+          body.style.filter = `grayScale(${grayScale}) brightness(${brightness}%)`.trim()
+        } else if (e.key === "-") {
+          brightness -= 50
+          localStorage.setItem("brightness", brightness)
+          body.style.filter = `grayScale(${grayScale}) brightness(${brightness}%)`.trim()
+        }
+      })
+      function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}){
+        if (setOrGet==="set"){
+        localStorage.setItem("examMode" ,examMode)  
+        localStorage.setItem("grayScale",grayScale)  
+        localStorage.setItem("brightness",brightness)  
+        }
+        else if (setOrGet === "get") {
+          return {
+            examMode: JSON.parse(localStorage.getItem("examMode")),
+            grayScale: JSON.parse(localStorage.getItem("grayScale")),
+            brightness: localStorage.getItem("brightness")
+          };
+        }
+      }
+      examModeConfig.addEventListener("input", ()=>applyFilters() )
+
+      // applyFilters()
+
+      // START edit profile
+
       document.getElementById("edit-profile-button").addEventListener("click", () => {
         createMenu(`          
           <form action="/update-profile" method="POST" enctype="multipart/form-data">
@@ -343,7 +409,10 @@ async function settingButtonSetup() {
             <img src="" class="profile-preview" alt="Image preview...">
             <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
           </form>`)
-      });
+      })
+
+      // END edit profile
+
     } catch (error) {
       console.error('Error fetching user details:', error);
     }
@@ -407,7 +476,7 @@ preWrittenMenu.addEventListener("click",()=>{
     setupCheckboxes([
       { id: "send-immediately" , storageKey: "pwtSendImmediately" },
       { id: "add-space" , storageKey: "pwtAddSpace" },
-      { id: "list-mode" , storageKey: "list-mode"}
+      { id: "list-mode" , storageKey: "pwtListMode"}
     ])
     const listModeCheckbox = document.getElementById("list-mode")
     listModeCheckbox.addEventListener("change",()=>{
@@ -422,7 +491,7 @@ preWrittenMenu.addEventListener("click",()=>{
   const PWTInput = document.getElementById("submit-text")
   const PWTContainer = document.getElementById("PWT-container")
 
-  if (localStorage.getItem("list-mode") === "true") PWTContainer.classList.add("block")
+  if (localStorage.getItem("pwtListMode") === "true") PWTContainer.classList.add("block")
 
   moreMenu.style.opacity = `0`  
   moreMenuToggle = false
@@ -515,9 +584,9 @@ document.addEventListener("contextmenu", function (e) {
   let selectedText = selection.toString().trim();
 
   if (e.target.closest('.message-container')) {
-    contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage'])
     targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
     targetedElement.classList.add("highlight")
+    targetedElement.querySelector(".sent") ?  contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage','invertColor']) : contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage'])
   }
 
   // right click when user select a text
@@ -545,6 +614,7 @@ function contextMenu(event,features) {
   features.forEach(element => {
     if (element == "copyMessage") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
     if (element == "hideMessage") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: hideMessage,text : "Hide" }  ))
+    if (element == "invertColor") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
     if (element == "copy")        menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
     if (element == "cut")         menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
     if (element == "reply")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
@@ -631,6 +701,7 @@ function removeReply(){
   replyId                          = null
   document.getElementById("reply-container").remove()
 }
+
 function createCustomElement(elementType, { id = "", className = "", text = "", HTML = "",onClick = null} = {}) {
   const element = document.createElement(elementType)
 
@@ -644,6 +715,11 @@ function createCustomElement(elementType, { id = "", className = "", text = "", 
 }
 
 function hideMessage(){ messages.removeChild(targetedElement.parentElement) }
+
+function invertColor(){
+  const elementFilter = targetedElement.querySelector(".sent")
+  elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+}
 
 // END right click functions
 
@@ -714,5 +790,6 @@ function sendUserStatus(userStatus){
 
 socket.on("connect",    () => sendUserStatus("online") )
 socket.on("disconnect", () => sendUserStatus("offline"))
+window.addEventListener('beforeunload', () => sendUserStatus("offline"))
 
 // END user status
