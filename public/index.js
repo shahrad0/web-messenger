@@ -15,6 +15,8 @@
 // add exam mode 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
+// complete divider
+// fix user status with "heartbeat"(occationaly pinging client)
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -28,6 +30,8 @@ const authToken = getCookie("auth_token")
 document.addEventListener('DOMContentLoaded', function() {
   if (!authToken) window.location.href = '../login/login.html'
   if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
+  applyFilters()
+  loadMessages()
 })
 
 let socket = io()
@@ -108,13 +112,10 @@ function loadMessages() {
       data.forEach(message => {
         messages.innerHTML += messageTemplate(message)
       });
-      setTimeout(() => scrollToBottom(false)  , 100)
+      setTimeout(() => scrollToBottom(false) , 100)
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
-
-// Call loadMessages when the page loads
-document.addEventListener('DOMContentLoaded', loadMessages);
 
 // Updated message template function
 function messageTemplate(message) {
@@ -292,6 +293,17 @@ document.addEventListener("keydown", (event) => {
   }
   // turn off screen when alt + (x || .) is pressed or when enter + . is pressed 
   if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed))  toggleOffSetup()
+
+  if (localStorage.getItem("examMode") === "true"){
+    let brightness = parseInt(localStorage.getItem("brightness")) ?? 50
+    const grayScale = localStorage.getItem("grayScale") === "true" ? 1 : 0
+
+    if (event.key === "=" || event.key === "+")   brightness = Math.min(brightness + 50, 400); // max brightness 400
+    else if (event.key === "-" ) brightness = Math.max(brightness - 50, 0); // min brightness 0
+    
+    localStorage.setItem("brightness", brightness)
+    body.style.filter = `grayscale(${grayScale}) brightness(${brightness}%)`.trim()
+  }
 })
 
 document.addEventListener("keyup", (event) => {
@@ -351,51 +363,9 @@ async function settingButtonSetup() {
           </form>
         </div>`)
 
+      examModeInit()
       const examModeConfig = document.getElementById("exam-mode-config")
-      function applyFilters() {
-        const examMode = document.getElementById("exam-mode").checked
-        const grayScale = document.getElementById("exam-mode-gray-scale").checked
-        const brightness = document.getElementById("exam-mode-brightness").value
-        
-        if (examMode) {
-          const grayScaleFilter = grayScale ? "grayscale(1)" :  " ";
-          const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
-          body.style.filter = `${grayScaleFilter} ${brightnessFilter}`.trim()
-        } 
-        else   body.style.filter = ""
-        examConfig("set", { examMode:examMode, grayScale:grayScale, brightness:brightness } )
-      }
-      window.addEventListener("keypress",(e)=>{
-        let brightness = parseInt(localStorage.getItem("brightness"))
-        let grayScale  = (localStorage.getItem("grayScale") === "true" ? 1 : 0)
-  
-        if (e.key === "=" || e.key ==="+")  {
-          brightness += 50
-          localStorage.setItem("brightness", brightness)
-          body.style.filter = `grayScale(${grayScale}) brightness(${brightness}%)`.trim()
-        } else if (e.key === "-") {
-          brightness -= 50
-          localStorage.setItem("brightness", brightness)
-          body.style.filter = `grayScale(${grayScale}) brightness(${brightness}%)`.trim()
-        }
-      })
-      function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}){
-        if (setOrGet==="set"){
-        localStorage.setItem("examMode" ,examMode)  
-        localStorage.setItem("grayScale",grayScale)  
-        localStorage.setItem("brightness",brightness)  
-        }
-        else if (setOrGet === "get") {
-          return {
-            examMode: JSON.parse(localStorage.getItem("examMode")),
-            grayScale: JSON.parse(localStorage.getItem("grayScale")),
-            brightness: localStorage.getItem("brightness")
-          };
-        }
-      }
       examModeConfig.addEventListener("input", ()=>applyFilters() )
-
-      // applyFilters()
 
       // START edit profile
 
@@ -578,15 +548,17 @@ function loadPWTEntries(pwtDeckId) {
 
 let selectedRange 
 let targetedElement
+let oldTargetedElement
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
   const selection = window.getSelection();
   let selectedText = selection.toString().trim();
-
-  if (e.target.closest('.message-container')) {
-    targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
-    targetedElement.classList.add("highlight")
+  targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
+  
+  if (targetedElement) {
     targetedElement.querySelector(".sent") ?  contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage','invertColor']) : contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage'])
+    targetedElement.classList.add("highlight")
+    oldTargetedElement = targetedElement
   }
 
   // right click when user select a text
@@ -604,7 +576,7 @@ document.addEventListener("contextmenu", function (e) {
 function contextMenu(event,features) {
   const existingMenu = document.getElementById("context-menu")
   if (existingMenu) {
-    if (targetedElement) targetedElement.classList.remove("highlight")
+    if (oldTargetedElement) oldTargetedElement.classList.remove("highlight")
     existingMenu.remove()
   }
 
@@ -625,7 +597,6 @@ function contextMenu(event,features) {
   // Adjust the position of the menu within the viewport
   menu.style.left  = `${Math.min(event.pageX, window.innerWidth  - menu.offsetWidth )}px`
   menu.style.top   = `${Math.min(event.pageY, window.innerHeight - menu.offsetHeight)}px`
-  menu.style.scale = 1
 
   // Remove the menu when clicking outside
   document.addEventListener("click", function () {
@@ -793,3 +764,53 @@ socket.on("disconnect", () => sendUserStatus("offline"))
 window.addEventListener('beforeunload', () => sendUserStatus("offline"))
 
 // END user status
+
+// START exam mode functions
+
+function examModeInit(){
+  document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
+  document.getElementById("exam-mode-gray-scale").checked = localStorage.getItem("grayScale") ==="true"
+  document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
+}
+
+function applyFilters() {
+  const examModeElement = document.getElementById("exam-mode")
+
+  if (examModeElement){
+    // getting element values
+    const examMode   = examModeElement.checked 
+    const grayScale  = document.getElementById("exam-mode-gray-scale").checked
+    const brightness = document.getElementById("exam-mode-brightness").value
+    
+    // applying filter and saving config
+    examModeFilter(examMode,grayScale,brightness)
+    examConfig("set", { examMode, grayScale, brightness } )
+  } 
+  else{
+    const { examMode , grayScale , brightness} = examConfig("get")
+    if (examMode)  examModeFilter(examMode,grayScale,brightness)
+  }
+}
+
+function examModeFilter(examMode,grayScale,brightness){
+  const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
+  const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
+  body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter}`.trim() : ""
+}
+
+function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}){
+  if (setOrGet==="set"){
+  localStorage.setItem("examMode" ,examMode)  
+  localStorage.setItem("grayScale",grayScale)  
+  localStorage.setItem("brightness",brightness)  
+  }
+  else if (setOrGet === "get") {
+    return {
+      examMode: JSON.parse(localStorage.getItem("examMode")   || "false"),
+      grayScale: JSON.parse(localStorage.getItem("grayScale") || "false"),
+      brightness: localStorage.getItem("brightness") || "100"
+    };
+  }
+}
+
+// END exam mode functions

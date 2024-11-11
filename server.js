@@ -202,7 +202,7 @@ function deleteMessage() {
     WHERE id IN (
       SELECT id FROM messages
       ORDER BY id DESC
-      LIMIT 5
+      LIMIT 10
     );
   `;
   db.run(query, (error) => {
@@ -214,7 +214,7 @@ function deleteMessage() {
   });
 }
 
-// deleteMessage()
+deleteMessage()
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `

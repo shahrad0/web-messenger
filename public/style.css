@@ -354,7 +354,6 @@ button{
 }
 #context-menu{
     transition: all 100ms;
-    scale: 0;
     min-width: 100px;
     background-color: var(--secondary-background);
     border-radius: 15px;
@@ -362,11 +361,20 @@ button{
     overflow: hidden;
     position: absolute;
     z-index: 15;
+    animation: popIn 100ms ease-in-out ;
+}
+@keyframes popIn {
+    0%{
+        scale : 0;
+    }
+    100%{
+        scale : 1;
+    }
 }
 .right-click-item{
     border-bottom: 1px solid var(--main-border) ;
-    padding: 5% 10% ;
     transition: all 100ms;
+    padding: 8px 12px;
 }
 .right-click-item:hover{
     background-color: var(--third-background);
