@@ -95,7 +95,7 @@ button{
 #chat{
     width: 80%;
     max-height: 100vh;
-    /* background-image: url(Images/Main/weed-neon-sign.jpg); */
+    background-image: url(Images/Main/weed-leaf-led-neon-sign-120113.jpg);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -237,7 +237,7 @@ button{
 .more-menu-item:hover{color: var( --highlight-color-hover);}
 #setting-button{
     margin: 5% 0 0 6%;
-    width: 15%;
+    width: 50px;
     transition: all 200ms;    
 }
 #setting-button:hover{

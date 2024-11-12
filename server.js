@@ -93,28 +93,41 @@ const upload = multer({ storage: storage });
 
 // START user status
 
-app.post("/user-status", upload.single("file"), (req, res) => {
-  const authHeader = req.headers["authorization"]
-  const token = authHeader && authHeader.split(" ")[1]
-  if (!token) return res.sendStatus(401)
-  const query = `UPDATE users SET status = ? WHERE id = ?`
+//  how do i detect who is connected? 
+io.on("connection", (socket) => {
+  // Retrieve the authentication token from cookies
+  const authHeader = socket.request.headers.cookie;
+  const token = authHeader && authHeader.split("=")[1]
 
+  // Check for token
+  if (!token)   return socket.emit('error', { message: 'Unauthorized: Token not provided' });
+  
+  // Verify the JWT token
   jwt.verify(token, secretKey, (err, user) => {
-    if (err) return res.sendStatus(403)
-    const { status } = req.body
-    if (status !== "online" && status !== "offline")   
-      return res.status(400).json({ message: "Invalid status" }) // Ensure status is valid | Not sure if its necessary
-
-    db.run(query,[status,user.userId],function(error) {
+    if (err)   return socket.emit('error', { message: 'Forbidden: Invalid token' })
+    
+    const query = `UPDATE users SET status = ? WHERE id = ?`
+    db.run(query, ["online", user.userId], function(error) {
       if (error) {
         console.error('Error updating user status:', error);
-        return res.status(500).json({ message: 'Failed to update status in database' });
+        return socket.emit('error', { message: 'Failed to update status in database'})
       }
-
-      console.log(`User ${user.username} (${user.userId}) is now ${status}`)
-
-      res.sendStatus(204)
-    })
+      console.log(`User ${user.username} (${user.userId}) is now online"`)
+    });
+    socket.on("disconnect", () => {
+      jwt.verify(token, secretKey, (err, user) => {
+        if (err)   return socket.emit('error', { message: 'Forbidden: Invalid token' });
+        
+        const query = `UPDATE users SET status = ? WHERE id = ?`
+        db.run(query, ["offline", user.userId], function(error) {
+          if (error) {
+            console.error('Error updating user status:', error)
+            return socket.emit('error', { message: 'Failed to update status in database' })
+          }
+          console.log(`User ${user.username} (${user.userId}) is now offline"`)
+        }); 
+      });
+    });
   })
 })
 
@@ -214,7 +227,7 @@ function deleteMessage() {
   });
 }
 
-deleteMessage()
+// deleteMessage()
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `
@@ -314,14 +327,12 @@ app.post("/register", upload.single("profileImage"), (req, res) => {
   if (!username) return res.status(400).send("Username is required");
   if (!password) return res.status(400).send("Password is required");
 
-  console.log(password);
-
   bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
     if (err) return res.status(500).send(err.message);
 
     // Store the user details along with the hashed password
     db.run(
-      "INSERT INTO users (username, password, profile_image) VALUES (?, ?, ?, ?)",
+      "INSERT INTO users (username, password, profile_image) VALUES (?, ?, ?)",
       [username, hashedPassword, profileImage],
       function (err) {
         if (err) {

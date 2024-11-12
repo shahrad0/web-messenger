@@ -1,7 +1,6 @@
-// things to add 
-// (do this one since there is a lot of spaghetti)renaming and polishing the code (for css too)
+// things to add or do
+// polishing the code (for css too)(this is always going to be the goal)
 // pwt hot key for opening its menu
-// complete reply 
 // add notification and add toggle for it 
 // complete the left menu (add main chat, archives and games)
 // allow sending multiple files
@@ -12,11 +11,12 @@
 // add customiztation
 // add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
 // add custom background image 
-// add exam mode 
+// make exam mode a different chat 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
-// complete divider
+// complete divider (need a lot of css changes)
 // fix user status with "heartbeat"(occationaly pinging client)
+// fix login and sign up(css)
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -26,10 +26,11 @@ function getCookie(name) {
 }
 const authToken = getCookie("auth_token")
 
-// check for cookie and authorization
-document.addEventListener('DOMContentLoaded', function() {
+if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
+
+// check for cookie 
+document.addEventListener('DOMContentLoaded', ()=> {
   if (!authToken) window.location.href = '../login/login.html'
-  if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
   applyFilters()
   loadMessages()
 })
@@ -46,6 +47,7 @@ const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 
 socket.on('chat message', (message) => {
+  
   messages.innerHTML += messageTemplate(message)
   let notify = document.getElementById("notify")
   if (notify) {
@@ -58,16 +60,25 @@ socket.on('chat message', (message) => {
 
   notifyTimeout = setTimeout(() => notify.remove() , 1000)
 
-  if (messages.scrollHeight-50 <= messages.scrollTop + messages.offsetHeight) scrollToBottom(true)
+  if (messages.scrollHeight - (messages.clientHeight / 10) <= (messages.scrollTop + messages.clientHeight)) scrollToBottom(true)
 })
 
 // divider not complete 
-const divider = document.getElementById("divider")
-divider.addEventListener("mousedown",()=>{
-  divider.addEventListener("mousemove",()=>{
+// const divider = document.getElementById("divider")
+// divider.addEventListener("mousedown", () => {
+//   const onMouseMove = (e) => {
+//     menu.style.width = e.x + "px"
+//   }
 
-  })
-})
+//   const onMouseUp = () => {
+//     document.removeEventListener("mousemove", onMouseMove); // Remove the mousemove listener
+//     document.removeEventListener("mouseup", onMouseUp);     // Remove the mouseup listener
+//   };
+
+//   document.addEventListener("mousemove", onMouseMove);
+//   document.addEventListener("mouseup", onMouseUp);
+// });
+
 //end divider
 
 function previewFile() {
@@ -79,18 +90,21 @@ function previewFile() {
   else preview.src = "";
 }
 
-// auto scroll down and scroll down button
+// START scroll button and handling pagination
+
+
+// this part can be a lot more polished (create custom element and add keyframe animation)
 messages.addEventListener('scroll', () => {
-  if (messages.scrollTop < messages.scrollHeight-1000 ) {
-    document.getElementById("scroll-down").style.display = `block`
-    setTimeout(() => { document.getElementById("scroll-down").style.opacity = `1` }, 200)
-  }
-  else if (messages.scrollTop > messages.scrollHeight-1000 ){
-    document.getElementById("scroll-down").style.opacity = `0`
-    setTimeout(() => { document.getElementById("scroll-down").style.display = `none` }, 200)
-  }
-  if (messages.scrollTop == 0) setTimeout (()=> loadOlderMessages() , 100) 
+  const scrollDownButton = document.getElementById("scroll-down")
+  // check if element been scrolled more than 10% of message height
+  if ((messages.scrollHeight - messages.clientHeight / 4) <= (messages.scrollTop + messages.clientHeight) ) scrollDownButton.style.display = `none` 
+  else  scrollDownButton.style.display = `block`
+  
+  if (messages.scrollTop === 0) setTimeout (()=> loadOlderMessages() , 100) 
+  
 })
+
+// END scroll button and handling pagination
 
 function scrollToBottom(transition) {
   messages.scrollTo({
@@ -130,7 +144,7 @@ function messageTemplate(message) {
     </div>`
 
   // files
-  if (message.filePath){
+  if (message.filePath) {
     const fileExt = message.filePath.split('.').pop().toLowerCase();
     if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${message.filePath}" class="sent image">`
     else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent video"></video>`
@@ -160,14 +174,18 @@ function messageTemplate(message) {
 }
 
 function scrollToMessage(replyId) {
-  const targetMessage = document.querySelector(`.message-text[data-message-id="${replyId}"]`)
+  const targetMessage = document.querySelector(`.message-text[data-message-id="${replyId}"]`);
+  
   if (targetMessage) {
-    targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    const messageContainer = targetMessage.closest('.message').querySelector('.message-container');
-    messageContainer.classList.add('highlight');
+    targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const messageContainer = targetMessage.closest('.message')?.querySelector('.message-container');
     
-    setTimeout(() => {  messageContainer.classList.remove('highlight') } , 1000)
-  }
+    if (messageContainer) {
+      messageContainer.classList.add('highlight')
+      setTimeout(() => messageContainer.classList.remove('highlight'), 1000)
+    }
+  } 
+  else loadOlderMessages(replyId)
 }
 
 function sendMessage(userMessage, replyId = null) {
@@ -229,7 +247,7 @@ function addCloseButton(parent,removableElement) {
   parent.appendChild(button);
 }
 
-function createMenu(content){
+function createMenu(content) {
   mainContent = `<div class="menu">${content}</div>`
   toggleBlackScreen(mainContent,blackScreen)
   addCloseButton(document.getElementById("menu-toolbar"),blackScreen)
@@ -294,7 +312,7 @@ document.addEventListener("keydown", (event) => {
   // turn off screen when alt + (x || .) is pressed or when enter + . is pressed 
   if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed))  toggleOffSetup()
 
-  if (localStorage.getItem("examMode") === "true"){
+  if (localStorage.getItem("examMode") === "true") {
     let brightness = parseInt(localStorage.getItem("brightness")) ?? 50
     const grayScale = localStorage.getItem("grayScale") === "true" ? 1 : 0
 
@@ -472,7 +490,7 @@ preWrittenMenu.addEventListener("click",()=>{
   document.addEventListener("keydown", (event) => {
     const key = event.key
     const isNumber = key >= "0" && key <= "9"
-    if (isNumber){
+    if (isNumber) {
       if ((keyState.dotPressed || keyState.backtickPressed)) {
         pwtDeckNumber = key
         loadPWTEntries(pwtDeckNumber)
@@ -551,6 +569,8 @@ let targetedElement
 let oldTargetedElement
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
+  if (document.getElementById("context-menu") && e.target.closest("#context-menu")) return
+
   const selection = window.getSelection();
   let selectedText = selection.toString().trim();
   targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
@@ -562,7 +582,7 @@ document.addEventListener("contextmenu", function (e) {
   }
 
   // right click when user select a text
-  if (selectedText){ 
+  if (selectedText) { 
     selectedRange = selection.getRangeAt(0)
     contextMenu(event,['copy'])
   }
@@ -606,6 +626,7 @@ function contextMenu(event,features) {
 }
 
 // START right click functions
+
 async function copy() {
     const selection = window.getSelection();
     if (selectedRange) {
@@ -627,7 +648,7 @@ async function copyMessage() {
   await navigator.clipboard.writeText(targetedElement.querySelector(".message-text p").innerText)
 }
 
-function replyStyle(replyContainer){
+function replyStyle(replyContainer) {
   input.setSelectionRange(input.value.length, input.value.length);
   input.style.transition            = "all 0s"
   input.style.borderTopLeftRadius   = "0px"
@@ -644,7 +665,7 @@ function replyStyle(replyContainer){
   window.addEventListener("resize", ()=>{replyContainer.style.width = getComputedStyle(input).width })
 }
 
-function reply(){
+function reply() {
   if (document.getElementById("reply-container")) removeReply()
   const reply = document.createElement('div')
   reply.id    = "reply-container"
@@ -663,7 +684,7 @@ function reply(){
   reply.appendChild(createCustomElement("p", {className : "reply-text"    , text : targetedElement.querySelector('.message-text p').innerText }  ))
 }
 
-function removeReply(){
+function removeReply() {
   messageContainer.style.height    = `88%`
   input.style.borderTopLeftRadius  = "50px"
   input.style.borderTopRightRadius = "50px"
@@ -685,9 +706,9 @@ function createCustomElement(elementType, { id = "", className = "", text = "", 
   return element
 }
 
-function hideMessage(){ messages.removeChild(targetedElement.parentElement) }
+function hideMessage() { messages.removeChild(targetedElement.parentElement) }
 
-function invertColor(){
+function invertColor() {
   const elementFilter = targetedElement.querySelector(".sent")
   elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
 }
@@ -696,78 +717,68 @@ function invertColor(){
 
 // START pagintion
 
-function loadOlderMessages() {
-  const oldestMessageID = parseInt(document.querySelector('[data-message-id]').getAttribute('data-message-id'))
-  if (oldestMessageID === 1)  return
+async function loadOlderMessages(replyId = null) {
+  let targetMessageId
+  
+  if (replyId) targetMessageId = replyId + 25
+  else {
+    const messageElement = document.querySelector('[data-message-id]');
+    const oldestMessageID = messageElement ? parseInt(messageElement.getAttribute('data-message-id')) : Infinity
+    if (oldestMessageID === 1 || !oldestMessageID) return
+    targetMessageId = oldestMessageID
+  }
 
   const fetchOptions = {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json' 
-    },
-    body: JSON.stringify({ messageId: oldestMessageID })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messageId: targetMessageId })
   }
 
-  fetch('/get-older-messages', fetchOptions)
-    .then(response => response.json())
-    .then(data => {
-      const oldScrollHeight = messages.scrollHeight
+  try {
+    const response = await fetch('/get-older-messages', fetchOptions);
+    const data = await response.json();
+    const previousScrollHeight = messages.scrollHeight;
 
-      data.reverse().forEach(message => { messages.innerHTML = messageTemplate(message) + messages.innerHTML })
-      
-      messages.scrollTop = messages.scrollHeight - oldScrollHeight
-    })
-    .catch(error => console.error('Error fetching messages:', error))
+    data.reverse().forEach(message => messages.insertAdjacentHTML('afterbegin', messageTemplate(message)))
+    messages.scrollTop = messages.scrollHeight - previousScrollHeight
+
+    // highlight and scrolls to  message if replyId exists
+    if (replyId) scrollToMessage(replyId)
+
+  } catch (error) {
+    console.error('Error fetching messages:', error)
+  }
 }
 
 // END pagintion
 
 // START for debug 
-function log(content = undefined){ console.log(content ? content : "ass") }
+function log(content = undefined) { console.log(content ? content : "ass") }
 // END for debug 
 
 // START user status
 
 function updateConnectionStatus(status) {
-  const disconnectElement = document.getElementById("disconnected")
-  if (disconnectElement) {
-    disconnectElement.classList.add("connected")
-    disconnectElement.innerText = "connected"
-    setTimeout(() => disconnectElement.remove() , 5000)
+  if (status === "offline")
+    setTimeout(() => body.appendChild(createCustomElement( "h1" , { id:"disconnected" , text:"disconnected" })) , 1000)
+  else if (status === "online") {
+    const disconnectElement = document.getElementById("disconnected")
+    if (disconnectElement) {
+      disconnectElement.classList.add("connected")
+      disconnectElement.innerText = "connected"
+      setTimeout(() => disconnectElement.remove() , 5000)
+    }    
   }
 }
 
-function sendUserStatus(userStatus){
-  updateConnectionStatus(userStatus)
-
-  const fetchOptions = {
-    method: 'POST',
-    headers: { 
-      'Authorization': `Bearer ${authToken}`, 
-      'Content-Type' : 'application/json'  },
-    body: JSON.stringify({ status: userStatus })
-  }
-
-  fetch('/user-status', fetchOptions)
-  .then(response => {
-    if (!response.ok) console.error('Failed to update user status', response.statusText)
-  })
-  .catch(error => {
-    console.error('Error updating user status:', error);
-  })
-
-  if (userStatus === "offline") setTimeout(() => body.appendChild(createCustomElement( "h1" , {id:"disconnected",text: "disconnected"})), 1000)
-}
-
-socket.on("connect",    () => sendUserStatus("online") )
-socket.on("disconnect", () => sendUserStatus("offline"))
-window.addEventListener('beforeunload', () => sendUserStatus("offline"))
+socket.on("disconnect", () => updateConnectionStatus("offline"))
+socket.on("connect"   , () => updateConnectionStatus("online"))
 
 // END user status
 
 // START exam mode functions
 
-function examModeInit(){
+function examModeInit() {
   document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
   document.getElementById("exam-mode-gray-scale").checked = localStorage.getItem("grayScale") ==="true"
   document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
@@ -776,7 +787,7 @@ function examModeInit(){
 function applyFilters() {
   const examModeElement = document.getElementById("exam-mode")
 
-  if (examModeElement){
+  if (examModeElement) {
     // getting element values
     const examMode   = examModeElement.checked 
     const grayScale  = document.getElementById("exam-mode-gray-scale").checked
@@ -792,14 +803,14 @@ function applyFilters() {
   }
 }
 
-function examModeFilter(examMode,grayScale,brightness){
+function examModeFilter(examMode,grayScale,brightness) {
   const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
   const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
   body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter}`.trim() : ""
 }
 
-function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}){
-  if (setOrGet==="set"){
+function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}) {
+  if (setOrGet==="set") {
   localStorage.setItem("examMode" ,examMode)  
   localStorage.setItem("grayScale",grayScale)  
   localStorage.setItem("brightness",brightness)  
