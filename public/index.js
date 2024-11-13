@@ -17,6 +17,7 @@
 // complete divider (need a lot of css changes)
 // fix user status with "heartbeat"(occationaly pinging client)
 // fix login and sign up(css)
+// fix pagination
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -26,11 +27,12 @@ function getCookie(name) {
 }
 const authToken = getCookie("auth_token")
 
-if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 
-// check for cookie 
+// checking these before content is loaded 
+if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
+if (!authToken) window.location.href = '../login/'
+
 document.addEventListener('DOMContentLoaded', ()=> {
-  if (!authToken) window.location.href = '../login/login.html'
   applyFilters()
   loadMessages()
 })
@@ -42,7 +44,7 @@ const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const fileInput        = document.getElementById('file')
 const messages         = document.getElementById("messages")
-const menu             = document.getElementById("menu")
+const sideMenu             = document.getElementById("side-menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 
@@ -63,23 +65,43 @@ socket.on('chat message', (message) => {
   if (messages.scrollHeight - (messages.clientHeight / 10) <= (messages.scrollTop + messages.clientHeight)) scrollToBottom(true)
 })
 
-// divider not complete 
-// const divider = document.getElementById("divider")
-// divider.addEventListener("mousedown", () => {
-//   const onMouseMove = (e) => {
-//     menu.style.width = e.x + "px"
-//   }
+// START divider  (check for efficiency later) still not complete
 
-//   const onMouseUp = () => {
-//     document.removeEventListener("mousemove", onMouseMove); // Remove the mousemove listener
-//     document.removeEventListener("mouseup", onMouseUp);     // Remove the mouseup listener
-//   };
+const divider = document.getElementById("divider")
+let sideMenuIsOpen = true
+divider.addEventListener("mousedown", () => {
+  const onMouseMove = (e) => {
+    if (e.x > 80 && sideMenuIsOpen ) sideMenu.style.width = `${e.x}px` 
+    // else if(e.x < 50 && sideMenuIsOpen) hideSideMenu()
+    // if ((!sideMenuIsOpen) && e.x < window.x / 10) log()
+  }
 
-//   document.addEventListener("mousemove", onMouseMove);
-//   document.addEventListener("mouseup", onMouseUp);
-// });
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove); // Remove the mousemove listener
+    document.removeEventListener("mouseup", onMouseUp);     // Remove the mouseup listener
+  };
 
-//end divider
+  document.addEventListener("mousemove", onMouseMove)
+  document.addEventListener("mouseup", onMouseUp)
+
+
+})
+function hideSideMenu() {
+  sideMenuIsOpen = false 
+  sideMenu.style.width = "0px"
+  divider.style.display = "none"
+  const showSideMenuButton = createCustomElement("button",{id : "show-side-menu", className: "generic-button",text: "show menu", onClick: () => showSideMenu()})
+  body.appendChild(showSideMenuButton)
+}
+
+function showSideMenu(width = 80) {
+  sideMenuIsOpen = true
+  sideMenu.style.width = `${width}px` 
+  divider.style.display = "block"
+  document.getElementById("show-side-menu").remove()
+}
+
+// END divider
 
 function previewFile() {
   let preview = document.querySelector('img')
@@ -415,8 +437,7 @@ settingButtonSetup()
 const preWrittenMenu  = document.getElementById("pre-written")
 let   pwtDeckNumber   = 0
 preWrittenMenu.addEventListener("click",()=>{
-  menu.innerHTML = `
-      <div id="PWT-header"> 
+  sideMenu.innerHTML = `
         <div class="side-menu-toolbar">
           <button id="close-menu" type="button"><svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg></button>
           <button id="config-button"><svg  xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 50 50" >    <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg></button>
@@ -425,7 +446,7 @@ preWrittenMenu.addEventListener("click",()=>{
           <input  id="submit-text" type="text" placeholder="submit-text">
           <button id="submit-pre-written-text-button"> add </button>
         </form>
-      </div>
+
       <div id="PWT-container">
       </div>`
 
@@ -519,8 +540,8 @@ closeMenuButton.addEventListener("click", closeMenu);
 
 // Close menu function
 function closeMenu() {
-  menu.innerHTML = `
-    <div>
+  sideMenu.innerHTML = `
+    <div class="side-menu-toolbar">
       <button id="setting-button">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
           <path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/>
@@ -562,6 +583,7 @@ function loadPWTEntries(pwtDeckId) {
     })
   })
 }})
+
 // END PWT
 
 let selectedRange 
@@ -600,28 +622,28 @@ function contextMenu(event,features) {
     existingMenu.remove()
   }
 
-  const menu = document.createElement("div");
-  menu.id    = "context-menu"
+  const contextMenuElement = document.createElement("div");
+  contextMenuElement.id    = "context-menu"
   // add element depending on where user right clicks
   features.forEach(element => {
-    if (element == "copyMessage") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
-    if (element == "hideMessage") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: hideMessage,text : "Hide" }  ))
-    if (element == "invertColor") menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
-    if (element == "copy")        menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
-    if (element == "cut")         menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
-    if (element == "reply")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
-    if (element == "paste")       menu.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
+    if (element == "copyMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
+    if (element == "hideMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: hideMessage,text : "Hide" }  ))
+    if (element == "invertColor") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
+    if (element == "copy")        contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
+    if (element == "cut")         contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
+    if (element == "reply")       contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
+    if (element == "paste")       contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
   });
-  body.appendChild(menu);
+  body.appendChild(contextMenuElement);
   
   // Adjust the position of the menu within the viewport
-  menu.style.left  = `${Math.min(event.pageX, window.innerWidth  - menu.offsetWidth )}px`
-  menu.style.top   = `${Math.min(event.pageY, window.innerHeight - menu.offsetHeight)}px`
+  contextMenuElement.style.left  = `${Math.min(event.pageX, window.innerWidth  - contextMenuElement.offsetWidth )}px`
+  contextMenuElement.style.top   = `${Math.min(event.pageY, window.innerHeight - contextMenuElement.offsetHeight)}px`
 
   // Remove the menu when clicking outside
   document.addEventListener("click", function () {
     if (targetedElement)  targetedElement.classList.remove("highlight")
-    menu.remove()
+      contextMenuElement.remove()
   } , { once: true })
 }
 
@@ -797,7 +819,7 @@ function applyFilters() {
     examModeFilter(examMode,grayScale,brightness)
     examConfig("set", { examMode, grayScale, brightness } )
   } 
-  else{
+  else {
     const { examMode , grayScale , brightness} = examConfig("get")
     if (examMode)  examModeFilter(examMode,grayScale,brightness)
   }

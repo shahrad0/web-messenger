@@ -24,7 +24,10 @@
     --offline-bg : rgb(90, 90, 90);
     --online-bg : rgb(0, 182, 30);
 
+    --short-transition : 200ms;
+    --long-transition  : 500ms;
     
+    --side-menu-button-width : 40px;
 }
 
 ::selection {
@@ -36,7 +39,7 @@ input{
     background-color: var(--secondary-background) !important;
     border: solid 2px var(--main-border)          !important;
     box-shadow: 0 0 15px 5px var(--main-blur)     !important;
-    transition: all 200ms                         !important;
+    transition: all var(--short-transition)       !important;
     font-size: 16px;
     display: block;
 }
@@ -47,7 +50,7 @@ input:focus{
 }
 svg path {
     fill: var(--main-color) ; 
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 svg:hover path{
     fill: var(--main-border) !important; 
@@ -76,24 +79,25 @@ button{
     border-radius: 50px;
     border: solid 1px var(--main-border);
     background-color: var(--secondary-background);
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 .generic-button:hover{
     color: var( --highlight-color-hover);
     box-shadow: 0 0 15px var(--main-blur);
 }
 .generic-button:active{
-    box-shadow: 0 0 25px 5px var(--main-blur);
+    box-shadow: 0 0 15px var(--main-blur);
 }
 .main-container{
     display: flex;
     height: 100vh;
 }
-#menu{
+#side-menu{
     width: 20%;
+    overflow: hidden;
 }
 #chat{
-    width: 80%;
+    flex: 1;
     max-height: 100vh;
     background-image: url(Images/Main/weed-leaf-led-neon-sign-120113.jpg);
     background-size: cover;
@@ -105,7 +109,7 @@ button{
     box-shadow: 0 0 15px 5px var(--main-blur);
     height: 100vh;
     width: 0.2%;
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 #divider:hover{
     box-shadow: 0 0 25px 5px var(--main-blur);
@@ -119,7 +123,8 @@ button{
     position: absolute;
     bottom: 3%;
     height: 7%;
-    width: 80%;
+    width: -moz-available;
+    width: -webkit-fill-available;;
     display: flex;
 }
 #input{
@@ -134,11 +139,11 @@ button{
     max-height: 88%;
     height: 88%;
     overflow-y: scroll;
-    transition: all 400ms;
+    transition: all var(--long-transition);
 }
 .message-container{
     display: flex;
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 .message{
     margin: 2% 0;
@@ -169,7 +174,7 @@ button{
     color: var(--highlight-color);
     margin-bottom: 10px;
     cursor: pointer;
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 .username:hover{
     color: var(--highlight-color-hover);
@@ -230,15 +235,14 @@ button{
     border-radius: 15px;
     border-bottom-right-radius: 0px;
     opacity: 0;
-    transition: all 200ms;
+    transition: all var(--short-transition);
     display: none;
 }
-.more-menu-item{padding: 6%;transition: all 200ms;cursor: pointer;}
+.more-menu-item{padding: 6%;transition: all var(--short-transition);cursor: pointer;}
 .more-menu-item:hover{color: var( --highlight-color-hover);}
 #setting-button{
-    margin: 5% 0 0 6%;
-    width: 50px;
-    transition: all 200ms;    
+    width: var(--side-menu-button-width);
+    transition: all var(--short-transition);    
 }
 #setting-button:hover{
     rotate: 45deg;
@@ -247,7 +251,7 @@ button{
     position: absolute;
     right: 8%;
     width: 6.5%;
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 #submit-text{
     width: 75%;
@@ -261,7 +265,7 @@ button{
     padding: 2% 1.5%;
     border: solid 2px var(--main-border);
     border-radius: 1005px ;
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 #submit-pre-written-text-button:hover{
     border: solid 2px var(--border-focus);
@@ -286,7 +290,7 @@ button{
     padding: 2% 4%;
     border: solid 1px var(--main-border);
     cursor: pointer;
-    transition: all 200ms;
+    transition: all var(--short-transition);
     -webkit-user-select: none; /* Safari */        
     -moz-user-select: none;    /* Firefox */
     -ms-user-select: none;     /* IE10+/Edge */
@@ -311,22 +315,21 @@ button{
 .side-menu-toolbar{
     position: relative;
     display: flex;
-    font-size: 12px;
-    padding: 5% 7%;
+    padding: 10px 20px;
     box-shadow: 0 0 15px var(--main-blur);
     border-bottom: solid 2px var(--main-border);
 }
 #config-button{
-    width: 12%;
+    width: var(--side-menu-button-width);
     position: absolute;
     right: 2%;
-    transition: all 800s;
+    transition: all 2000s;
 }
 #config-button:hover{
-    rotate: 900000deg;
+    rotate: 9000000deg;
 }
 #close-menu{
-    width: 12%;
+    width: var(--side-menu-button-width);
 }
 .menu-item{
     border: 1px var(--main-border) solid;
@@ -343,7 +346,7 @@ button{
     right: 1.2%;
     font-size: 24px;
     background-color: var(--main-background-color);
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 #scroll-down:hover{
     color: var( --highlight-color-hover);
@@ -353,7 +356,7 @@ button{
     box-shadow: 0 0 25px 5px var(--main-blur);
 }
 #context-menu{
-    transition: all 100ms;
+    transition: all var(--short-transition);
     min-width: 100px;
     background-color: var(--secondary-background);
     border-radius: 15px;
@@ -373,7 +376,7 @@ button{
 }
 .right-click-item{
     border-bottom: 1px solid var(--main-border) ;
-    transition: all 100ms;
+    transition: all var(--short-transition);
     padding: 8px 12px;
 }
 .right-click-item:hover{
@@ -395,7 +398,7 @@ button{
     top: -100%;
     margin-left: 11.25px ;
     padding: 0 2%;
-    transition: all 200ms;
+    transition: all var(--short-transition);
 }
 #close-reply{
     width : 2.5%;
@@ -405,7 +408,7 @@ button{
     top: 25%;
 }
 .form-button{
-    transition: all 300ms;
+    transition: all var(--short-transition);
     width : 3%;
     margin: .5%;
 }
@@ -520,7 +523,7 @@ button{
     border: solid red 2px;
     border-radius: 69420px;
     text-align: center;
-    transition: all 500ms;
+    transition: all var(--long-transition);
     padding: 1%;
 }
 .connected{
@@ -562,4 +565,11 @@ button{
 #exam-mode-config{
     width: 100%;
     padding: 2%;
+}
+#show-side-menu{
+    width : 50px;
+    height: 50px;
+    position: absolute;
+    top: 40%;
+    transition: all var(--short-transition);
 }

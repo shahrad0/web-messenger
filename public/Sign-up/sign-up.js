@@ -29,4 +29,4 @@ form.addEventListener('submit', function(e) {
   alert(error.message);
 }); 
 });
-document.getElementById("login-redirect").addEventListener("click",()=>{setTimeout(()=>{window.location.href = '../login/login.html'},1)})
+document.getElementById("login-redirect").addEventListener("click",()=>{setTimeout(()=>{window.location.href = '../login/'},1)})

@@ -49,6 +49,6 @@ form.addEventListener('submit', function(e) {
 });
 
 document.getElementById("login-redirect").addEventListener("click",()=>{
-  setTimeout(()=>{window.location.href = '../Sign-up/sign-up.html'},1)
+  setTimeout(()=>{window.location.href = '../Sign-up/'},1)
 
 })
