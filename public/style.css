@@ -572,4 +572,21 @@ button{
     position: absolute;
     top: 40%;
     transition: all var(--short-transition);
+    left: -50px;
+}
+@keyframes showSideMenu {
+    0%{
+        left: -50px;
+    }
+    100%{
+        left: 15px;
+    } 
+}
+@keyframes hideSideMenu {
+    0%{
+        left: 15px;
+    }
+    100%{
+        left: -50px;
+    } 
 }

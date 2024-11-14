@@ -69,22 +69,22 @@ socket.on('chat message', (message) => {
 
 const divider = document.getElementById("divider")
 let sideMenuIsOpen = true
+
 divider.addEventListener("mousedown", () => {
   const onMouseMove = (e) => {
-    if (e.x > 80 && sideMenuIsOpen ) sideMenu.style.width = `${e.x}px` 
-    // else if(e.x < 50 && sideMenuIsOpen) hideSideMenu()
-    // if ((!sideMenuIsOpen) && e.x < window.x / 10) log()
+    if (sideMenuIsOpen){
+      if (e.x > 80) sideMenu.style.width = `${e.x}px` 
+      else if (e.x >= 50 && e.x <= 80) sideMenu.style.width = `80px` 
+      else hideSideMenu()
+    }
   }
-
   const onMouseUp = () => {
     document.removeEventListener("mousemove", onMouseMove); // Remove the mousemove listener
     document.removeEventListener("mouseup", onMouseUp);     // Remove the mouseup listener
-  };
+  }
 
   document.addEventListener("mousemove", onMouseMove)
   document.addEventListener("mouseup", onMouseUp)
-
-
 })
 function hideSideMenu() {
   sideMenuIsOpen = false 
@@ -92,6 +92,34 @@ function hideSideMenu() {
   divider.style.display = "none"
   const showSideMenuButton = createCustomElement("button",{id : "show-side-menu", className: "generic-button",text: "show menu", onClick: () => showSideMenu()})
   body.appendChild(showSideMenuButton)
+  let debounceTimeout
+
+  document.addEventListener("mousemove", (e) => {
+      clearTimeout(debounceTimeout)
+  
+      if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
+        // Debounce to prevent rapid triggering
+        debounceTimeout = setTimeout(() => {
+          if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
+            showSideMenuButton.style.animation = "showSideMenu var(--long-transition) forwards";
+            showSideMenuButton.style.left = "15px";
+          }
+        }, 2000)
+      } 
+      else {
+          showSideMenuButton.style.animation = "hideSideMenu var(--long-transition) forwards";
+          showSideMenuButton.style.left = "-50px";
+      }
+  });
+  
+}
+
+// idk wtf is this 
+function debounce(fn, delay) {
+  return function (...args) {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => fn(...args), delay);
+  };
 }
 
 function showSideMenu(width = 80) {
