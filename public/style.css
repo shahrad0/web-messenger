@@ -27,9 +27,20 @@
     --short-transition : 200ms;
     --long-transition  : 500ms;
     
-    --side-menu-button-width : 40px;
+    --button-width : 40px;
 }
-
+*{
+    margin: 0;
+    padding: 0;
+    color: var(--main-color);
+    scrollbar-width: thin;
+    scrollbar-color: var(--main-border) var(--secondary-background);
+}
+body{
+    background-color: var(--main-background-color);
+    overflow: hidden;
+    height: 100vh !important;
+}
 ::selection {
     color: var(--highlight-color);
     background-color: var(--highlight-background)
@@ -57,18 +68,6 @@ svg:hover path{
 }
 svg:active path{
     fill: var(--border-focus) !important; 
-}
-*{
-    margin: 0;
-    padding: 0;
-    color: var(--main-color);
-    scrollbar-width: thin;
-    scrollbar-color: var(--main-border) var(--secondary-background);
-}
-body{
-    background-color: var(--main-background-color);
-    overflow: hidden;
-    height: 100vh !important;
 }
 button{
     background-color: transparent;
@@ -101,7 +100,6 @@ button{
     max-height: 100vh;
     background-image: url(Images/Main/weed-leaf-led-neon-sign-120113.jpg);
     background-size: cover;
-    background-position: center;
     background-repeat: no-repeat;
 }
 #divider { 
@@ -113,7 +111,7 @@ button{
 }
 #divider:hover{
     box-shadow: 0 0 25px 5px var(--main-blur);
-    cursor:e-resize;
+    cursor: e-resize;
 }
 #divider:active{
     background-color: var(--border-focus);
@@ -136,8 +134,7 @@ button{
 }
 #messages{
     width: 100%;
-    max-height: 88%;
-    height: 88%;
+    max-height: 90%;
     overflow-y: scroll;
     transition: all var(--long-transition);
 }
@@ -241,7 +238,7 @@ button{
 .more-menu-item{padding: 6%;transition: all var(--short-transition);cursor: pointer;}
 .more-menu-item:hover{color: var( --highlight-color-hover);}
 #setting-button{
-    width: var(--side-menu-button-width);
+    width: var(--button-width);
     transition: all var(--short-transition);    
 }
 #setting-button:hover{
@@ -320,7 +317,7 @@ button{
     border-bottom: solid 2px var(--main-border);
 }
 #config-button{
-    width: var(--side-menu-button-width);
+    width: var(--button-width);
     position: absolute;
     right: 2%;
     transition: all 2000s;
@@ -329,7 +326,7 @@ button{
     rotate: 9000000deg;
 }
 #close-menu{
-    width: var(--side-menu-button-width);
+    width: var(--button-width);
 }
 .menu-item{
     border: 1px var(--main-border) solid;
@@ -455,7 +452,6 @@ button{
     padding: 2%;
 }
 #update-profile{
-    padding: 2%;
     bottom: 5%;
     left: 3%;
     position: absolute;
@@ -465,14 +461,13 @@ button{
     margin-top: 2%;
     width: 22%;
 }
-/* end edit profile (combine in future) */
-/* this is definitely gonna change  */
 #notify{
+    width: -moz-available;
+    width: -webkit-fill-available;
     position: absolute;
     bottom: 10%;
     border-top-left-radius: 100%;
     border-top-right-radius: 100%;
-    width: 80%;
     height: 5%;
     background:linear-gradient(to top , rgba(44, 255, 125, 0.336) ,rgba(69, 255, 94, 0.568)) ;
     box-shadow: 0 0 25px var(--main-blur);
@@ -567,8 +562,10 @@ button{
     padding: 2%;
 }
 #show-side-menu{
-    width : 50px;
-    height: 50px;
+    background-color: var(--main-background-color);
+    width : var(--button-width);
+    height: var(--button-width);
+    padding: 5px;
     position: absolute;
     top: 40%;
     transition: all var(--short-transition);

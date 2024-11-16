@@ -14,9 +14,7 @@
 // make exam mode a different chat 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
-// complete divider (need a lot of css changes)
 // fix user status with "heartbeat"(occationaly pinging client)
-// fix login and sign up(css)
 // fix pagination
 
 function getCookie(name) {
@@ -44,7 +42,7 @@ const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const fileInput        = document.getElementById('file')
 const messages         = document.getElementById("messages")
-const sideMenu             = document.getElementById("side-menu")
+const sideMenu         = document.getElementById("side-menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 
@@ -69,12 +67,13 @@ socket.on('chat message', (message) => {
 
 const divider = document.getElementById("divider")
 let sideMenuIsOpen = true
+let debounceTimeout
 
 divider.addEventListener("mousedown", () => {
   const onMouseMove = (e) => {
     if (sideMenuIsOpen){
-      if (e.x > 80) sideMenu.style.width = `${e.x}px` 
-      else if (e.x >= 50 && e.x <= 80) sideMenu.style.width = `80px` 
+      const newWidth = e.x > 80 ? e.x : e.x >= 50 ? 80 : null
+      if (newWidth !== null) sideMenu.style.width = `${newWidth}px`
       else hideSideMenu()
     }
   }
@@ -86,40 +85,42 @@ divider.addEventListener("mousedown", () => {
   document.addEventListener("mousemove", onMouseMove)
   document.addEventListener("mouseup", onMouseUp)
 })
+
 function hideSideMenu() {
   sideMenuIsOpen = false 
   sideMenu.style.width = "0px"
   divider.style.display = "none"
-  const showSideMenuButton = createCustomElement("button",{id : "show-side-menu", className: "generic-button",text: "show menu", onClick: () => showSideMenu()})
-  body.appendChild(showSideMenuButton)
-  let debounceTimeout
+  const showSideMenuButton = createCustomElement("button", {
+    id : "show-side-menu",
+    className: "generic-button",
+    HTML: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g><path d="M31.71,15.29l-10-10L20.29,6.71,28.59,15H0v2H28.59l-8.29,8.29,1.41,1.41,10-10A1,1,0,0,0,31.71,15.29Z"/></g></svg>`,
+    onClick: () => showSideMenu()})
 
-  document.addEventListener("mousemove", (e) => {
-      clearTimeout(debounceTimeout)
+  body.appendChild(showSideMenuButton)
   
-      if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
-        // Debounce to prevent rapid triggering
-        debounceTimeout = setTimeout(() => {
-          if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
-            showSideMenuButton.style.animation = "showSideMenu var(--long-transition) forwards";
-            showSideMenuButton.style.left = "15px";
-          }
-        }, 2000)
-      } 
-      else {
-          showSideMenuButton.style.animation = "hideSideMenu var(--long-transition) forwards";
-          showSideMenuButton.style.left = "-50px";
-      }
-  });
-  
+  const debouncedHoverHandler = debounce((e) => handleSideMenuHover(e, showSideMenuButton), 1000);
+  document.addEventListener("mousemove", debouncedHoverHandler);
 }
 
-// idk wtf is this 
+function handleSideMenuHover(e,showSideMenuButton) {
+  clearTimeout(debounceTimeout)
+  if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
+    if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
+      showSideMenuButton.style.animation = "showSideMenu var(--long-transition) forwards"
+      showSideMenuButton.style.left = "15px"
+    }
+  } 
+  else {
+      showSideMenuButton.style.animation = "hideSideMenu var(--long-transition) forwards"
+      showSideMenuButton.style.left = "-50px"
+  }
+}
+
 function debounce(fn, delay) {
   return function (...args) {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => fn(...args), delay);
-  };
+    clearTimeout(debounceTimeout)
+    debounceTimeout = setTimeout(() => fn(...args), delay)
+  }
 }
 
 function showSideMenu(width = 80) {
@@ -127,6 +128,7 @@ function showSideMenu(width = 80) {
   sideMenu.style.width = `${width}px` 
   divider.style.display = "block"
   document.getElementById("show-side-menu").remove()
+  document.removeEventListener("mousemove",handleSideMenuHover())
 }
 
 // END divider

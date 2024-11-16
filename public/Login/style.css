@@ -15,8 +15,6 @@ input{
     width: 95%;
     padding: 2% ;
     color: inherit;
-    position: absolute;
-    
 }
 input button{
     background-color: aqua;
@@ -42,9 +40,12 @@ button{
     border-radius: 1000px ;
     padding: 0.5% 0;
     color: inherit;
-    width: 10%;
     cursor: pointer;
     transition: all 200ms;
+    bottom: 5%;
+    padding: 2%;
+    position: absolute;
+    width: fit-content;
 }
 button:hover{
     border: 1px solid red;
@@ -67,11 +68,6 @@ label{
     margin-top: 2%;
     width: 22%;
 }
-#submit{
-    position: absolute;
-    bottom: 5%;
-    padding: 2%;
-}
 h1{
     text-align: center;
     margin-top: 2%;
@@ -81,9 +77,5 @@ h1:hover{
     color: red;
 }
 #login-redirect{
-    position: absolute;
-    bottom: 5%;
-    padding: 2%;
     right: 3%;
-    width: fit-content;
 }
