@@ -47,8 +47,8 @@ const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 
 socket.on('chat message', (message) => {
-  
-  messages.innerHTML += messageTemplate(message)
+  // this part can be optimized a lot more 
+  messages.insertAdjacentHTML("beforeend" , messageTemplate(message))
   let notify = document.getElementById("notify")
   if (notify) {
     clearTimeout(notifyTimeout) 
@@ -152,8 +152,7 @@ messages.addEventListener('scroll', () => {
   if ((messages.scrollHeight - messages.clientHeight / 4) <= (messages.scrollTop + messages.clientHeight) ) scrollDownButton.style.display = `none` 
   else  scrollDownButton.style.display = `block`
   
-  if (messages.scrollTop === 0) setTimeout (()=> loadOlderMessages() , 100) 
-  
+  if (messages.scrollTop === 0) loadOlderMessages()
 })
 
 // END scroll button and handling pagination
@@ -176,7 +175,7 @@ function loadMessages() {
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
-        messages.innerHTML += messageTemplate(message)
+        messages.insertAdjacentHTML("beforeend" , messageTemplate(message))
       });
       setTimeout(() => scrollToBottom(false) , 100)
     })
@@ -217,9 +216,8 @@ function messageTemplate(message) {
           ${replySection}
           ${file}
           <div class="message-text" data-message-id="${message.messageId}">
-          <p>${message.message}</p>
+            <p>${message.message}</p>
           </div>
-          <div class="message-detail"></div>
         </div>
       </div>
     </div>`
@@ -278,33 +276,33 @@ function sendMessage(userMessage, replyId = null) {
 }
 
 // end message func
-// black screen
 
-const blackScreen = document.getElementById("black-screen")
+const blurOverlay = document.getElementById("blur-overlay")
 const moreButton = document.getElementById("more")
 const moreMenu = document.getElementById("more-menu")
 let moreMenuToggle = false
 
 // START creating menu 
-function toggleBlackScreen(content = '',element) {
+
+function toggleBlurOverlay(content = '',element) {
   element.style.display = content ? 'block' : 'none';
   element.innerHTML = content;
 }
 
 function addCloseButton(parent,removableElement) {
   const button = document.createElement("button");
-  button.id = "close-black-screen";
+  button.id = "close-blur-overlay";
   button.innerHTML = '<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>'
-  button.addEventListener("click", () => toggleBlackScreen('',removableElement));
+  button.addEventListener("click", () => toggleBlurOverlay('',removableElement));
   parent.appendChild(button);
 }
 
 function createMenu(content) {
   mainContent = `<div class="menu">${content}</div>`
-  toggleBlackScreen(mainContent,blackScreen)
-  addCloseButton(document.getElementById("menu-toolbar"),blackScreen)
+  toggleBlurOverlay(mainContent,blurOverlay)
+  addCloseButton(document.getElementById("menu-toolbar"),blurOverlay)
   document.addEventListener('keydown',(event)=>{
-    if (event.key === "Escape") toggleBlackScreen('',blackScreen)
+    if (event.key === "Escape") toggleBlurOverlay('',blurOverlay)
   })
 }
 
@@ -338,8 +336,8 @@ document.addEventListener("click", async (event) => {
 // Toggle Off functionality
 let toggleOff = false
 function toggleOffSetup() {
-  document.getElementById("off").style.display   = toggleOff ? "none" : "block"
-  body.style.cursor                     = toggleOff ? "default" : "none"
+  document.getElementById("off").style.display = toggleOff ? "none" : "block"
+  body.style.cursor = toggleOff ? "default" : "none"
   toggleOff = !toggleOff
 }
 document.getElementById("turn-off").addEventListener("click", ()=> toggleOffSetup() )
@@ -362,7 +360,7 @@ document.addEventListener("keydown", (event) => {
     input.focus()
   }
   // turn off screen when alt + (x || .) is pressed or when enter + . is pressed 
-  if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed))  toggleOffSetup()
+  if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed)) toggleOffSetup()
 
   if (localStorage.getItem("examMode") === "true") {
     let brightness = parseInt(localStorage.getItem("brightness")) ?? 50
@@ -390,7 +388,7 @@ moreButton.addEventListener("click", () => {
   moreMenu.style.display = moreMenuToggle ? 'none' : 'block';
   moreMenu.style.opacity = moreMenuToggle ? '0' : '1';
   moreMenuToggle = !moreMenuToggle;
-  if (!moreMenuToggle) setTimeout(() => { moreMenu.style.display = 'none'; }, 200);
+  if (!moreMenuToggle) setTimeout(() => moreMenu.style.display = 'none', 200);
 });
 
 // Settings Button Setup
@@ -609,7 +607,6 @@ function loadPWTEntries(pwtDeckId) {
       if (localStorage.getItem("pwtAddSpace")        === "true") text += " "
       if (localStorage.getItem("pwtSendImmediately") === "true") sendMessage(text, replyId)
       else   input.value += text
-      
     })
   })
 }})

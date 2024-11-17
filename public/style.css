@@ -21,13 +21,13 @@
 
     --reply-background      :rgb(27, 51, 33);
 
-    --offline-bg : rgb(90, 90, 90);
-    --online-bg : rgb(0, 182, 30);
+    /* --offline-bg : rgb(90, 90, 90);
+    --online-bg  : rgb(0, 182, 30); */
 
     --short-transition : 200ms;
     --long-transition  : 500ms;
     
-    --button-width : 40px;
+    --button-size : 40px;
 }
 *{
     margin: 0;
@@ -176,7 +176,7 @@ button{
 .username:hover{
     color: var(--highlight-color-hover);
 }
-#black-screen{
+#blur-overlay{
     background-color: rgba(0, 0, 0, 0.69);
     backdrop-filter: blur(10px);
     width: 100%;
@@ -185,11 +185,10 @@ button{
     z-index: 10;
     display: none;
 }
-#close-black-screen{
+#close-blur-overlay{
     width:  5%;
     position: absolute;
     right: 2%;
-    cursor: pointer;
 }
 .menu{
     position: relative;
@@ -238,7 +237,7 @@ button{
 .more-menu-item{padding: 6%;transition: all var(--short-transition);cursor: pointer;}
 .more-menu-item:hover{color: var( --highlight-color-hover);}
 #setting-button{
-    width: var(--button-width);
+    width: var(--button-size);
     transition: all var(--short-transition);    
 }
 #setting-button:hover{
@@ -313,11 +312,9 @@ button{
     position: relative;
     display: flex;
     padding: 10px 20px;
-    box-shadow: 0 0 15px var(--main-blur);
-    border-bottom: solid 2px var(--main-border);
 }
 #config-button{
-    width: var(--button-width);
+    width: var(--button-size);
     position: absolute;
     right: 2%;
     transition: all 2000s;
@@ -326,12 +323,45 @@ button{
     rotate: 9000000deg;
 }
 #close-menu{
-    width: var(--button-width);
+    width: var(--button-size);
 }
-.menu-item{
-    border: 1px var(--main-border) solid;
-    border-top:0px ;
-    padding: 10%;
+.side-menu-item {
+    padding: 10px 20px;
+    font-size: 20px;
+    transition: all var(--short-transition);
+    border-bottom: 1px var(--main-border) solid;
+}
+#games {
+    border: 2px solid transparent; 
+    background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 300%;
+    background-clip: border-box; /* Show gradient on the border */
+    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 0.9); /* Add transparency for a softer inner background */
+
+    animation: rainbow 3s linear infinite alternate;
+}
+
+#games:hover {
+    /* if its white it looks cool too */
+    /* box-shadow: inset 0 0 15px 100px rgba(255, 255, 255, 0.5); */
+    box-shadow: inset 0 0 15px 100px rgba(0, 0, 0, 0.5);
+}
+@keyframes rainbow {
+    0% {
+        background-position: 0%;
+    }
+    100% {
+        background-position: 100%;
+    }
+}
+.side-menu-item:hover{
+    cursor: pointer;
+    color: var(--highlight-color);
+    background-color: var(--secondary-background);
+}
+.selected-chat{
+    background-color: rgb(19, 63, 19) !important;
+    border-bottom: 2px var(--border-focus) solid;
 }
 #scroll-down{
     width:  40px;
@@ -563,8 +593,8 @@ button{
 }
 #show-side-menu{
     background-color: var(--main-background-color);
-    width : var(--button-width);
-    height: var(--button-width);
+    width : var(--button-size);
+    height: var(--button-size);
     padding: 5px;
     position: absolute;
     top: 40%;
