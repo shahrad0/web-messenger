@@ -79,6 +79,16 @@ db.run(
   }
 );
 
+function getToken(req) {
+  const authHeader = req.headers["authorization"]
+  if (!authHeader) return null
+
+  const parts = authHeader.split(" ")
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null
+
+  return parts[1];
+}
+
 // File upload setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -95,13 +105,8 @@ const upload = multer({ storage: storage });
 
 //  how do i detect who is connected? 
 io.on("connection", (socket) => {
-  // Retrieve the authentication token from cookies
-  const authHeader = socket.request.headers.cookie;
-  const token = authHeader && authHeader.split("=")[1]
+  const token = getToken(socket.request)
 
-  // Check for token
-  if (!token)   return socket.emit('error', { message: 'Unauthorized: Token not provided' });
-  
   // Verify the JWT token
   jwt.verify(token, secretKey, (err, user) => {
     if (err)   return socket.emit('error', { message: 'Forbidden: Invalid token' })
@@ -137,14 +142,12 @@ io.on("connection", (socket) => {
 app.post("/submit-message", upload.single("file"), (req, res) => {
   const { message, replyId } = req.body;
   const filePath = req.file ? req.file.filename : null;
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
   const query = `INSERT INTO messages (message, user_id, reply_id, file_path) VALUES (?, ?, ?, ?)`;
-  if (!token) return res.sendStatus(401);
+  const token = getToken(req)
 
   jwt.verify(token, secretKey, (err, user) => {
     if (err) return res.sendStatus(403);
-
+    console.log(user)
     db.get("SELECT username, profile_image FROM users WHERE id = ?", [user.userId], (err, currentUser) => {
       if (err) return res.status(500).send("Error fetching user data")
       if (!currentUser) return res.status(400).send("User not found")
@@ -209,25 +212,28 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
 
 
 
-function deleteMessage() {
-  const query = `
-    DELETE FROM messages
-    WHERE id IN (
-      SELECT id FROM messages
-      ORDER BY id DESC
-      LIMIT 10
-    );
-  `;
-  db.run(query, (error) => {
-    if (error) {
-      console.error("Error deleting messages:", error.message);
-    } else {
-      console.log("Successfully deleted the last 5 messages.");
-    }
-  });
-}
+app.post("/delete-message", (req, res) => {
+  const { messageId } = req.body
+  const token = getToken(req)
 
-// deleteMessage()
+  if (!token) return res.status(401).send("Unauthorized")
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) return res.status(403).send("Invalid token")
+
+    const roleQuery = "SELECT role FROM users WHERE id = ?"
+    db.get(roleQuery, [user.userId], (err, row) => {
+      if (err || !row || (row.role !== "owner" && row.role !== "admin")) return res.status(403).send("Unauthorized")
+
+      const deleteQuery = "DELETE FROM messages WHERE id = ?"
+      db.run(deleteQuery, [messageId], (err) => {
+        if (err) return res.status(500).send("Failed to delete message")
+        res.status(200).send("Message deleted successfully")
+      })
+    })
+  })
+})
+
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
   const query = `
@@ -275,7 +281,6 @@ app.get("/get-messages", (req, res) => {
 
 app.post("/get-older-messages", (req, res) => {
   const {messageId} = req.body
-
   const query = `
     SELECT 
       messages.message, 
@@ -369,9 +374,8 @@ app.post("/login", (req, res) => {
 
 // Serve user details
 app.get("/user-details", (req, res) => {
-  // const { id } = req.query;
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  const token = getToken(req)
+  
   jwt.verify(token, secretKey, (err, user) => {
     if (err) return res.sendStatus(403); // If the token is invalid, return forbidden
     db.get(
@@ -489,6 +493,21 @@ function generateToken(user, res) {
 //   });
 // };
 
-// updateUserRole(8, 'owner');
+// updateUserRole(1, 'owner');
 
 // END update user role
+
+// START user role 
+
+app.get("/get-user-role", (req , res) => {
+  const token = getToken(req)
+  console.log("ass")
+  jwt.verify(token,secretKey,(err,user)=>{
+    db.get("SELECT role FROM users WHERE id = ?", [user.userId],(err,userRole) =>{
+      res.status(200).json(userRole)
+      console.log( userRole)
+    })
+  })
+})
+
+// END user role 

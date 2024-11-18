@@ -4,7 +4,6 @@
 // add notification and add toggle for it 
 // complete the left menu (add main chat, archives and games)
 // allow sending multiple files
-// add deleting messages
 // add command and right click options depending on user role 
 // add search
 // add who is online or offline with good UI
@@ -16,6 +15,9 @@
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 // fix user status with "heartbeat"(occationaly pinging client)
 // fix pagination
+// in exam chat add quiz mode or test mode 
+// change user role if they changed their role
+// allow selecting multiple messages and deleting them 
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -24,7 +26,6 @@ function getCookie(name) {
   return null;
 }
 const authToken = getCookie("auth_token")
-
 
 // checking these before content is loaded 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', ()=> {
 
 let socket = io()
 let replyId
+let userRole
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
@@ -63,7 +65,32 @@ socket.on('chat message', (message) => {
   if (messages.scrollHeight - (messages.clientHeight / 10) <= (messages.scrollTop + messages.clientHeight)) scrollToBottom(true)
 })
 
-// START divider  (check for efficiency later) still not complete
+// START getting user role
+
+async function getUserRole() {
+  try {
+    const response = await fetch(`/get-user-role`, {
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${authToken}` 
+      },
+    })
+
+    if (!response.ok)   throw new Error(`Error: ${response.status} ${response.statusText}`)
+
+    userRole = await response.json()
+    userRole = userRole.role
+    // return await response.json();
+  } 
+  catch (error) {
+    console.error("Failed to fetch user role:", error)
+  }
+}
+getUserRole()
+
+// END getting user role
+
+// START divider
 
 const divider = document.getElementById("divider")
 let sideMenuIsOpen = true
@@ -625,7 +652,11 @@ document.addEventListener("contextmenu", function (e) {
   targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
   
   if (targetedElement) {
-    targetedElement.querySelector(".sent") ?  contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage','invertColor']) : contextMenu(event, [`copyMessage` , 'reply' , 'hideMessage'])
+    let features = [`copyMessage` , 'reply' , 'hideMessage']
+    if (targetedElement.querySelector(".sent"))       features.push("invertColor")
+    if (userRole === "owner" || userRole === "admin") features.push("delete") 
+
+    contextMenu(e,features)
     targetedElement.classList.add("highlight")
     oldTargetedElement = targetedElement
   }
@@ -656,6 +687,7 @@ function contextMenu(event,features) {
     if (element == "copyMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
     if (element == "hideMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: hideMessage,text : "Hide" }  ))
     if (element == "invertColor") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
+    if (element == "delete")      contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
     if (element == "copy")        contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
     if (element == "cut")         contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
     if (element == "reply")       contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
@@ -760,6 +792,25 @@ function hideMessage() { messages.removeChild(targetedElement.parentElement) }
 function invertColor() {
   const elementFilter = targetedElement.querySelector(".sent")
   elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+}
+
+// this can be combined with other function in future 
+
+async function deleteMessage() {
+  const messageId = targetedElement.querySelector(".message-text").getAttribute("data-message-id");
+  const fetchOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ messageId }),
+  }
+  const response = await fetch("/delete-message", fetchOptions)
+  if (!response.ok) {
+    const error = await response.text()
+    window.alert(`Failed to delete message: ${error}`)
+  }
 }
 
 // END right click functions
