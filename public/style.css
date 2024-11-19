@@ -136,6 +136,7 @@ button{
     width: 100%;
     max-height: 90%;
     overflow-y: scroll;
+    overflow-x: hidden;
     transition: all var(--long-transition);
 }
 .message-container{
@@ -485,6 +486,7 @@ button{
     bottom: 5%;
     left: 3%;
     position: absolute;
+    padding: 2%;
 }
 .profile-preview{
     margin: 0 2.5%;
@@ -616,4 +618,11 @@ button{
     100%{
         left: -50px;
     } 
+}
+/* gonna remove this its just for goofing around */
+@keyframes deleteMessage {
+    50%{
+        rotate: 9000deg;
+        transform: translateX(1000px);
+    }
 }

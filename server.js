@@ -228,6 +228,7 @@ app.post("/delete-message", (req, res) => {
       const deleteQuery = "DELETE FROM messages WHERE id = ?"
       db.run(deleteQuery, [messageId], (err) => {
         if (err) return res.status(500).send("Failed to delete message")
+        io.emit("delete message",{messageId : messageId})
         res.status(200).send("Message deleted successfully")
       })
     })

@@ -2,15 +2,13 @@
 // polishing the code (for css too)(this is always going to be the goal)
 // pwt hot key for opening its menu
 // add notification and add toggle for it 
-// complete the left menu (add main chat, archives and games)
 // allow sending multiple files
-// add command and right click options depending on user role 
 // add search
 // add who is online or offline with good UI
 // add customiztation
 // add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
 // add custom background image 
-// make exam mode a different chat 
+// make exam chat and other chats functional 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 // fix user status with "heartbeat"(occationaly pinging client)
@@ -43,14 +41,13 @@ const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const fileInput        = document.getElementById('file')
-const messages         = document.getElementById("messages")
 const sideMenu         = document.getElementById("side-menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 
 socket.on('chat message', (message) => {
   // this part can be optimized a lot more 
-  messages.insertAdjacentHTML("beforeend" , messageTemplate(message))
+  messageContainer.insertAdjacentHTML("beforeend" , messageTemplate(message))
   let notify = document.getElementById("notify")
   if (notify) {
     clearTimeout(notifyTimeout) 
@@ -58,11 +55,11 @@ socket.on('chat message', (message) => {
   }
 
   notify = createCustomElement("div", { id: "notify"})
-  messages.appendChild(notify)
+  messageContainer.appendChild(notify)
 
   notifyTimeout = setTimeout(() => notify.remove() , 1000)
 
-  if (messages.scrollHeight - (messages.clientHeight / 10) <= (messages.scrollTop + messages.clientHeight)) scrollToBottom(true)
+  if (messageContainer.scrollHeight - (messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
 })
 
 // START getting user role
@@ -173,28 +170,29 @@ function previewFile() {
 
 
 // this part can be a lot more polished (create custom element and add keyframe animation)
-messages.addEventListener('scroll', () => {
+messageContainer.addEventListener('scroll', () => {
   const scrollDownButton = document.getElementById("scroll-down")
   // check if element been scrolled more than 10% of message height
-  if ((messages.scrollHeight - messages.clientHeight / 4) <= (messages.scrollTop + messages.clientHeight) ) scrollDownButton.style.display = `none` 
+  if ((messageContainer.scrollHeight - messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight) ) scrollDownButton.style.display = `none` 
   else  scrollDownButton.style.display = `block`
   
-  if (messages.scrollTop === 0) loadOlderMessages()
+  if (messageContainer.scrollTop === 0) loadOlderMessages()
 })
 
 // END scroll button and handling pagination
 
 function scrollToBottom(transition) {
-  messages.scrollTo({
-    top: messages.scrollHeight,
+  messageContainer.scrollTo({
+    top: messageContainer.scrollHeight,
     behavior: transition ? "smooth" : "instant"
   })
 }
 
 // sending message
 form.addEventListener('submit', function(e) {
-  e.preventDefault();
-  sendMessage(input.value,replyId)
+  e.preventDefault()
+  if ( !input.value.startsWith("/") ) sendMessage(input.value,replyId)
+  else handleCommand(input.value)
 })
 
 function loadMessages() {
@@ -202,7 +200,7 @@ function loadMessages() {
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
-        messages.insertAdjacentHTML("beforeend" , messageTemplate(message))
+        messageContainer.insertAdjacentHTML("beforeend" , messageTemplate(message))
       });
       setTimeout(() => scrollToBottom(false) , 100)
     })
@@ -685,7 +683,7 @@ function contextMenu(event,features) {
   // add element depending on where user right clicks
   features.forEach(element => {
     if (element == "copyMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
-    if (element == "hideMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: hideMessage,text : "Hide" }  ))
+    if (element == "hideMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: () => hideMessage(),text : "Hide" }  ))
     if (element == "invertColor") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
     if (element == "delete")      contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
     if (element == "copy")        contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
@@ -787,7 +785,17 @@ function createCustomElement(elementType, { id = "", className = "", text = "", 
   return element
 }
 
-function hideMessage() { messages.removeChild(targetedElement.parentElement) }
+function hideMessage(count = null) {
+  if (!count) targetedElement.closest(".message").remove() 
+  else {
+    let messages = Array.from(document.querySelectorAll(".message"))
+    const toRemove = Math.min(count, messages.length)
+
+    for (let i = 0; i < toRemove; i++) {
+      messages[messages.length - 1 - i].remove()
+    }
+  }
+}
 
 function invertColor() {
   const elementFilter = targetedElement.querySelector(".sent")
@@ -839,8 +847,8 @@ async function loadOlderMessages(replyId = null) {
     const data = await response.json();
     const previousScrollHeight = messages.scrollHeight;
 
-    data.reverse().forEach(message => messages.insertAdjacentHTML('afterbegin', messageTemplate(message)))
-    messages.scrollTop = messages.scrollHeight - previousScrollHeight
+    data.reverse().forEach(message => messageContainer.insertAdjacentHTML('afterbegin', messageTemplate(message)))
+    messageContainer.scrollTop = messageContainer.scrollHeight - previousScrollHeight
 
     // highlight and scrolls to  message if replyId exists
     if (replyId) scrollToMessage(replyId)
@@ -925,3 +933,52 @@ function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}) 
 }
 
 // END exam mode functions
+
+// START delete message 
+
+socket.on("delete message", (messageId) => {
+  const targetMessage = document.querySelector(`[data-message-id="${messageId.messageId}"]`);
+  const messageParent = targetMessage.closest(".message")
+  messageParent.style.animation = "deleteMessage 1s"
+  messageParent.addEventListener("animationend" , () => messageParent.remove())
+})
+
+// END delete message 
+
+// START command
+
+// 0 --> user
+// 1 --> mod
+// 2 --> admin
+// 3 --> owner
+
+const roles = { user: 0, mod: 1, admin: 2,owner: 3 }
+
+const commands = {
+  hideMessage: {
+    handler: (count) => {
+      hideMessage(count)
+    },
+    requiredRole: 0,
+  },
+  // deleteMessage: {
+  //   handler: (count) => {
+
+  //   },
+  //   requiredRole: 1, 
+  // },
+}
+
+function handleCommand(text) {
+  // still dont know wtf is  ...
+  const [commandName, ...args] = text.slice(1).split(" ")
+  const command = commands[commandName]
+
+  if (command) {
+    command.handler(args[0])
+  } 
+
+  // else console.error(`Unknown command: ${commandName}`);
+  
+}
+// END command
