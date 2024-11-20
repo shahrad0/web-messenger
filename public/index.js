@@ -16,6 +16,8 @@
 // in exam chat add quiz mode or test mode 
 // change user role if they changed their role
 // allow selecting multiple messages and deleting them 
+// add multiple animation for deleting message and randomly choose one when deleting a message
+// rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -37,6 +39,9 @@ document.addEventListener('DOMContentLoaded', ()=> {
 let socket = io()
 let replyId
 let userRole
+let unseenMessages
+// change
+let unseenMessagesElement = document.getElementById("unseen-messages")
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
@@ -46,7 +51,7 @@ const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
 
 socket.on('chat message', (message) => {
-  // this part can be optimized a lot more 
+  // this part can be optimized a lot more using DocumentFragment
   messageContainer.insertAdjacentHTML("beforeend" , messageTemplate(message))
   let notify = document.getElementById("notify")
   if (notify) {
@@ -60,6 +65,12 @@ socket.on('chat message', (message) => {
   notifyTimeout = setTimeout(() => notify.remove() , 1000)
 
   if (messageContainer.scrollHeight - (messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
+  else {
+    // change
+    // createCustomElement("div",{id : "unseen-messages" , })
+    unseenMessages ++
+    unseenMessagesElement.innerText = unseenMessages
+  }
 })
 
 // START getting user role
@@ -186,6 +197,9 @@ function scrollToBottom(transition) {
     top: messageContainer.scrollHeight,
     behavior: transition ? "smooth" : "instant"
   })
+  // change
+  unseenMessagesElement.innerText = unseenMessages
+  unseenMessages = 0
 }
 
 // sending message
@@ -727,13 +741,15 @@ async function copyMessage() {
   await navigator.clipboard.writeText(targetedElement.querySelector(".message-text p").innerText)
 }
 
+// START reply 
+
 function replyStyle(replyContainer) {
   input.setSelectionRange(input.value.length, input.value.length);
   input.style.transition            = "all 0s"
   input.style.borderTopLeftRadius   = "0px"
   input.style.borderTopRightRadius  = "0px"
   input.style.padding               = `0 2%`
-  messageContainer.style.height     = `81%`
+  messageContainer.style.height     = `83%`
   input.addEventListener('focus', function() {
     replyContainer.style.border = `solid 2px var(--border-focus)`
   });
@@ -772,6 +788,13 @@ function removeReply() {
   replyId                          = null
   document.getElementById("reply-container").remove()
 }
+
+messageContainer.addEventListener("dblclick", (e) => {
+  targetedElement = e.target
+  reply()
+})
+
+// END reply 
 
 function createCustomElement(elementType, { id = "", className = "", text = "", HTML = "",onClick = null} = {}) {
   const element = document.createElement(elementType)

@@ -626,3 +626,14 @@ button{
         transform: translateX(1000px);
     }
 }
+#unseen-messages{
+    position: absolute;
+    width: 20px;
+    top : -30%;
+    left: -30%;
+    background-color: var(--main-background-color);
+    color: var(--highlight-color);
+    border-radius: 10px;
+    border: solid 1px var(--main-border);
+    font-size: 16px;
+}

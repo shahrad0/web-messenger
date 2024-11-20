@@ -105,7 +105,8 @@ const upload = multer({ storage: storage });
 
 //  how do i detect who is connected? 
 io.on("connection", (socket) => {
-  const token = getToken(socket.request)
+  const authHeader = socket.request.headers.cookie
+  const token = authHeader && authHeader.split("=")[1]
 
   // Verify the JWT token
   jwt.verify(token, secretKey, (err, user) => {
@@ -146,8 +147,8 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
   const token = getToken(req)
 
   jwt.verify(token, secretKey, (err, user) => {
-    if (err) return res.sendStatus(403);
-    console.log(user)
+    if (err) return res.sendStatus(403)
+    
     db.get("SELECT username, profile_image FROM users WHERE id = ?", [user.userId], (err, currentUser) => {
       if (err) return res.status(500).send("Error fetching user data")
       if (!currentUser) return res.status(400).send("User not found")
@@ -502,11 +503,9 @@ function generateToken(user, res) {
 
 app.get("/get-user-role", (req , res) => {
   const token = getToken(req)
-  console.log("ass")
   jwt.verify(token,secretKey,(err,user)=>{
     db.get("SELECT role FROM users WHERE id = ?", [user.userId],(err,userRole) =>{
       res.status(200).json(userRole)
-      console.log( userRole)
     })
   })
 })
