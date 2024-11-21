@@ -1,12 +1,10 @@
 // things to add or do
 // polishing the code (for css too)(this is always going to be the goal)
-// pwt hot key for opening its menu
 // add notification and add toggle for it 
 // allow sending multiple files
 // add search
 // add who is online or offline with good UI
 // add customiztation
-// add command for hiding messsages i.e /hide 50 or /hide from 10{message id} to 90 
 // add custom background image 
 // make exam chat and other chats functional 
 // add poll or voting system
@@ -39,9 +37,7 @@ document.addEventListener('DOMContentLoaded', ()=> {
 let socket = io()
 let replyId
 let userRole
-let unseenMessages
-// change
-let unseenMessagesElement = document.getElementById("unseen-messages")
+let unseenMessages = 0
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
@@ -49,6 +45,7 @@ const fileInput        = document.getElementById('file')
 const sideMenu         = document.getElementById("side-menu")
 const messageContainer = document.getElementById("messages")
 const chatContainer    = document.getElementById("chat")
+const scrollDownButton =  document.getElementById("scroll-down")
 
 socket.on('chat message', (message) => {
   // this part can be optimized a lot more using DocumentFragment
@@ -66,12 +63,20 @@ socket.on('chat message', (message) => {
 
   if (messageContainer.scrollHeight - (messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
   else {
-    // change
-    // createCustomElement("div",{id : "unseen-messages" , })
-    unseenMessages ++
+    unseenMessages++
+    let unseenMessagesElement = document.getElementById("unseen-messages")
+    if (!unseenMessagesElement) {
+      unseenMessagesElement = createCustomElement("div", { id: "unseen-messages" })
+      scrollDownButton.appendChild(unseenMessagesElement)
+    }
     unseenMessagesElement.innerText = unseenMessages
   }
 })
+
+function removeUnseenMessagesElement() {
+  unseenMessages = 0
+  document.getElementById("unseen-messages")?.remove()
+}
 
 // START getting user role
 
@@ -179,10 +184,8 @@ function previewFile() {
 
 // START scroll button and handling pagination
 
-
 // this part can be a lot more polished (create custom element and add keyframe animation)
 messageContainer.addEventListener('scroll', () => {
-  const scrollDownButton = document.getElementById("scroll-down")
   // check if element been scrolled more than 10% of message height
   if ((messageContainer.scrollHeight - messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight) ) scrollDownButton.style.display = `none` 
   else  scrollDownButton.style.display = `block`
@@ -197,9 +200,7 @@ function scrollToBottom(transition) {
     top: messageContainer.scrollHeight,
     behavior: transition ? "smooth" : "instant"
   })
-  // change
-  unseenMessagesElement.innerText = unseenMessages
-  unseenMessages = 0
+  removeUnseenMessagesElement()
 }
 
 // sending message
@@ -790,7 +791,8 @@ function removeReply() {
 }
 
 messageContainer.addEventListener("dblclick", (e) => {
-  targetedElement = e.target
+  // has a bug if you click on the .message element it'd be fucked fix it later
+  targetedElement = e.target.closest(".message-container")
   reply()
 })
 
@@ -1004,4 +1006,16 @@ function handleCommand(text) {
   // else console.error(`Unknown command: ${commandName}`);
   
 }
+
 // END command
+
+// START navigator 
+
+document.getElementById("navigation-bar").addEventListener("click",()=>{
+  createMenu(`
+    <div id="menu-toolbar"></div>
+    display users chat img user status etc.. 
+    `)
+})
+
+// END navigator 
