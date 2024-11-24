@@ -9,14 +9,19 @@
 // make exam chat and other chats functional 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
-// fix user status with "heartbeat"(occationaly pinging client)
-// fix pagination
 // in exam chat add quiz mode or test mode 
 // change user role if they changed their role
 // allow selecting multiple messages and deleting them 
 // add multiple animation for deleting message and randomly choose one when deleting a message
+// fix pagination
 // rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
+// add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 
+
+// priority 
+// organize where user uploads are i.e profile goes in -> user/profile or user upload goes to user/uploads/media
+// delete the file when a message is deleted 
+// ftp server
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -27,7 +32,9 @@ const authToken = getCookie("auth_token")
 
 // checking these before content is loaded 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
+
 if (!authToken) window.location.href = '../login/'
+else getUserRole()
 
 document.addEventListener('DOMContentLoaded', ()=> {
   applyFilters()
@@ -99,7 +106,6 @@ async function getUserRole() {
     console.error("Failed to fetch user role:", error)
   }
 }
-getUserRole()
 
 // END getting user role
 
@@ -277,11 +283,11 @@ function scrollToMessage(replyId) {
   } 
   else loadOlderMessages(replyId)
 }
-
-function sendMessage(userMessage, replyId = null) {
+// change chat id 
+function sendMessage(userMessage, replyId = null,chat_id = 1) {
   const message = userMessage.trim();
   const hasFile = fileInput && fileInput.files.length > 0
-  if (message === '') return; // return if message is empty
+  if (!message && !hasFile) return
 
   const fetchOptions = {
     method: 'POST',
@@ -298,7 +304,7 @@ function sendMessage(userMessage, replyId = null) {
   } else {
     // Add JSON data when no file is present
     fetchOptions.headers['Content-Type'] = 'application/json';
-    fetchOptions.body = JSON.stringify({ message, replyId });
+    fetchOptions.body = JSON.stringify({ message, replyId, chat_id});
   }
 
   fetch('/submit-message', fetchOptions)
@@ -1012,6 +1018,7 @@ function handleCommand(text) {
 // START navigator 
 
 document.getElementById("navigation-bar").addEventListener("click",()=>{
+  fetch()
   createMenu(`
     <div id="menu-toolbar"></div>
     display users chat img user status etc.. 

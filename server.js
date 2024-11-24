@@ -5,8 +5,6 @@ const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
-
-// handling files
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
@@ -50,32 +48,64 @@ const db = new sqlite3.Database(
   }
 );
 
+// Create chat table
+db.run(
+  `CREATE TABLE IF NOT EXISTS chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    profile_image TEXT
+  )`,
+  (err) => {
+    if (err) console.error("Error creating messages table:", err.message)
+  }
+);
+
 // Create messages table
 db.run(
   `CREATE TABLE IF NOT EXISTS messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  message TEXT NOT NULL,
-  user_id INTEGER NOT NULL,
-  reply_id INTEGER DEFAULT NULL,
-  file_path  TEXT DEFAULT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id)
-)`,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    message TEXT,
+    user_id INTEGER NOT NULL,
+    chat_id INTEGER NOT NULL,
+    reply_id INTEGER DEFAULT NULL,
+    file_path  TEXT DEFAULT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(chat_id) REFERENCES chats(id)
+  )`,
   (err) => {
-    if (err) console.error("Error creating messages table:", err.message);
+    if (err) console.error("Error creating messages table:", err.message)
   }
 );
 
 // Create users table
 db.run(
   `CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  role TEXT DEFAULT 'user', 
-  profile_image TEXT,
-  password TEXT NOT NULL,
-  status TEXT DEFAULT 'offline')`,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    role TEXT DEFAULT 'user', 
+    profile_image TEXT,
+    password TEXT NOT NULL,
+    status TEXT DEFAULT 'offline'
+  )`,
   (err) => {
-    if (err) console.error("Error creating users table:", err.message);
+    if (err) console.error("Error creating users table:", err.message)
+  }
+);
+
+// Create chat_users table (join table)
+db.run(
+  `CREATE TABLE IF NOT EXISTS chat_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    role TEXT DEFAULT 'member',
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(chat_id, user_id)
+  )`,
+  (err) => {
+    if (err) console.error("Error creating chat_users table:", err.message)
   }
 );
 
@@ -141,9 +171,10 @@ io.on("connection", (socket) => {
 
 // Handle message submission and save to database
 app.post("/submit-message", upload.single("file"), (req, res) => {
-  const { message, replyId } = req.body;
+  const { message, replyId , chatId} = req.body;
+  console.log(chatId)
   const filePath = req.file ? req.file.filename : null;
-  const query = `INSERT INTO messages (message, user_id, reply_id, file_path) VALUES (?, ?, ?, ?)`;
+  const query = `INSERT INTO messages (message, user_id, chat_id, reply_id, file_path) VALUES (?, ?, ?, ?, ?)`;
   const token = getToken(req)
 
   jwt.verify(token, secretKey, (err, user) => {
@@ -154,7 +185,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
       if (!currentUser) return res.status(400).send("User not found")
       if (!message && !filePath) return res.status(400).send("Either a message or a file must be provided.")
 
-      db.run(query, [message || null, user.userId, replyId || null, filePath], function (err) {
+      db.run(query, [message || null, user.userId, chatId, replyId || null, filePath], function (err) {
         if (err) return res.status(500).send("Error inserting message");
 
         const messageId = this.lastID
@@ -206,10 +237,10 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
             filePath
           });
         }
-      });
-    });
-  });
-});
+      })
+    })
+  })
+})
 
 
 
@@ -501,13 +532,28 @@ function generateToken(user, res) {
 
 // START user role 
 
-app.get("/get-user-role", (req , res) => {
+app.get("/get-user-role", (req, res) => {
   const token = getToken(req)
-  jwt.verify(token,secretKey,(err,user)=>{
-    db.get("SELECT role FROM users WHERE id = ?", [user.userId],(err,userRole) =>{
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err || !user) return res.status(401).json({ error: "Unauthorized access" })
+
+    db.get("SELECT role FROM users WHERE id = ?", [user.userId], (err, userRole) => {
+      if (err) {
+        console.error("Database error:", err.message)
+        return res.status(500).json({ error: "Internal server error" })
+      }
       res.status(200).json(userRole)
     })
   })
 })
 
+
 // END user role 
+// temp
+// const query = 'INSERT INTO chats'
+
+// START get chat name and users in chat 
+
+
+
+// END get chat name and users in chat 
