@@ -45,6 +45,7 @@ let socket = io()
 let replyId
 let userRole
 let unseenMessages = 0
+let chatId = 1
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
@@ -284,7 +285,7 @@ function scrollToMessage(replyId) {
   else loadOlderMessages(replyId)
 }
 // change chat id 
-function sendMessage(userMessage, replyId = null,chat_id = 1) {
+function sendMessage(userMessage, replyId = null,chatId = 1) {
   const message = userMessage.trim();
   const hasFile = fileInput && fileInput.files.length > 0
   if (!message && !hasFile) return
@@ -304,7 +305,7 @@ function sendMessage(userMessage, replyId = null,chat_id = 1) {
   } else {
     // Add JSON data when no file is present
     fetchOptions.headers['Content-Type'] = 'application/json';
-    fetchOptions.body = JSON.stringify({ message, replyId, chat_id});
+    fetchOptions.body = JSON.stringify({ message, replyId, chatId});
   }
 
   fetch('/submit-message', fetchOptions)
@@ -1017,8 +1018,10 @@ function handleCommand(text) {
 
 // START navigator 
 
-document.getElementById("navigation-bar").addEventListener("click",()=>{
-  fetch()
+document.getElementById("navigation-bar").addEventListener("click", async () => {
+  const response = await fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
+  if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
+
   createMenu(`
     <div id="menu-toolbar"></div>
     display users chat img user status etc.. 

@@ -172,7 +172,6 @@ io.on("connection", (socket) => {
 // Handle message submission and save to database
 app.post("/submit-message", upload.single("file"), (req, res) => {
   const { message, replyId , chatId} = req.body;
-  console.log(chatId)
   const filePath = req.file ? req.file.filename : null;
   const query = `INSERT INTO messages (message, user_id, chat_id, reply_id, file_path) VALUES (?, ?, ?, ?, ?)`;
   const token = getToken(req)
@@ -358,32 +357,56 @@ app.post("/get-older-messages", (req, res) => {
 // END pagintion
 
 // Handle user registration (sign up)
-app.post("/register", upload.single("profileImage"), (req, res) => {
+app.post("/register", upload.single("profileImage"), async (req, res) => {
   const { username, password } = req.body;
   const profileImage = req.file ? req.file.filename : null;
 
   if (!username) return res.status(400).send("Username is required");
   if (!password) return res.status(400).send("Password is required");
 
-  bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
-    if (err) return res.status(500).send(err.message);
+  try {
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Store the user details along with the hashed password
+    // Insert user into the database
     db.run(
       "INSERT INTO users (username, password, profile_image) VALUES (?, ?, ?)",
       [username, hashedPassword, profileImage],
       function (err) {
         if (err) {
-          if (err.message.includes("UNIQUE constraint failed"))   return res.status(400).send("Username already taken")
-          console.error("Error inserting user:", err.message);
-          return res.status(500).send("Error saving user data");
+          if (err.message.includes("UNIQUE constraint failed")) {
+            return res.status(400).send("Username already taken.")
+          }
+          console.error("Error inserting user:", err.message)
+          return res.status(500).send("Error saving user data.")
         }
-        generateToken({ userId: this.lastID,username,profile_image : profileImage},res)
-        res.status(200).json({ userId: this.lastID });
+
+        const userId = this.lastID
+
+        // Add the user to basic chats
+        const chatIds = [1, 2] // chat IDs 
+        const query = "INSERT INTO chat_users (chat_id, user_id) VALUES (?, ?)"
+        let completed = 0
+
+        chatIds.forEach((chatId) => {
+          db.run(query, [chatId, userId], (err) => {
+            if (err) {
+              console.error(`Error adding user to chat ${chatId}:`, err.message)
+              return
+            }
+            completed++
+            if (completed === chatIds.length) {
+              const token = generateToken({ userId, username, profileImage })
+              return res.status(200).json({ userId, token })
+            }
+          })
+        })
       }
-    );
-  });
-});
+    )
+  } catch (err) {
+    console.error("Error hashing password:", err.message);
+    res.status(500).send("Server error. Please try again.");
+  }
+})
 
 // Handle user login
 app.post("/login", (req, res) => {
@@ -550,10 +573,19 @@ app.get("/get-user-role", (req, res) => {
 
 // END user role 
 // temp
-// const query = 'INSERT INTO chats'
+// const query = 'INSERT INTO chats (name) VALUES ("Exam")';
 
+// db.run(query)
 // START get chat name and users in chat 
 
+app.get("/chat-detail", (req, res) => {
+  const { chatId } = req.query
 
+  const query = "SELECT user_id FROM chat_users WHERE chat_id = ?"
+
+  db.get( query, [chatId], (err,user) => {
+    console.log(user)
+  })
+})
 
 // END get chat name and users in chat 
