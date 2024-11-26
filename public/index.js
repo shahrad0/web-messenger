@@ -22,19 +22,19 @@
 // organize where user uploads are i.e profile goes in -> user/profile or user upload goes to user/uploads/media
 // delete the file when a message is deleted 
 // ftp server
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2)   return parts.pop().split(';').shift();
-  return null;
-}
-const authToken = getCookie("auth_token")
 
 // checking these before content is loaded 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 
-if (!authToken) window.location.href = '../login/'
-else getUserRole()
+fetch("/verify", { credentials: "include" })
+  .then((res) => {
+    if (!res.ok) throw new Error("Failed to verify user")
+    return res.json()
+  })
+  .catch((err) => {
+    console.error("Error:", err.message)
+    window.location.href = "login/"
+  })
 
 document.addEventListener('DOMContentLoaded', ()=> {
   applyFilters()
@@ -90,23 +90,19 @@ function removeUnseenMessagesElement() {
 
 async function getUserRole() {
   try {
-    const response = await fetch(`/get-user-role`, {
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': `Bearer ${authToken}` 
-      },
-    })
+    const response = await fetch(`/get-user-role`, { credentials : 'include' })
 
     if (!response.ok)   throw new Error(`Error: ${response.status} ${response.statusText}`)
 
     userRole = await response.json()
     userRole = userRole.role
-    // return await response.json();
   } 
   catch (error) {
     console.error("Failed to fetch user role:", error)
   }
 }
+
+getUserRole()
 
 // END getting user role
 
@@ -285,41 +281,43 @@ function scrollToMessage(replyId) {
   else loadOlderMessages(replyId)
 }
 // change chat id 
-function sendMessage(userMessage, replyId = null,chatId = 1) {
+async function sendMessage(userMessage, replyId = null, chatId = 1) {
   const message = userMessage.trim();
-  const hasFile = fileInput && fileInput.files.length > 0
-  if (!message && !hasFile) return
+  const hasFile = fileInput && fileInput.files.length > 0;
 
-  const fetchOptions = {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${authToken}` }
-  };
+  if (!message && !hasFile) return;
 
-  if (hasFile) {
-    // Add data to FormData when a file is present
-    const formData = new FormData();
-    formData.append('message', message);
-    formData.append('replyId', replyId);
-    formData.append('file', fileInput.files[0]);
-    fetchOptions.body = formData;
-  } else {
-    // Add JSON data when no file is present
-    fetchOptions.headers['Content-Type'] = 'application/json';
-    fetchOptions.body = JSON.stringify({ message, replyId, chatId});
+  try {
+    const fetchOptions = {
+      method: 'POST',
+      credentials: 'include', 
+    };
+
+    if (hasFile) {
+      const formData = new FormData()
+      formData.append('message', message)
+      formData.append('replyId', replyId)
+      formData.append('file', fileInput.files[0])
+      fetchOptions.body = formData;
+    } else {
+      fetchOptions.headers = { 'Content-Type': 'application/json' };
+      fetchOptions.body = JSON.stringify({ message, replyId, chatId });
+    }
+
+    const response = await fetch('/submit-message', fetchOptions)
+
+    if (!response.ok) throw new Error(`Error: ${response.statusText}`)
+
+    const data = await response.json()
+
+    input.value = ''
+    if (hasFile) fileInput.value = ''
+    if (document.getElementById('reply-container')) removeReply()
+    scrollToBottom(true)
+  } 
+  catch (error) {
+    console.error('Error submitting message:', error)
   }
-
-  fetch('/submit-message', fetchOptions)
-    .then(response => {
-      if (!response.ok) throw new Error('Failed to submit message');
-      scrollToBottom(true)
-      return response.json();
-    })
-    .then(data => {
-      input.value = ''  
-      if (hasFile) fileInput.value = '' 
-      if (document.getElementById("reply-container")) removeReply() 
-    })
-    .catch(error => console.error('Error submitting message:', error));
 }
 
 // end message func
@@ -368,10 +366,10 @@ document.addEventListener("click", async (event) => {
         <div class="user-info-container">
           <img class="user-image" src="/uploads/${user.profile_image}" alt="">
           <div style="width: 100%;">
-            <p class="user-detail">${user.username}</p>
-            <p class="user-detail">User ID: ${user.id}</p>
-            <p class="user-detail">User Role: ${user.role}</p>
-            <p class="user-detail">User Status: ${user.status}</p>
+            <p class="user-detail">Name : ${user.username}</p>
+            <p class="user-detail">ID : ${user.id}</p>
+            <p class="user-detail">Role : ${user.role}</p>
+            <p class="user-detail">Status : ${user.status}</p>
           </div>
         </div>`)
     } catch (error) {
@@ -444,8 +442,8 @@ async function settingButtonSetup() {
   settingButton.addEventListener("click", async () => {
     try {
       const response = await fetch(`/user-details`, {
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-      });
+        headers: { credentials : 'include' }
+      })
       if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
       const user = await response.json();
       
@@ -458,9 +456,9 @@ async function settingButtonSetup() {
             <img class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
           </a>
           <div id="user-profile-detail">
-            <p class="user-detail">${user.username}</p>
-            <p class="user-detail">User ID: ${user.id}</p>
-            <p class="user-detail">User Role: ${user.role}</p>
+            <p class="user-detail">Name : ${user.username}</p>
+            <p class="user-detail">ID : ${user.id}</p>
+            <p class="user-detail">Role : ${user.role}</p>
           </div>
 
 
@@ -838,18 +836,16 @@ function invertColor() {
 
 async function deleteMessage() {
   const messageId = targetedElement.querySelector(".message-text").getAttribute("data-message-id");
-  const fetchOptions = {
+  const response = await fetch("/delete-message", {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
-    },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messageId }),
-  }
-  const response = await fetch("/delete-message", fetchOptions)
+  })
+
   if (!response.ok) {
-    const error = await response.text()
-    window.alert(`Failed to delete message: ${error}`)
+    const error = await response.text();
+    window.alert(`Failed to delete message: ${error}`);
   }
 }
 
@@ -1021,11 +1017,25 @@ function handleCommand(text) {
 document.getElementById("navigation-bar").addEventListener("click", async () => {
   const response = await fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
   if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
-
+  const users = await response.json()
+  
   createMenu(`
     <div id="menu-toolbar"></div>
-    display users chat img user status etc.. 
+    <div class="users-container">
+      ${displayUsers(users)}
+    </div>
     `)
 })
+
+function displayUsers(users) {
+  return users
+    .map(
+      (element) => `
+      <div class="user-container">
+        <img src="uploads/${element.profile_image}" alt="${element.username}'s profile picture">
+        <span>${element.username}</span>
+      </div>`
+    ).join("")
+}
 
 // END navigator 

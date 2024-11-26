@@ -75,7 +75,7 @@ db.run(
   (err) => {
     if (err) console.error("Error creating messages table:", err.message)
   }
-);
+)
 
 // Create users table
 db.run(
@@ -90,7 +90,7 @@ db.run(
   (err) => {
     if (err) console.error("Error creating users table:", err.message)
   }
-);
+)
 
 // Create chat_users table (join table)
 db.run(
@@ -107,17 +107,7 @@ db.run(
   (err) => {
     if (err) console.error("Error creating chat_users table:", err.message)
   }
-);
-
-function getToken(req) {
-  const authHeader = req.headers["authorization"]
-  if (!authHeader) return null
-
-  const parts = authHeader.split(" ")
-  if (parts.length !== 2 || parts[0] !== "Bearer") return null
-
-  return parts[1];
-}
+)
 
 // File upload setup
 const storage = multer.diskStorage({
@@ -148,7 +138,7 @@ io.on("connection", (socket) => {
         console.error('Error updating user status:', error);
         return socket.emit('error', { message: 'Failed to update status in database'})
       }
-      console.log(`User ${user.username} (${user.userId}) is now online"`)
+      console.log(`User ${user.username} (${user.userId}) is now online`)
     });
     socket.on("disconnect", () => {
       jwt.verify(token, secretKey, (err, user) => {
@@ -160,7 +150,7 @@ io.on("connection", (socket) => {
             console.error('Error updating user status:', error)
             return socket.emit('error', { message: 'Failed to update status in database' })
           }
-          console.log(`User ${user.username} (${user.userId}) is now offline"`)
+          console.log(`User ${user.username} (${user.userId}) is now offline`)
         }); 
       });
     });
@@ -171,10 +161,11 @@ io.on("connection", (socket) => {
 
 // Handle message submission and save to database
 app.post("/submit-message", upload.single("file"), (req, res) => {
-  const { message, replyId , chatId} = req.body;
-  const filePath = req.file ? req.file.filename : null;
-  const query = `INSERT INTO messages (message, user_id, chat_id, reply_id, file_path) VALUES (?, ?, ?, ?, ?)`;
-  const token = getToken(req)
+  const { message, replyId , chatId} = req.body
+  const filePath = req.file ? req.file.filename : null
+
+  const query = `INSERT INTO messages (message, user_id, chat_id, reply_id, file_path) VALUES (?, ?, ?, ?, ?)`
+  const token = req.cookies.auth_token
 
   jwt.verify(token, secretKey, (err, user) => {
     if (err) return res.sendStatus(403)
@@ -241,11 +232,9 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
   })
 })
 
-
-
 app.post("/delete-message", (req, res) => {
   const { messageId } = req.body
-  const token = getToken(req)
+  const token = req.cookies.auth_token
 
   if (!token) return res.status(401).send("Unauthorized")
 
@@ -395,7 +384,7 @@ app.post("/register", upload.single("profileImage"), async (req, res) => {
             }
             completed++
             if (completed === chatIds.length) {
-              const token = generateToken({ userId, username, profileImage })
+              const token = generateToken({ userId, username, profileImage }, res)
               return res.status(200).json({ userId, token })
             }
           })
@@ -428,9 +417,21 @@ app.post("/login", (req, res) => {
   });
 });
 
+// verify user on login
+app.get("/verify", (req, res) => {
+  const token = req.cookies.auth_token
+
+  if (!token) return res.status(401).send("Not authenticated")
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) return res.status(403).send("Invalid or expired token")
+    res.status(200).json({ userId: user.userId, username: user.username })
+  });
+})
+
 // Serve user details
 app.get("/user-details", (req, res) => {
-  const token = getToken(req)
+  const token = req.cookies.auth_token
   
   jwt.verify(token, secretKey, (err, user) => {
     if (err) return res.sendStatus(403); // If the token is invalid, return forbidden
@@ -449,7 +450,7 @@ app.get("/user-details", (req, res) => {
   });
 });
 
-// Serve user details
+// Serve user's details
 app.get("/users-details", (req, res) => {
   const { id } = req.query;
   db.get(
@@ -495,20 +496,25 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
 function generateToken(user, res) {
   const tokenData = {
-      userId: user.userId,
-      username: user.username,
+    userId: user.userId,
+    username: user.username,
   }
-  if (user.profile_image)  tokenData.profile_image = user.profile_image; // Only include if available
-  // Generate JWT token
-  const token = jwt.sign(tokenData, secretKey, { expiresIn: "7d" });
-  // Set the token as a cookie
+
+  if (user.profile_image) tokenData.profile_image = user.profile_image
+
+  const token = jwt.sign(tokenData, secretKey, { expiresIn: "7d" })
+
   res.cookie("auth_token", token, {
-      secure: process.env.NODE_ENV === "production", // true in production
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // lax in development
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    httpOnly: true, // Prevent XSS attacks
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  })
+
+  return token
 }
+
 // START adding column
 // const addReplyIdColumn = () => {
 //   const sql = `ALTER TABLE users ADD COLUMN status TEXT DEFAULT offline`;
@@ -556,7 +562,8 @@ function generateToken(user, res) {
 // START user role 
 
 app.get("/get-user-role", (req, res) => {
-  const token = getToken(req)
+  const token = req.cookies.auth_token
+
   jwt.verify(token, secretKey, (err, user) => {
     if (err || !user) return res.status(401).json({ error: "Unauthorized access" })
 
@@ -579,13 +586,24 @@ app.get("/get-user-role", (req, res) => {
 // START get chat name and users in chat 
 
 app.get("/chat-detail", (req, res) => {
-  const { chatId } = req.query
+  const { chatId } = req.query;
 
-  const query = "SELECT user_id FROM chat_users WHERE chat_id = ?"
+  const query = `
+    SELECT users.id, users.username, users.status, users.role, users.profile_image
+    FROM chat_users
+    JOIN users ON chat_users.user_id = users.id
+    WHERE chat_users.chat_id = ?
+    `
 
-  db.get( query, [chatId], (err,user) => {
-    console.log(user)
+  db.all(query, [chatId], (err, users) => {
+    if (err) {
+      console.error(err)
+      res.status(500).send("Error fetching chat details")
+      return
+    }
+    res.json(users)
   })
 })
+
 
 // END get chat name and users in chat 
