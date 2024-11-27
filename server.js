@@ -579,7 +579,7 @@ app.get("/get-user-role", (req, res) => {
 
 
 // END user role 
-// temp
+// make this a function that runs for the first time to create exam chat and main chat
 // const query = 'INSERT INTO chats (name) VALUES ("Exam")';
 
 // db.run(query)

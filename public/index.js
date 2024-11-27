@@ -259,7 +259,7 @@ function messageTemplate(message) {
           ${replySection}
           ${file}
           <div class="message-text" data-message-id="${message.messageId}">
-            <p>${message.message}</p>
+            ${message.message}
           </div>
         </div>
       </div>
@@ -274,8 +274,8 @@ function scrollToMessage(replyId) {
     const messageContainer = targetMessage.closest('.message')?.querySelector('.message-container');
     
     if (messageContainer) {
-      messageContainer.classList.add('highlight')
-      setTimeout(() => messageContainer.classList.remove('highlight'), 1000)
+      messageContainer.classList.add('highlighted-message')
+      setTimeout(() => messageContainer.classList.remove('highlighted-message'), 1000)
     }
   } 
   else loadOlderMessages(replyId)
@@ -675,7 +675,7 @@ document.addEventListener("contextmenu", function (e) {
     if (userRole === "owner" || userRole === "admin") features.push("delete") 
 
     contextMenu(e,features)
-    targetedElement.classList.add("highlight")
+    targetedElement.classList.add("highlighted-message")
     oldTargetedElement = targetedElement
   }
 
@@ -694,7 +694,7 @@ document.addEventListener("contextmenu", function (e) {
 function contextMenu(event,features) {
   const existingMenu = document.getElementById("context-menu")
   if (existingMenu) {
-    if (oldTargetedElement) oldTargetedElement.classList.remove("highlight")
+    if (oldTargetedElement) oldTargetedElement.classList.remove("highlighted-message")
     existingMenu.remove()
   }
 
@@ -719,7 +719,7 @@ function contextMenu(event,features) {
 
   // Remove the menu when clicking outside
   document.addEventListener("click", function () {
-    if (targetedElement)  targetedElement.classList.remove("highlight")
+    if (targetedElement)  targetedElement.classList.remove("highlighted-message")
       contextMenuElement.remove()
   } , { once: true })
 }
@@ -744,7 +744,7 @@ async function paste() {
 }
 
 async function copyMessage() {
-  await navigator.clipboard.writeText(targetedElement.querySelector(".message-text p").innerText)
+  await navigator.clipboard.writeText(targetedElement.querySelector(".message-text").innerText)
 }
 
 // START reply 
@@ -782,7 +782,7 @@ function reply() {
   form.appendChild(reply)
   reply.appendChild(closeReply)
   reply.appendChild(createCustomElement("p", {className : "reply-username", text : "Replying to " + targetedElement.querySelector('.username').innerText} ))
-  reply.appendChild(createCustomElement("p", {className : "reply-text"    , text : targetedElement.querySelector('.message-text p').innerText }  ))
+  reply.appendChild(createCustomElement("p", {className : "reply-text"    , text : targetedElement.querySelector('.message-text').innerText }  ))
 }
 
 function removeReply() {
@@ -795,10 +795,14 @@ function removeReply() {
   document.getElementById("reply-container").remove()
 }
 
-messageContainer.addEventListener("dblclick", (e) => {
-  // has a bug if you click on the .message element it'd be fucked fix it later
-  targetedElement = e.target.closest(".message-container")
-  reply()
+document.addEventListener("dblclick", (e) => {
+  if (e.target.classList.contains("message-text")) return
+
+  targetedElement = e.target.classList.contains("message") 
+  ? e.target.querySelector(".message-container")
+  : e.target.closest(".message-container")
+
+  if (targetedElement) reply()
 })
 
 // END reply 
@@ -1032,8 +1036,12 @@ function displayUsers(users) {
     .map(
       (element) => `
       <div class="user-container">
-        <img src="uploads/${element.profile_image}" alt="${element.username}'s profile picture">
-        <span>${element.username}</span>
+        <img class="user-profile" src="uploads/${element.profile_image}" alt="NPC">
+        <div class="user-info">
+          <span class="username" data-user-id="${element.id}">${element.username}</span>
+          ${element.status === "offline" ? '<span>offline</span>': '<span class="highlighted-text">online</span>'}
+          <span style="position : absolute;right:2%;top:20%;">${element.role}</span>
+        </div>
       </div>`
     ).join("")
 }
