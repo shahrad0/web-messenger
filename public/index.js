@@ -12,14 +12,14 @@
 // in exam chat add quiz mode or test mode 
 // change user role if they changed their role
 // allow selecting multiple messages and deleting them 
-// add multiple animation for deleting message and randomly choose one when deleting a message
+// add multiple animation for deleting message and randomly choose one when deleting a message (use nuke)
 // fix pagination
 // rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
-
+// add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
 
 // priority 
-// organize where user uploads are i.e profile goes in -> user/profile or user upload goes to user/uploads/media
+// organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/uploads/media
 // delete the file when a message is deleted 
 // ftp server
 
@@ -190,7 +190,10 @@ function previewFile() {
 // this part can be a lot more polished (create custom element and add keyframe animation)
 messageContainer.addEventListener('scroll', () => {
   // check if element been scrolled more than 10% of message height
-  if ((messageContainer.scrollHeight - messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight) ) scrollDownButton.style.display = `none` 
+  if ((messageContainer.scrollHeight - messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight) ) {
+    scrollDownButton.style.display = `none` 
+    removeUnseenMessagesElement()
+  }
   else  scrollDownButton.style.display = `block`
   
   if (messageContainer.scrollTop === 0) loadOlderMessages()
@@ -242,7 +245,7 @@ function messageTemplate(message) {
     const fileExt = message.filePath.split('.').pop().toLowerCase();
     if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${message.filePath}" class="sent image">`
     else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent video"></video>`
-    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent pdf" width="800px" height="600px"></object>`
+    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent pdf" width="8000px" height="700px"></object>`
     // temp solution add rar and music 
     else  file = `<a href="uploads/${message.filePath}">free robux</a>`
   }
@@ -259,7 +262,7 @@ function messageTemplate(message) {
           ${replySection}
           ${file}
           <div class="message-text" data-message-id="${message.messageId}">
-            ${message.message}
+            ${message.message ? message.message : ""}
           </div>
         </div>
       </div>
@@ -280,6 +283,7 @@ function scrollToMessage(replyId) {
   } 
   else loadOlderMessages(replyId)
 }
+
 // change chat id 
 async function sendMessage(userMessage, replyId = null, chatId = 1) {
   const message = userMessage.trim();
@@ -297,6 +301,7 @@ async function sendMessage(userMessage, replyId = null, chatId = 1) {
       const formData = new FormData()
       formData.append('message', message)
       formData.append('replyId', replyId)
+      formData.append('chatId', chatId)
       formData.append('file', fileInput.files[0])
       fetchOptions.body = formData;
     } else {
@@ -380,12 +385,15 @@ document.addEventListener("click", async (event) => {
 
 // Toggle Off functionality
 let toggleOff = false
+
 function toggleOffSetup() {
   document.getElementById("off").style.display = toggleOff ? "none" : "block"
   body.style.cursor = toggleOff ? "default" : "none"
   toggleOff = !toggleOff
 }
-document.getElementById("turn-off").addEventListener("click", ()=> toggleOffSetup() )
+
+document.getElementById("turn-off").addEventListener("click", ()=> toggleOffSetup())
+
 // keys 
 const keyState = {
   altPressed      : false,
@@ -393,6 +401,7 @@ const keyState = {
   dotPressed      : false,
   backtickPressed : false
 }
+
 document.addEventListener("keydown", (event) => {
   const { key, keyCode } = event
 
@@ -400,10 +409,13 @@ document.addEventListener("keydown", (event) => {
   keyState.enterPressed    ||= keyCode === 13
   keyState.backtickPressed ||= key === "`"
   keyState.dotPressed      ||= key === "."
+
   if (key === "/" && document.activeElement !== input) {
     event.preventDefault()
     input.focus()
   }
+  if (key === "Escape" && document.activeElement === input) input.blur()
+  
   // turn off screen when alt + (x || .) is pressed or when enter + . is pressed 
   if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed)) toggleOffSetup()
 
@@ -684,10 +696,16 @@ document.addEventListener("contextmenu", function (e) {
     selectedRange = selection.getRangeAt(0)
     contextMenu(event,['copy'])
   }
+
   // right click on input
   if (input === document.activeElement) {
     if (selectedText) contextMenu(e,['cut','copy',"paste"])
     else contextMenu(e,["paste"])
+  }
+
+  // right click on navigator 
+  if (e.target === navigatorElement){
+    contextMenu(e, ['hideNavigator'])
   }
 })
 
@@ -702,14 +720,15 @@ function contextMenu(event,features) {
   contextMenuElement.id    = "context-menu"
   // add element depending on where user right clicks
   features.forEach(element => {
-    if (element == "copyMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
-    if (element == "hideMessage") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: () => hideMessage(),text : "Hide" }  ))
-    if (element == "invertColor") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
-    if (element == "delete")      contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
-    if (element == "copy")        contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
-    if (element == "cut")         contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
-    if (element == "reply")       contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
-    if (element == "paste")       contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
+    if (element == "hideNavigator")contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-navigator", onClick: hideNavigator,text : "Hide" }  ))
+    if (element == "copyMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
+    if (element == "hideMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: () => hideMessage(),text : "Hide" }  ))
+    if (element == "invertColor")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
+    if (element == "delete") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
+    if (element == "copy")   contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
+    if (element == "cut")    contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
+    if (element == "reply")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
+    if (element == "paste")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
   });
   body.appendChild(contextMenuElement);
   
@@ -755,7 +774,7 @@ function replyStyle(replyContainer) {
   input.style.borderTopLeftRadius   = "0px"
   input.style.borderTopRightRadius  = "0px"
   input.style.padding               = `0 2%`
-  messageContainer.style.height     = `83%`
+  messageContainer.style.maxHeight  = `calc(83% - 50px)`
   input.addEventListener('focus', function() {
     replyContainer.style.border = `solid 2px var(--border-focus)`
   });
@@ -786,12 +805,12 @@ function reply() {
 }
 
 function removeReply() {
-  messageContainer.style.height    = `88%`
+  messageContainer.style.maxHeight = `calc(90% - 50px)`
   input.style.borderTopLeftRadius  = "50px"
   input.style.borderTopRightRadius = "50px"
-  input.style.padding              = `0 2%` 
-  input.style.width                = `80%` 
-  replyId                          = null
+  input.style.padding = `0 2%` 
+  input.style.width = `80%` 
+  replyId = null
   document.getElementById("reply-container").remove()
 }
 
@@ -833,7 +852,13 @@ function hideMessage(count = null) {
 
 function invertColor() {
   const elementFilter = targetedElement.querySelector(".sent")
-  elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+  if (elementFilter.tagName === "OBJECT") {
+    // failed attempt at inverting just the pdf pages not the whole pdf
+    elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+  } 
+  else {
+    elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+  }
 }
 
 // this can be combined with other function in future 
@@ -851,6 +876,12 @@ async function deleteMessage() {
     const error = await response.text();
     window.alert(`Failed to delete message: ${error}`);
   }
+}
+// not complete 
+function hideNavigator() {
+  navigatorElement.style.display = "none"
+  messageContainer.style.maxHeight = "90%"
+  messageContainer.style.marginTop = 0
 }
 
 // END right click functions
@@ -935,7 +966,7 @@ function applyFilters() {
     
     // applying filter and saving config
     examModeFilter(examMode,grayScale,brightness)
-    examConfig("set", { examMode, grayScale, brightness } )
+    examConfig("set", { examMode, grayScale, brightness})
   } 
   else {
     const { examMode , grayScale , brightness} = examConfig("get")
@@ -1018,18 +1049,27 @@ function handleCommand(text) {
 
 // START navigator 
 
-document.getElementById("navigation-bar").addEventListener("click", async () => {
+navigatorElement = createCustomElement("div", { 
+  id : "navigation-bar",
+  text : "Main Chat",
+  onClick : () => chatDetail()
+})
+
+chatContainer.appendChild(navigatorElement)
+getChatUsers()
+
+async function chatDetail() {
   const response = await fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
   if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
-  const users = await response.json()
-  
+  const data = await response.json()
+  console.log(data)
   createMenu(`
-    <div id="menu-toolbar"></div>
+    <div id="menu-toolbar">${data.chatName}</div>
     <div class="users-container">
-      ${displayUsers(users)}
+      ${displayUsers(data.users)}
     </div>
-    `)
-})
+  `)
+}
 
 function displayUsers(users) {
   return users
@@ -1040,10 +1080,28 @@ function displayUsers(users) {
         <div class="user-info">
           <span class="username" data-user-id="${element.id}">${element.username}</span>
           ${element.status === "offline" ? '<span>offline</span>': '<span class="highlighted-text">online</span>'}
-          <span style="position : absolute;right:2%;top:20%;">${element.role}</span>
+          <span style="position : absolute;right:2%;top:0%;">${element.role}</span>
         </div>
       </div>`
     ).join("")
+}
+
+function getChatUsers() {
+  fetch(`/chat-users?chatId=${encodeURIComponent(chatId)}`)
+  .then((response) => {
+    if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
+    return response.json()
+  })
+  .then((data) => {
+    const chatUserCount = data.userCount
+    const chatUserCountElement = createCustomElement("p", {
+      text: `${chatUserCount} members`,
+    })
+    navigatorElement.appendChild(chatUserCountElement);
+  })
+  .catch((error) => {
+    console.error("Failed to fetch chat user count:", error)
+  })
 }
 
 // END navigator 

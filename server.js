@@ -1,15 +1,16 @@
-const express = require("express");
-const socketIo = require("socket.io");
-const path = require("path");
-const sqlite3 = require("sqlite3").verbose();
-const bodyParser = require("body-parser");
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
-const multer = require("multer");
-const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
-const secretKey = 'C3%ke$lctd^eqcO7-xqxZSj%sca:^lu[FB#4e=9G@JyS?N<>VTLRYi:MD0"brK=';
-const app = express();
+const express = require("express")
+const socketIo = require("socket.io")
+const path = require("path")
+const fs = require('fs')
+const sqlite3 = require("sqlite3").verbose()
+const bodyParser = require("body-parser")
+const multer = require("multer")
+const jwt = require("jsonwebtoken")
+const cookieParser = require("cookie-parser")
+const secretKey = 'C3%ke$lctd^eqcO7-xqxZSj%sca:^lu[FB#4e=9G@JyS?N<>VTLRYi:MD0"brK='
+const bcrypt = require("bcrypt")
+const saltRounds = 10
+const app = express()
 
 // START https
 // open cmd in the main directory and enter this command openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
@@ -53,22 +54,44 @@ db.run(
   `CREATE TABLE IF NOT EXISTS chats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    profile_image TEXT
+    profile_image TEXT,
+    user_count INTEGER NOT NULL DEFAULT 0,
+    online_users INTEGER DEFAULT 0
   )`,
   (err) => {
     if (err) console.error("Error creating messages table:", err.message)
   }
-);
+)
+// to add basic chats when table was created 
+db.get(
+  `SELECT COUNT(*) AS count FROM chats`,
+  (err, row) => {
+    if (err) {
+      console.error("Error checking chats table:", err.message)
+      return
+    }
+    if (row.count === 0) createBasicChats()
+  }
+)
+
+function createBasicChats() {
+  const query = 'INSERT INTO chats (name) VALUES ("Main Chat"),("Exam")'
+
+  db.run(query, (err) => {
+    if (err) console.error("Error inserting basic chats:", err.message)
+    else     console.log("Basic chats created successfully.")
+  })
+}
 
 // Create messages table
 db.run(
   `CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    message TEXT,
+    message TEXT DEFAULT NULL,
     user_id INTEGER NOT NULL,
     chat_id INTEGER NOT NULL,
     reply_id INTEGER DEFAULT NULL,
-    file_path  TEXT DEFAULT NULL,
+    file_path TEXT DEFAULT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(chat_id) REFERENCES chats(id)
   )`,
@@ -123,7 +146,6 @@ const upload = multer({ storage: storage });
 
 // START user status
 
-//  how do i detect who is connected? 
 io.on("connection", (socket) => {
   const authHeader = socket.request.headers.cookie
   const token = authHeader && authHeader.split("=")[1]
@@ -159,7 +181,7 @@ io.on("connection", (socket) => {
 
 // END user status
 
-// Handle message submission and save to database
+// Handle message and file submission 
 app.post("/submit-message", upload.single("file"), (req, res) => {
   const { message, replyId , chatId} = req.body
   const filePath = req.file ? req.file.filename : null
@@ -232,6 +254,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
   })
 })
 
+// Handle deleting messages
 app.post("/delete-message", (req, res) => {
   const { messageId } = req.body
   const token = req.cookies.auth_token
@@ -579,14 +602,25 @@ app.get("/get-user-role", (req, res) => {
 
 
 // END user role 
-// make this a function that runs for the first time to create exam chat and main chat
-// const query = 'INSERT INTO chats (name) VALUES ("Exam")';
 
-// db.run(query)
 // START get chat name and users in chat 
 
+app.get("/chat-users", (req, res) => {
+  const { chatId } = req.query 
+
+  const query = 'SELECT user_id FROM chat_users WHERE chat_id = ?'
+  db.all(query, [chatId], (err,users) => {
+    if (err) {
+      console.error(err)
+      res.status(500).send("Error fetching chat details")
+      return
+    }
+    res.json({ userCount : users.length})
+  })
+})
+
 app.get("/chat-detail", (req, res) => {
-  const { chatId } = req.query;
+  const { chatId } = req.query
 
   const query = `
     SELECT users.id, users.username, users.status, users.role, users.profile_image
@@ -601,9 +635,20 @@ app.get("/chat-detail", (req, res) => {
       res.status(500).send("Error fetching chat details")
       return
     }
-    res.json(users)
+
+    db.get('SELECT name FROM chats WHERE id = ?', [chatId], (err, chat) => {
+      if (err) {
+        console.error(err)
+        res.status(500).send("Error fetching chat details")
+        return
+      }
+
+      res.json({
+        chatName : chat.name,
+        users
+      })
+    })
   })
 })
-
 
 // END get chat name and users in chat 
