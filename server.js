@@ -1,7 +1,6 @@
 const express = require("express")
 const socketIo = require("socket.io")
 const path = require("path")
-const fs = require('fs')
 const sqlite3 = require("sqlite3").verbose()
 const bodyParser = require("body-parser")
 const multer = require("multer")
@@ -11,12 +10,12 @@ const secretKey = 'C3%ke$lctd^eqcO7-xqxZSj%sca:^lu[FB#4e=9G@JyS?N<>VTLRYi:MD0"br
 const bcrypt = require("bcrypt")
 const saltRounds = 10
 const app = express()
+const fs = require('fs')
 
 // START https
 // open cmd in the main directory and enter this command openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
 
 // const https   = require('https');
-// const fs      = require('fs');
 // const options = {
 //   key: fs.readFileSync('key.pem'),
 //   cert: fs.readFileSync('cert.pem'),
@@ -268,11 +267,26 @@ app.post("/delete-message", (req, res) => {
     db.get(roleQuery, [user.userId], (err, row) => {
       if (err || !row || (row.role !== "owner" && row.role !== "admin")) return res.status(403).send("Unauthorized")
 
-      const deleteQuery = "DELETE FROM messages WHERE id = ?"
-      db.run(deleteQuery, [messageId], (err) => {
-        if (err) return res.status(500).send("Failed to delete message")
-        io.emit("delete message",{messageId : messageId})
-        res.status(200).send("Message deleted successfully")
+      // Check if the message has a file path
+      const fileCheckQuery = "SELECT file_path FROM messages WHERE id = ?"
+      db.get(fileCheckQuery, [messageId], (err, message) => {
+        if (err) return res.status(500).send("Error retrieving message")
+        if (!message) return res.status(404).send("Message not found")
+
+        // Delete the file if it exists
+        if (message.file_path) {
+          fs.unlink("uploads/"+message.file_path, (err) => {
+            if (err) console.error(`Failed to delete file: ${message.file_path}`, err)
+          })
+        }
+
+        // Delete the message from the database
+        const deleteQuery = "DELETE FROM messages WHERE id = ?"
+        db.run(deleteQuery, [messageId], (err) => {
+          if (err) return res.status(500).send("Failed to delete message")
+          io.emit("delete message", { messageId })
+          res.status(200).send("Message deleted successfully")
+        })
       })
     })
   })
@@ -599,7 +613,6 @@ app.get("/get-user-role", (req, res) => {
     })
   })
 })
-
 
 // END user role 
 

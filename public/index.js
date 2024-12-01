@@ -17,10 +17,10 @@
 // rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
+// add changing password in profile edit menu
 
 // priority 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/uploads/media
-// delete the file when a message is deleted 
 // ftp server
 
 // checking these before content is loaded 
@@ -137,7 +137,8 @@ function hideSideMenu() {
     id : "show-side-menu",
     className: "generic-button",
     HTML: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g><path d="M31.71,15.29l-10-10L20.29,6.71,28.59,15H0v2H28.59l-8.29,8.29,1.41,1.41,10-10A1,1,0,0,0,31.71,15.29Z"/></g></svg>`,
-    onClick: () => showSideMenu()})
+    onClick: () => showSideMenu()
+  })
 
   body.appendChild(showSideMenuButton)
   
@@ -675,13 +676,18 @@ let targetedElement
 let oldTargetedElement
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
-  if (document.getElementById("context-menu") && e.target.closest("#context-menu")) return
-
   const selection = window.getSelection();
   let selectedText = selection.toString().trim();
   targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
-  
-  if (targetedElement) {
+
+  // right click when user selects a text
+  if (selectedText) { 
+    selectedRange = selection.getRangeAt(0)
+    contextMenu(event,['copy'])
+  }
+
+  // when user right click on message container
+  else if (targetedElement) {
     let features = [`copyMessage` , 'reply' , 'hideMessage']
     if (targetedElement.querySelector(".sent"))       features.push("invertColor")
     if (userRole === "owner" || userRole === "admin") features.push("delete") 
@@ -690,32 +696,31 @@ document.addEventListener("contextmenu", function (e) {
     targetedElement.classList.add("highlighted-message")
     oldTargetedElement = targetedElement
   }
-
-  // right click when user select a text
-  if (selectedText) { 
-    selectedRange = selection.getRangeAt(0)
-    contextMenu(event,['copy'])
-  }
-
+  
   // right click on input
-  if (input === document.activeElement) {
+  else if (input === document.activeElement) {
     if (selectedText) contextMenu(e,['cut','copy',"paste"])
     else contextMenu(e,["paste"])
   }
 
   // right click on navigator 
-  if (e.target === navigatorElement){
+  else if (e.target === navigatorElement){
     contextMenu(e, ['hideNavigator'])
   }
+  // remove context menu if none of the conditions were true 
+  else removeExistingMenu()
 })
 
-function contextMenu(event,features) {
+function removeExistingMenu() {
   const existingMenu = document.getElementById("context-menu")
   if (existingMenu) {
     if (oldTargetedElement) oldTargetedElement.classList.remove("highlighted-message")
     existingMenu.remove()
   }
+}
 
+function contextMenu(event,features) {
+  removeExistingMenu()
   const contextMenuElement = document.createElement("div");
   contextMenuElement.id    = "context-menu"
   // add element depending on where user right clicks
@@ -1062,7 +1067,7 @@ async function chatDetail() {
   const response = await fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
   if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
   const data = await response.json()
-  console.log(data)
+
   createMenu(`
     <div id="menu-toolbar">${data.chatName}</div>
     <div class="users-container">
