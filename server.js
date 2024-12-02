@@ -146,37 +146,62 @@ const upload = multer({ storage: storage });
 // START user status
 
 io.on("connection", (socket) => {
-  const authHeader = socket.request.headers.cookie
-  const token = authHeader && authHeader.split("=")[1]
+  const authHeader = socket.request.headers.cookie;
+  const token = authHeader && authHeader.split("=")[1];
 
-  // Verify the JWT token
   jwt.verify(token, secretKey, (err, user) => {
-    if (err)   return socket.emit('error', { message: 'Forbidden: Invalid token' })
-    
-    const query = `UPDATE users SET status = ? WHERE id = ?`
-    db.run(query, ["online", user.userId], function(error) {
-      if (error) {
-        console.error('Error updating user status:', error);
-        return socket.emit('error', { message: 'Failed to update status in database'})
-      }
-      console.log(`User ${user.username} (${user.userId}) is now online`)
-    });
-    socket.on("disconnect", () => {
-      jwt.verify(token, secretKey, (err, user) => {
-        if (err)   return socket.emit('error', { message: 'Forbidden: Invalid token' });
-        
-        const query = `UPDATE users SET status = ? WHERE id = ?`
-        db.run(query, ["offline", user.userId], function(error) {
-          if (error) {
-            console.error('Error updating user status:', error)
-            return socket.emit('error', { message: 'Failed to update status in database' })
-          }
-          console.log(`User ${user.username} (${user.userId}) is now offline`)
-        }); 
-      });
-    });
+    if (err) {
+      socket.emit('error', { message: 'Forbidden: Invalid token' });
+      return
+    }
+
+    handleUserConnection(user, socket)
   })
 })
+
+const handleUserConnection = (user, socket) => {
+  updateUserStatus("online", user.userId, (err) => {
+    if (err) {
+      console.error('Error updating user status:', err)
+      return socket.emit('error', { message: 'Failed to update status in database' })
+    }
+
+    console.log(`User ${user.username} is now online`)
+    updateOnlineUsers(1, user.userId, (err) => {
+      if (err) console.error("Error updating online count:", err)
+    })
+
+    socket.on("disconnect", () => handleUserDisconnection(user))
+  })
+}
+
+const handleUserDisconnection = (user) => {
+  updateUserStatus("offline", user.userId, (err) => {
+    if (err) return console.error('Error updating user status:', err)
+
+    updateOnlineUsers(-1, user.userId, (err) => {
+      if (err) console.error("Error updating online count:", err)
+      console.log(`User ${user.username} is now offline`)
+    })
+  })
+}
+
+const updateUserStatus = (status, userId, callback) => {
+  const query = `UPDATE users SET status = ? WHERE id = ?`
+  db.run(query, [status, userId], callback)
+}
+
+const updateOnlineUsers = (increment, userId, callback) => {
+  const query = `
+    UPDATE chats
+    SET online_users = online_users + ?
+    WHERE id IN (
+      SELECT chat_id
+      FROM chat_users
+      WHERE user_id = ?
+    )`
+  db.run(query, [increment, userId], callback)
+}
 
 // END user status
 
@@ -333,7 +358,7 @@ app.get("/get-messages", (req, res) => {
 
     res.json(messages);
   });
-});
+})
 
 // START pagintion
 
@@ -452,7 +477,7 @@ app.post("/login", (req, res) => {
       res.status(200).json({ userId: user.id, username: user.username });
     });
   });
-});
+})
 
 // verify user on login
 app.get("/verify", (req, res) => {
@@ -485,7 +510,7 @@ app.get("/user-details", (req, res) => {
       }
     );
   });
-});
+})
 
 // Serve user's details
 app.get("/users-details", (req, res) => {
@@ -502,7 +527,7 @@ app.get("/users-details", (req, res) => {
       res.json(dbData);
     }
   );
-});
+})
 
 // Update user profile
 app.post("/update-profile", upload.single("profile_image"), (req, res) => {
@@ -621,14 +646,20 @@ app.get("/get-user-role", (req, res) => {
 app.get("/chat-users", (req, res) => {
   const { chatId } = req.query 
 
-  const query = 'SELECT user_id FROM chat_users WHERE chat_id = ?'
+  const query = 'SELECT user_id  FROM chat_users WHERE chat_id = ?'
   db.all(query, [chatId], (err,users) => {
-    if (err) {
-      console.error(err)
-      res.status(500).send("Error fetching chat details")
-      return
-    }
-    res.json({ userCount : users.length})
+    const chatQuery = 'SELECT online_users FROM chats WHERE id = ?'
+    db.get(chatQuery, [chatId], (err, chat) => {
+      console.log(chat)
+      if (err) {
+        console.error(err)
+        res.status(500).send("Error fetching chat details")
+        return
+      }
+      console.log(users)
+      res.json({ userCount : users.length})
+    })
+
   })
 })
 

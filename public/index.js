@@ -49,11 +49,11 @@ let chatId = 1
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
-const fileInput        = document.getElementById('file')
 const sideMenu         = document.getElementById("side-menu")
-const messageContainer = document.getElementById("messages")
+const fileInput        = document.getElementById('file')
 const chatContainer    = document.getElementById("chat")
-const scrollDownButton =  document.getElementById("scroll-down")
+const messageContainer = document.getElementById("messages")
+const scrollDownButton = document.getElementById("scroll-down")
 
 socket.on('chat message', (message) => {
   // this part can be optimized a lot more using DocumentFragment
@@ -360,14 +360,12 @@ function createMenu(content) {
 // END creating menu 
 
 // Fetch and display user details
-document.addEventListener("click", async (event) => {
-  if (event.target.classList.contains('username')) {
-    const userId = event.target.getAttribute('data-user-id');
-    try {
-      const response = await fetch(`/users-details?id=${encodeURIComponent(userId)}`)
-      if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
-      const user = await response.json()   
-      createMenu(`
+async function getUsersDetail(userId) {
+  try {
+    const response = await fetch(`/users-details?id=${encodeURIComponent(userId)}`)
+    if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
+    const user = await response.json()
+    createMenu(`
       <div id="menu-toolbar">User Info</div>
         <div class="user-info-container">
           <img class="user-image" src="/uploads/${user.profile_image}" alt="">
@@ -377,12 +375,19 @@ document.addEventListener("click", async (event) => {
             <p class="user-detail">Role : ${user.role}</p>
             <p class="user-detail">Status : ${user.status}</p>
           </div>
-        </div>`)
-    } catch (error) {
-      console.error('Error fetching user details:', error)
-    }
+        </div>`
+    )
+  } catch (error) {
+    console.error('Error fetching user details:', error)
   }
-});
+}
+
+document.addEventListener("click", async (event) => {
+  if (event.target.classList.contains('username')) {
+    const userId = event.target.getAttribute('data-user-id')
+    getUsersDetail(userId)
+  }
+})
 
 // Toggle Off functionality
 let toggleOff = false
@@ -1074,6 +1079,12 @@ async function chatDetail() {
       ${displayUsers(data.users)}
     </div>
   `)
+
+  // remove this after the menu has been closed
+  document.addEventListener("click", (e) => {
+    const userId = e.target.closest(".user-container")?.querySelector(".username").getAttribute("data-user-id")
+    if (userId) getUsersDetail(userId) 
+  })
 }
 
 function displayUsers(users) {

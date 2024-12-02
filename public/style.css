@@ -411,8 +411,9 @@ button{
     background-color: var(--third-background);
     cursor: pointer;
 }
-.message-text p {
+.message-text{
     overflow-wrap: break-word;
+    direction: rtl;
 }
 #reply-container{
     position: absolute;
