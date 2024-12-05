@@ -3,7 +3,6 @@
 // add notification and add toggle for it 
 // allow sending multiple files
 // add search
-// add who is online or offline with good UI
 // add customiztation
 // add custom background image 
 // make exam chat and other chats functional 
@@ -22,6 +21,7 @@
 // priority 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/uploads/media
 // ftp server
+// add safemode for future
 
 // checking these before content is loaded 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
@@ -287,41 +287,51 @@ function scrollToMessage(replyId) {
 
 // change chat id 
 async function sendMessage(userMessage, replyId = null, chatId = 1) {
-  const message = userMessage.trim();
-  const hasFile = fileInput && fileInput.files.length > 0;
+  const message = userMessage.trim()
+  const hasFile = fileInput && fileInput.files.length > 0
 
-  if (!message && !hasFile) return;
+  if (!message && !hasFile) return
 
   try {
-    const fetchOptions = {
-      method: 'POST',
-      credentials: 'include', 
-    };
+    const progressBar = document.getElementById('progress-bar')
+    progressBar.style.display = 'block'
 
-    if (hasFile) {
-      const formData = new FormData()
-      formData.append('message', message)
-      formData.append('replyId', replyId)
-      formData.append('chatId', chatId)
-      formData.append('file', fileInput.files[0])
-      fetchOptions.body = formData;
-    } else {
-      fetchOptions.headers = { 'Content-Type': 'application/json' };
-      fetchOptions.body = JSON.stringify({ message, replyId, chatId });
+    const xhr = new XMLHttpRequest()
+    const url = '/submit-message'
+    xhr.open('POST', url, true)
+    xhr.withCredentials = true
+
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100)
+        progressBar.value = percentComplete
+        progressBar.textContent = `${percentComplete}%`
+      }
+    })
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        progressBar.style.display = 'none'
+        input.value = ''
+        if (hasFile) fileInput.value = ''
+        if (document.getElementById('reply-container')) removeReply()
+        scrollToBottom(true)
+      }
+      else console.error('Error uploading file:', xhr.responseText)
     }
 
-    const response = await fetch('/submit-message', fetchOptions)
+    xhr.onerror = () => {
+      console.error('Error submitting message')
+    }
 
-    if (!response.ok) throw new Error(`Error: ${response.statusText}`)
+    const formData = new FormData()
+    formData.append('message', message)
+    formData.append('replyId', replyId)
+    formData.append('chatId', chatId)
+    if (hasFile) formData.append('file', fileInput.files[0])
 
-    const data = await response.json()
-
-    input.value = ''
-    if (hasFile) fileInput.value = ''
-    if (document.getElementById('reply-container')) removeReply()
-    scrollToBottom(true)
-  } 
-  catch (error) {
+    xhr.send(formData)
+  } catch (error) {
     console.error('Error submitting message:', error)
   }
 }
@@ -491,12 +501,20 @@ async function settingButtonSetup() {
             <br>
             <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
             <label for="exam-mode-brightness">brightness</label>
+
+
+            <br>
+            <br>
+            <input type="checkbox" id="remove-background" class="checkbox custom-checkbox">
+            <label for="remove-background">remove background</label>
+
+
           </form>
         </div>`)
 
       examModeInit()
       const examModeConfig = document.getElementById("exam-mode-config")
-      examModeConfig.addEventListener("input", ()=>applyFilters() )
+      examModeConfig.addEventListener("input", () => applyFilters())
 
       // START edit profile
 
@@ -961,6 +979,7 @@ socket.on("connect"   , () => updateConnectionStatus("online"))
 
 function examModeInit() {
   document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
+  document.getElementById("remove-background").checked = localStorage.getItem("removeBackground") === "true"
   document.getElementById("exam-mode-gray-scale").checked = localStorage.getItem("grayScale") ==="true"
   document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
 }
@@ -973,33 +992,37 @@ function applyFilters() {
     const examMode   = examModeElement.checked 
     const grayScale  = document.getElementById("exam-mode-gray-scale").checked
     const brightness = document.getElementById("exam-mode-brightness").value
+    const removeBackground = document.getElementById("remove-background").checked
     
     // applying filter and saving config
-    examModeFilter(examMode,grayScale,brightness)
-    examConfig("set", { examMode, grayScale, brightness})
+    examModeFilter(examMode,grayScale,brightness,removeBackground)
+    examConfig("set", { examMode, grayScale, brightness, removeBackground})
   } 
   else {
-    const { examMode , grayScale , brightness} = examConfig("get")
-    if (examMode)  examModeFilter(examMode,grayScale,brightness)
+    const { examMode , grayScale , brightness, removeBackground} = examConfig("get")
+    if (examMode)  examModeFilter(examMode,grayScale,brightness,removeBackground)
   }
 }
 
-function examModeFilter(examMode,grayScale,brightness) {
+function examModeFilter(examMode, grayScale, brightness, removeBackground) {
   const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
   const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
   body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter}`.trim() : ""
+  removeBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
 }
 
-function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = ""}={}) {
+function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = "", removeBackground = ""}={}) {
   if (setOrGet==="set") {
   localStorage.setItem("examMode" ,examMode)  
   localStorage.setItem("grayScale",grayScale)  
   localStorage.setItem("brightness",brightness)  
+  localStorage.setItem("removeBackground",removeBackground)  
   }
   else if (setOrGet === "get") {
     return {
       examMode: JSON.parse(localStorage.getItem("examMode")   || "false"),
       grayScale: JSON.parse(localStorage.getItem("grayScale") || "false"),
+      removeBackground: JSON.parse(localStorage.getItem("removeBackground") || "false"),
       brightness: localStorage.getItem("brightness") || "100"
     };
   }
@@ -1066,10 +1089,11 @@ navigatorElement = createCustomElement("div", {
 })
 
 chatContainer.appendChild(navigatorElement)
-getChatUsers()
+// not good remove later
+setTimeout(()=>getChatUsers() , 200)
 
 async function chatDetail() {
-  const response = await fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
+  const response = await fetch(`/chat-users?chatId=${encodeURIComponent(chatId)}`)
   if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
   const data = await response.json()
 
@@ -1103,7 +1127,7 @@ function displayUsers(users) {
 }
 
 function getChatUsers() {
-  fetch(`/chat-users?chatId=${encodeURIComponent(chatId)}`)
+  fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
   .then((response) => {
     if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
     return response.json()
@@ -1111,7 +1135,7 @@ function getChatUsers() {
   .then((data) => {
     const chatUserCount = data.userCount
     const chatUserCountElement = createCustomElement("p", {
-      text: `${chatUserCount} members`,
+      text: `${chatUserCount} members,` + ` ${data.onlineUsers} online`,
     })
     navigatorElement.appendChild(chatUserCountElement);
   })

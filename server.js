@@ -145,6 +145,16 @@ const upload = multer({ storage: storage });
 
 // START user status
 
+// reset chat and user status
+function resetStatus() {
+  const usersQuery = 'UPDATE users SET status = "offline"'
+  const chatQuery  = 'UPDATE chats SET online_users = 0'
+  db.run(usersQuery)
+  db.run(chatQuery)
+}
+
+resetStatus()
+
 io.on("connection", (socket) => {
   const authHeader = socket.request.headers.cookie;
   const token = authHeader && authHeader.split("=")[1];
@@ -158,7 +168,10 @@ io.on("connection", (socket) => {
     handleUserConnection(user, socket)
   })
 })
-
+// idk
+// io.emit("update chat detail"), () => {
+//   getChatDetail()
+// }
 const handleUserConnection = (user, socket) => {
   updateUserStatus("online", user.userId, (err) => {
     if (err) {
@@ -643,27 +656,28 @@ app.get("/get-user-role", (req, res) => {
 
 // START get chat name and users in chat 
 
-app.get("/chat-users", (req, res) => {
+function getChatDetail(req, res) {
   const { chatId } = req.query 
 
   const query = 'SELECT user_id  FROM chat_users WHERE chat_id = ?'
   db.all(query, [chatId], (err,users) => {
     const chatQuery = 'SELECT online_users FROM chats WHERE id = ?'
     db.get(chatQuery, [chatId], (err, chat) => {
-      console.log(chat)
       if (err) {
         console.error(err)
         res.status(500).send("Error fetching chat details")
         return
       }
-      console.log(users)
-      res.json({ userCount : users.length})
+      res.json({ userCount : users.length, onlineUsers : chat.online_users})
     })
-
   })
-})
+}
 
 app.get("/chat-detail", (req, res) => {
+  getChatDetail(req, res)
+})
+
+app.get("/chat-users", (req, res) => {
   const { chatId } = req.query
 
   const query = `

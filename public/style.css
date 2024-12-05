@@ -1,4 +1,4 @@
-:root{
+:root {
     --main-blur             : rgb(13, 65, 0);
     --main-border           : rgb(0, 138, 53);
     --main-background-color : rgb(0, 0, 0);
@@ -7,12 +7,10 @@
     --border-focus          : rgb(0, 199, 76);
     --blur-focus            : rgb(0, 90, 35);
 
-    --secondary-color       : rgb(0,0,0);
     --secondary-background  : rgb(31, 31, 31);
 
     --highlight-color       : rgb(0, 168, 36);
     --highlight-color-hover : rgb(0, 209, 45); 
-    --highlight-background  : rgb(0, 0, 0);
 
     --third-background      : rgb(50,50,50);
 
@@ -21,31 +19,28 @@
 
     --reply-background      :rgb(27, 51, 33);
 
-    /* --offline-bg : rgb(90, 90, 90);
-    --online-bg  : rgb(0, 182, 30); */
-
     --short-transition : 200ms;
     --long-transition  : 500ms;
     
     --button-size : 40px;
 }
-*{
+* {
     margin: 0;
     padding: 0;
     color: var(--main-color);
     scrollbar-width: thin;
     scrollbar-color: var(--main-border) var(--secondary-background);
 }
-body{
+body {
     background-color: var(--main-background-color);
     overflow: hidden;
     height: 100vh !important;
 }
 ::selection {
     color: var(--highlight-color);
-    background-color: var(--highlight-background)
+    background-color: var(--main-background-color)
 }
-input{
+input {
     caret-color: rgb(107, 177, 107)             !important;
     background-color: var(--secondary-background) !important;
     border: solid 2px var(--main-border)          !important;
@@ -54,7 +49,7 @@ input{
     font-size: 16px;
     display: block;
 }
-input:focus{
+input:focus {
     outline: none;
     border: solid 2px var(--border-focus)      !important;
     box-shadow: 0 0 20px 5px var(--blur-focus) !important;
@@ -63,42 +58,41 @@ svg path {
     fill: var(--main-color) ; 
     transition: all var(--short-transition);
 }
-svg:hover path{
+svg:hover path {
     fill: var(--main-border) !important; 
 }
-svg:active path{
+svg:active path {
     fill: var(--border-focus) !important; 
 }
-button{
+button {
     background-color: transparent;
     border: none;
     cursor: pointer;
 }
-.generic-button{
+.generic-button {
     border-radius: 50px;
     border: solid 1px var(--main-border);
     background-color: var(--secondary-background);
     transition: all var(--short-transition);
 }
-.generic-button:hover{
+.generic-button:hover {
     color: var( --highlight-color-hover);
     box-shadow: 0 0 15px var(--main-blur);
 }
-.generic-button:active{
+.generic-button:active {
     box-shadow: 0 0 15px var(--main-blur);
 }
-.main-container{
+.main-container {
     display: flex;
     height: 100vh;
 }
-#side-menu{
+#side-menu {
     width: 20%;
     overflow: hidden;
 }
-#chat{
+#chat {
     flex: 1;
     max-height: 100vh;
-    background-image: url(Images/Main/weed-leaf-led-neon-sign-120113.jpg);
     background-size: cover;
     background-repeat: no-repeat;
 }
@@ -109,15 +103,15 @@ button{
     width: 0.2%;
     transition: all var(--short-transition);
 }
-#divider:hover{
+#divider:hover {
     background-color: var(--border-focus);
     cursor: e-resize;
 }
-#divider:active{
+#divider:active {
     box-shadow: 0 0 15px 10px var(--blur-focus);
     cursor: e-resize;
 }
-#form{
+#form {
     position: absolute;
     bottom: 3%;
     height: 7%;
@@ -125,14 +119,14 @@ button{
     width: -webkit-fill-available;
     display: flex;
 }
-#input{
+#input {
     padding: 0 2%;
     width: 80%;
     height: 100%;
     border-radius: 50px;
     margin-left: 11.25px; 
 }
-#messages{
+#messages {
     width: 100%;
     margin-top: 50px;
     max-height: calc(90% - 50px);
@@ -140,14 +134,14 @@ button{
     overflow-x: hidden;
     transition: all var(--long-transition);
 }
-.message-container{
+.message-container {
     display: flex;
     transition: all var(--short-transition);
 }
-.message{
+.message {
     padding: 1% 0;
 }
-.message-content{
+.message-content {
     background-color:var(--secondary-background) ;
     border: solid 1px var(--main-border);
     max-width:80%;
@@ -156,28 +150,28 @@ button{
     border-bottom-left-radius: 0;
     box-shadow: 0 0 15px 5px var(--main-blur);
 }
-.user-profile{
+.user-profile {
     width:  50px;
     border-radius: 25px;
 }
-.message-profile{
+.message-profile {
     position: relative;
     width: 75px;
     display: flex;
     align-items: end;
     justify-content: center;
 }
-.username{
+.username {
     display: flex;
     color: var(--highlight-color);
     margin-bottom: 10px;
     cursor: pointer;
     transition: all var(--short-transition);
 }
-.username:hover{
+.username:hover {
     color: var(--highlight-color-hover);
 }
-#blur-overlay{
+#blur-overlay {
     background-color: rgba(0, 0, 0, 0.69);
     backdrop-filter: blur(10px);
     width: 100%;
@@ -186,12 +180,12 @@ button{
     z-index: 10;
     display: none;
 }
-#close-blur-overlay{
+#close-blur-overlay {
     width:  5%;
     position: absolute;
     right: 2%;
 }
-.menu{
+.menu {
     position: relative;
     background-color: var(--secondary-background);
     width: 40%;
@@ -201,18 +195,18 @@ button{
     border: 2px solid var(--main-border) ;
     box-shadow: 0 0 25px var(--main-blur);
 }
-.user-info-container{
+.user-info-container {
     display: flex;
     flex-wrap: wrap;
 }
 .user-image {
     width: 100px;
 }
-.user-detail{
+.user-detail {
     padding: 1%;
     font-size: 20px;
 }
-#off{
+#off {
     display: none;
     position: absolute;
     width: 100%;
@@ -220,10 +214,10 @@ button{
     z-index: 100;
     background-color: black;
 }
-#more{
+#more {
     rotate: 90deg;
 }
-#more-menu{
+#more-menu {
     background-color: var(--secondary-background);
     width:200px ;
     position: absolute;
@@ -235,50 +229,56 @@ button{
     transition: all var(--short-transition);
     display: none;
 }
-.more-menu-item{padding: 6%;transition: all var(--short-transition);cursor: pointer;}
-.more-menu-item:hover{color: var( --highlight-color-hover);}
-#setting-button{
+.more-menu-item {
+    padding: 6%;
+    transition: all var(--short-transition);
+    cursor: pointer;
+}
+.more-menu-item:hover {
+    color: var( --highlight-color-hover);
+}
+#setting-button {
     width: var(--button-size);
     transition: all var(--short-transition);    
 }
-#setting-button:hover{
+#setting-button:hover {
     rotate: 45deg;
 }
-#edit-profile-button{
+#edit-profile-button {
     position: absolute;
     right: 8%;
     width: 6.5%;
     transition: all var(--short-transition);
 }
-#submit-text{
+#submit-text {
     width: 75%;
     margin: 5% 0 0 5%;
     padding: 2%;
     display: initial !important;
     border-radius: 69420px;
 }
-#submit-pre-written-text-button{
+#submit-pre-written-text-button {
     background-color: var(--secondary-background);
     padding: 2% 1.5%;
     border: solid 2px var(--main-border);
     border-radius: 1005px ;
     transition: all var(--short-transition);
 }
-#submit-pre-written-text-button:hover{
+#submit-pre-written-text-button:hover {
     border: solid 2px var(--border-focus);
     box-shadow: 0 0 15px var(--main-blur);
 }
-#submit-pre-written-text-button:active{
+#submit-pre-written-text-button:active {
     box-shadow: 0 0 15px var(--border-focus);
 }
-#PWT-container{
+#PWT-container {
     max-height: 80%;
     display: flex;
     flex-wrap: wrap;
     overflow-y: auto;
     overflow-x: hidden;
 }
-.pre-written-text{
+.pre-written-text {
     max-width: 85%;
     overflow-wrap: break-word;
     margin: 3% 0 0 5%;
@@ -293,14 +293,14 @@ button{
     -ms-user-select: none;     /* IE10+/Edge */
     user-select: none;         /* Standard */
 }
-.pre-written-text:hover{
+.pre-written-text:hover {
     border-color:  var(--border-focus);
     box-shadow: 0 0 5px 5px var(--main-blur);
 }
-.pre-written-text:active{
+.pre-written-text:active {
     box-shadow: 0 0 15px 5px var(--blur-focus);
 }
-#menu-toolbar{
+#menu-toolbar {
     padding: 2%;
     display: flex;
     width: 96%;
@@ -309,21 +309,22 @@ button{
     font-size: 30px;
     color: var( --highlight-color);
 }
-.side-menu-toolbar{
+.side-menu-toolbar {
     position: relative;
     display: flex;
-    padding: 10px 20px;
+    padding: 5px 20px;
+    height: 40px;
 }
-#config-button{
+#config-button {
     width: var(--button-size);
     position: absolute;
     right: 2%;
     transition: all 2000s;
 }
-#config-button:hover{
+#config-button:hover {
     rotate: 9000000deg;
 }
-#close-menu{
+#close-menu {
     width: var(--button-size);
 }
 .side-menu-item {
@@ -333,38 +334,35 @@ button{
     border-bottom: 1px var(--main-border) solid;
 }
 #games {
-    border: 2px solid transparent; 
-    background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
-    background-size: 300%;
-    background-clip: border-box; /* Show gradient on the border */
-    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 0.9); /* Add transparency for a softer inner background */
-
-    animation: rainbow 3s linear infinite alternate;
+    border: 1px solid transparent; 
+    background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet,red);
+    background-size: 200% 200%;
+    background-clip: border-box;
+    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 1);
+    animation: rainbow 3s linear infinite ;
 }
-
 #games:hover {
-    /* if its white it looks cool too */
-    /* box-shadow: inset 0 0 15px 100px rgba(255, 255, 255, 0.5); */
-    box-shadow: inset 0 0 15px 100px rgba(0, 0, 0, 0.5);
+    animation: rainbow .5s linear infinite ;
+
 }
 @keyframes rainbow {
     0% {
-        background-position: 0%;
+        background-position: 0% 50%;
     }
     100% {
-        background-position: 100%;
+        background-position: 200% 50%;
     }
 }
-.side-menu-item:hover{
+.side-menu-item:hover {
     cursor: pointer;
     color: var(--highlight-color);
     background-color: var(--secondary-background);
 }
-.selected-chat{
+.selected-chat {
     background-color: rgb(19, 63, 19) !important;
     border-bottom: 2px var(--border-focus) solid;
 }
-#scroll-down{
+#scroll-down {
     width:  40px;
     height: 40px;
     position: fixed;
@@ -376,14 +374,14 @@ button{
     background-color: var(--main-background-color);
     transition: all var(--short-transition);
 }
-#scroll-down:hover{
+#scroll-down:hover {
     color: var( --highlight-color-hover);
     box-shadow: 0 0 15px var(--main-blur);
 }
-#scroll-down:active{
+#scroll-down:active {
     box-shadow: 0 0 25px 5px var(--main-blur);
 }
-#context-menu{
+#context-menu {
     transition: all var(--short-transition);
     min-width: 100px;
     background-color: var(--secondary-background);
@@ -402,20 +400,20 @@ button{
         scale : 1;
     }
 }
-.right-click-item{
+.right-click-item {
     border-bottom: 1px solid var(--main-border) ;
     transition: all var(--short-transition);
     padding: 8px 12px;
 }
-.right-click-item:hover{
+.right-click-item:hover {
     background-color: var(--third-background);
     cursor: pointer;
 }
-.message-text{
+.message-text {
     overflow-wrap: break-word;
     direction: rtl;
 }
-#reply-container{
+#reply-container {
     position: absolute;
     background-color: var(--secondary-background);
     border: solid 2px var(--border-focus);
@@ -429,75 +427,75 @@ button{
     padding: 0 2%;
     transition: all var(--short-transition);
 }
-#close-reply{
+#close-reply {
     width : 2.5%;
     height: 2.5%;
     position: absolute;
     right: 3%;
     top: 25%;
 }
-.form-button{
+.form-button {
     transition: all var(--short-transition);
     width : 3%;
     margin: .5%;
 }
-.reply-username{
+.reply-username {
     color: var( --highlight-color);
     margin-top: 0.8%;
 }
-.reply-text{
+.reply-text {
     margin-top: 0.3%;   
 }
 .highlighted-message{
     box-shadow: 0 0 25px var(--selected-message-blur);
     background-color: var(--selected-message-bg);
 }
-.highlighted-text{
+.highlighted-text {
     color: var(--highlight-color);
 }
-.replied-message-container{
+.replied-message-container {
     cursor: pointer;
     background-color: var(--reply-background);
     border-radius: 15px;
     padding: 10px;
 }
-.replied-username{
+.replied-username {
     color: var( --highlight-color);
     min-width: 100px;
     margin-bottom: 4%;
 }
-.replied-text{
+.replied-text {
     overflow-wrap: break-word;
 }
-.sent{
+.sent {
     max-width: 100%;
     margin-bottom: 1%;
 }
 /* edit profile (combine in future) */
-#edit-profile-header{
+#edit-profile-header {
     color: var( --highlight-color);
     text-align: center;
     margin: 2% 0;
 }
-.new-profile-input{
+.new-profile-input {
     margin: 4% 2.5%;
     border-radius: 50px;
     height: fit-content;
     width: 90%;
     padding: 2%;
 }
-#update-profile{
+#update-profile {
     bottom: 5%;
     left: 3%;
     position: absolute;
     padding: 2%;
 }
-.profile-preview{
+.profile-preview {
     margin: 0 2.5%;
     margin-top: 2%;
     width: 22%;
 }
-#notify{
+#notify {
     width: -moz-available;
     width: -webkit-fill-available;
     position: absolute;
@@ -522,29 +520,31 @@ button{
     }
 }
 /* can add padding to menu to prevent repeating the same thing */
-.note-container{
+.note-container {
     padding: 2%;
     font-style: italic;
 }
-.config-container{
+.config-container {
     padding: 2%;
 }
-.checkbox{
+.checkbox {
     display: initial;
 }
-#pwt-deck{
+#pwt-deck {
     width: 100%;
     text-align: center;
     padding: 2%;
 }
-#file{
+#file {
     display: none;
 }
-.block { display: block !important }
-#PWT-header{
+.block { 
+    display: block !important 
+}
+#PWT-header {
     height: 20%;
 }
-#disconnected{
+#disconnected {
     position: absolute;
     top: 5%;
     left: 15%;
@@ -557,47 +557,36 @@ button{
     transition: all var(--long-transition);
     padding: 1%;
 }
-.connected{
+.connected {
     background-color:var(--secondary-background) !important;
     box-shadow: 0 0 15px var(--main-blur)        !important;
     border: solid var(--main-border) 2px         !important;
     animation: fadeOut 5s;
 }
 @keyframes fadeOut {
-    70%{
+    70% {
         opacity: 1;
     }
-    100%{
+    100% {
         opacity: 0;
     }
 }
-/* .user-status{
-    width : 10px;
-    height: 10px;
-    border-radius: 10px;
-}
-.offline{
-    background-color: var(--offline-bg);
-}
-.online{
-    background-color: var(--online-bg);
-} */
 #user-profile-image { 
     width: 20%;
     margin: 0 3%;
  }
-#user-profile-image img{
+#user-profile-image img {
     width: 100%;
     border-radius: 200px;
 }
-#user-profile-detail{
+#user-profile-detail {
     width: 74%;
 }
-#exam-mode-config{
+#exam-mode-config {
     width: 100%;
     padding: 2%;
 }
-#show-side-menu{
+#show-side-menu {
     background-color: var(--main-background-color);
     width : var(--button-size);
     height: var(--button-size);
@@ -630,7 +619,7 @@ button{
         transform: translateX(1000px);
     }
 }
-#unseen-messages{
+#unseen-messages {
     position: absolute;
     width: 20px;
     top : -30%;
@@ -641,7 +630,7 @@ button{
     border: solid 1px var(--main-border);
     font-size: 16px;
 }
-#navigation-bar{
+#navigation-bar {
     background-color: var(--main-background-color);
     border-bottom: solid 1px var(--main-border);
     position: fixed;
@@ -653,7 +642,7 @@ button{
     z-index: 1;
     transition: all var(--short-transition);
 }
-#navigation-bar:hover{
+#navigation-bar:hover {
     border-bottom: solid 1px var(--border-focus);
 }
 .user-container {
@@ -662,7 +651,7 @@ button{
     display: flex;
     cursor: pointer;
     transition: all var(--short-transition);
-    margin: 1% 0;
+    padding: 1% 0;
 }
 .user-container:hover {
     background-color: var(--third-background);
@@ -671,4 +660,10 @@ button{
     position: relative;
     margin-left: 2%;
     width: 100%;
+}
+#progress-container {
+
+}
+progress::-moz-progress-bar { 
+    background-color: var(--highlight-background); 
 }
