@@ -661,9 +661,21 @@ button {
     margin-left: 2%;
     width: 100%;
 }
-#progress-container {
-
+#progress-bar {
+    position: absolute;
+    border-radius: 30px;
+    width: 10%;
+    height: 40%;
+    background-color: var(--third-background);
+    border: solid 1px var(--border-focus);
+    left: calc(84% - 10% - 10px);
+    top: 30%;
 }
-progress::-moz-progress-bar { 
-    background-color: var(--highlight-background); 
+#progress-bar::-moz-progress-bar { 
+    background-color: var(--highlight-color); 
+    border-radius: 30px;
+}
+.upload-warning {
+    border: 1px rgb(255, 56, 56) solid   !important;
+    box-shadow: 0 0 25px rgb(255, 71, 71)!important;
 }

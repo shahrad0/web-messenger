@@ -45,6 +45,7 @@ let socket = io()
 let replyId
 let userRole
 let unseenMessages = 0
+let isUploading = false
 let chatId = 1
 const body             = document.body
 const form             = document.getElementById('form')
@@ -287,31 +288,45 @@ function scrollToMessage(replyId) {
 
 // change chat id 
 async function sendMessage(userMessage, replyId = null, chatId = 1) {
+  if (isUploading) {
+    input.classList.add("upload-warning")
+    setTimeout(() => {
+      input.classList.remove("upload-warning")
+    }, 5000)
+    return
+  }
   const message = userMessage.trim()
   const hasFile = fileInput && fileInput.files.length > 0
 
   if (!message && !hasFile) return
 
   try {
-    const progressBar = document.getElementById('progress-bar')
-    progressBar.style.display = 'block'
-
+    isUploading = true
     const xhr = new XMLHttpRequest()
     const url = '/submit-message'
     xhr.open('POST', url, true)
     xhr.withCredentials = true
 
-    xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) {
-        const percentComplete = Math.round((event.loaded / event.total) * 100)
-        progressBar.value = percentComplete
-        progressBar.textContent = `${percentComplete}%`
-      }
-    })
+    let progressBar
+    if (hasFile) {
+      progressBar = createCustomElement("progress", {
+        id : "progress-bar",
+      })
+      progressBar.max = 100
+      progressBar.value = 0
+      form.appendChild(progressBar)
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100)
+          progressBar.value = percentComplete
+          progressBar.textContent = `${percentComplete}%`
+        }
+      })
+    }
 
     xhr.onload = () => {
+      progressBar?.remove()
       if (xhr.status === 200) {
-        progressBar.style.display = 'none'
         input.value = ''
         if (hasFile) fileInput.value = ''
         if (document.getElementById('reply-container')) removeReply()
