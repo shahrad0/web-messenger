@@ -1,7 +1,6 @@
 // things to add or do
 // polishing the code (for css too)(this is always going to be the goal)
 // add notification and add toggle for it 
-// allow sending multiple files
 // add search
 // add customiztation
 // add custom background image 
@@ -234,7 +233,7 @@ function loadMessages() {
 function messageTemplate(message) {
   // reply
   let replySection = ''
-  let file = ''
+  let files = ''
   if (message.replyId && message.repliedMessage && message.repliedUsername) 
     replySection = `
     <div class="replied-message-container" data-reply-id="${message.replyId}" onclick="scrollToMessage(${message.replyId})">
@@ -243,13 +242,16 @@ function messageTemplate(message) {
     </div>`
 
   // files
-  if (message.filePath) {
-    const fileExt = message.filePath.split('.').pop().toLowerCase();
-    if (['jpeg', 'jpg', 'png'].includes(fileExt)) file = `<img            src="uploads/${message.filePath}" class="sent image">`
-    else if (['mp4', 'avi'].includes(fileExt))    file = `<video controls src="uploads/${message.filePath}" class="sent video"></video>`
-    else if (fileExt === 'pdf')                   file = `<object        data="uploads/${message.filePath}" class="sent pdf" width="8000px" height="700px"></object>`
-    // temp solution add rar and music 
-    else  file = `<a href="uploads/${message.filePath}">free robux</a>`
+  if (message.filePaths && Array.isArray(message.filePaths)) {
+    files = message.filePaths
+      .map(filePath => {
+        const fileExt = filePath.split('.').pop().toLowerCase()
+        if (['jpeg', 'jpg', 'png'].includes(fileExt)) return `<img src="uploads/${filePath}" class="sent image">`
+        else if (['mp4', 'avi'].includes(fileExt)) return `<video controls src="uploads/${filePath}" class="sent video"></video>`
+        else if (fileExt === 'pdf') return `<object data="uploads/${filePath}" class="sent pdf" width="8000px" height="700px"></object>`
+        else return `<a href="uploads/${filePath}">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</a>`
+      })
+      .join('')
   }
 
   // message
@@ -262,7 +264,7 @@ function messageTemplate(message) {
         <div class="message-content">
           <div class="username" data-user-id="${message.userId}">${message.username}</div>
           ${replySection}
-          ${file}
+          ${files}
           <div class="message-text" data-message-id="${message.messageId}">
             ${message.message ? message.message : ""}
           </div>
@@ -290,9 +292,7 @@ function scrollToMessage(replyId) {
 async function sendMessage(userMessage, replyId = null, chatId = 1) {
   if (isUploading) {
     input.classList.add("upload-warning")
-    setTimeout(() => {
-      input.classList.remove("upload-warning")
-    }, 5000)
+    setTimeout(() => input.classList.remove("upload-warning"), 5000)
     return
   }
   const message = userMessage.trim()
@@ -327,6 +327,7 @@ async function sendMessage(userMessage, replyId = null, chatId = 1) {
     xhr.onload = () => {
       progressBar?.remove()
       if (xhr.status === 200) {
+        isUploading = false
         input.value = ''
         if (hasFile) fileInput.value = ''
         if (document.getElementById('reply-container')) removeReply()
@@ -343,8 +344,11 @@ async function sendMessage(userMessage, replyId = null, chatId = 1) {
     formData.append('message', message)
     formData.append('replyId', replyId)
     formData.append('chatId', chatId)
-    if (hasFile) formData.append('file', fileInput.files[0])
-
+    if (hasFile) {
+      for (const file of fileInput.files) {
+        formData.append('file', file)
+      }
+    }
     xhr.send(formData)
   } catch (error) {
     console.error('Error submitting message:', error)
@@ -894,14 +898,17 @@ function hideMessage(count = null) {
 }
 
 function invertColor() {
-  const elementFilter = targetedElement.querySelector(".sent")
-  if (elementFilter.tagName === "OBJECT") {
-    // failed attempt at inverting just the pdf pages not the whole pdf
-    elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
-  } 
-  else {
-    elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
-  }
+  const elements = targetedElement.querySelectorAll(".sent")
+  elements.forEach(element => {
+    element.style.filter ? element.style.filter = "" : element.style.filter = "invert()"
+  });
+  // if (elementFilter.tagName === "OBJECT") {
+  //   // failed attempt at inverting just the pdf pages not the whole pdf
+  //   elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+  // } 
+  // else {
+    // elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
+  // }
 }
 
 // this can be combined with other function in future 

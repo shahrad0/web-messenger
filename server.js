@@ -219,25 +219,25 @@ const updateOnlineUsers = (increment, userId, callback) => {
 // END user status
 
 // Handle message and file submission 
-app.post("/submit-message", upload.single("file"), (req, res) => {
-  const { message, replyId , chatId} = req.body
-  const filePath = req.file ? req.file.filename : null
+app.post("/submit-message", upload.array("file", 5), (req, res) => {
+  const { message, replyId, chatId } = req.body;
+  const filePaths = req.files ? req.files.map(file => file.filename) : [];
 
-  const query = `INSERT INTO messages (message, user_id, chat_id, reply_id, file_path) VALUES (?, ?, ?, ?, ?)`
-  const token = req.cookies.auth_token
+  const query = `INSERT INTO messages (message, user_id, chat_id, reply_id, file_path) VALUES (?, ?, ?, ?, ?)`;
+  const token = req.cookies.auth_token;
 
   jwt.verify(token, secretKey, (err, user) => {
-    if (err) return res.sendStatus(403)
+    if (err) return res.sendStatus(403);
     
     db.get("SELECT username, profile_image FROM users WHERE id = ?", [user.userId], (err, currentUser) => {
-      if (err) return res.status(500).send("Error fetching user data")
-      if (!currentUser) return res.status(400).send("User not found")
-      if (!message && !filePath) return res.status(400).send("Either a message or a file must be provided.")
+      if (err) return res.status(500).send("Error fetching user data");
+      if (!currentUser) return res.status(400).send("User not found");
+      if (!message && filePaths.length === 0) return res.status(400).send("Either a message or a file must be provided.");
 
-      db.run(query, [message || null, user.userId, chatId, replyId || null, filePath], function (err) {
+      db.run(query, [message || null, user.userId, chatId, replyId || null, filePaths.join(",")], function (err) {
         if (err) return res.status(500).send("Error inserting message");
 
-        const messageId = this.lastID
+        const messageId = this.lastID;
         if (replyId) {
           db.get(
             `SELECT messages.message AS repliedMessage, users.username AS repliedUsername 
@@ -246,7 +246,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
              WHERE messages.id = ?`, [replyId], (err, repliedData) => {
               if (err) return res.status(500).send("Error fetching replied message");
 
-              io.emit("chat message", {message,username: currentUser.username,profileImage: currentUser.profile_image,userId: user.userId,messageId,replyId,repliedMessage: repliedData ? repliedData.repliedMessage : null,repliedUsername: repliedData ? repliedData.repliedUsername : null,filePath});
+              io.emit("chat message", {message, username: currentUser.username, profileImage: currentUser.profile_image, userId: user.userId, messageId, replyId, repliedMessage: repliedData ? repliedData.repliedMessage : null, repliedUsername: repliedData ? repliedData.repliedUsername : null, filePaths});
 
               res.status(200).json({
                 message,
@@ -257,7 +257,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
                 replyId,
                 repliedMessage: repliedData ? repliedData.repliedMessage : null,
                 repliedUsername: repliedData ? repliedData.repliedUsername : null,
-                filePath
+                filePaths
               });
             }
           );
@@ -271,7 +271,7 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
             replyId: null,
             repliedMessage: null,
             repliedUsername: null,
-            filePath
+            filePaths
           });
 
           res.status(200).json({
@@ -283,8 +283,8 @@ app.post("/submit-message", upload.single("file"), (req, res) => {
             replyId: null,
             repliedMessage: null,
             repliedUsername: null,
-            filePath
-          });
+            filePaths
+          })
         }
       })
     })
@@ -308,20 +308,31 @@ app.post("/delete-message", (req, res) => {
       // Check if the message has a file path
       const fileCheckQuery = "SELECT file_path FROM messages WHERE id = ?"
       db.get(fileCheckQuery, [messageId], (err, message) => {
-        if (err) return res.status(500).send("Error retrieving message")
+        if (err) {
+          console.error("Error retrieving message", err)
+          return res.status(500).send("Error retrieving message")
+        }
         if (!message) return res.status(404).send("Message not found")
 
-        // Delete the file if it exists
-        if (message.file_path) {
-          fs.unlink("uploads/"+message.file_path, (err) => {
-            if (err) console.error(`Failed to delete file: ${message.file_path}`, err)
+        // Split the file path by commas (for multiple files)
+        const filePaths = message.file_path ? message.file_path.split(",") : []
+
+        // Delete each file if it exists
+        filePaths.forEach(filePath => {
+          const fullFilePath = "uploads/" + filePath
+          console.log(`Deleting file at path: ${fullFilePath}`)
+          fs.unlink(fullFilePath, (err) => {
+            if (err) console.error(`Failed to delete file: ${fullFilePath}`, err)
           })
-        }
+        })
 
         // Delete the message from the database
         const deleteQuery = "DELETE FROM messages WHERE id = ?"
         db.run(deleteQuery, [messageId], (err) => {
-          if (err) return res.status(500).send("Failed to delete message")
+          if (err) {
+            console.error("Failed to delete message", err)
+            return res.status(500).send("Failed to delete message")
+          }
           io.emit("delete message", { messageId })
           res.status(200).send("Message deleted successfully")
         })
@@ -329,6 +340,7 @@ app.post("/delete-message", (req, res) => {
     })
   })
 })
+
 
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
@@ -349,28 +361,33 @@ app.get("/get-messages", (req, res) => {
     LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
     ORDER BY messages.id DESC
     LIMIT 50
-  `;
+  `
   
   db.all(query, [], (err, rows) => {
     if (err) {
-      console.error("Error fetching messages:", err.message);
-      return res.status(500).send("Error fetching messages");
+      console.error("Error fetching messages:", err.message)
+      return res.status(500).send("Error fetching messages")
     }
     
-    const messages = rows.reverse().map(row => ({
-      message: row.message,
-      username: row.username,
-      profileImage: row.profile_image,
-      userId: row.userId,
-      messageId: row.messageId,
-      replyId: row.reply_id,
-      repliedMessage: row.repliedMessage,
-      repliedUsername: row.repliedUsername,
-      filePath: row.file_path 
-    }));
+    const messages = rows.reverse().map(row => {
+      // If there's a file_path, split it into an array of file paths (in case of multiple files)
+      const filePaths = row.file_path ? row.file_path.split(',') : []
+      
+      return {
+        message: row.message,
+        username: row.username,
+        profileImage: row.profile_image,
+        userId: row.userId,
+        messageId: row.messageId,
+        replyId: row.reply_id,
+        repliedMessage: row.repliedMessage,
+        repliedUsername: row.repliedUsername,
+        filePaths: filePaths // Return filePaths as an array
+      }
+    })
 
-    res.json(messages);
-  });
+    res.json(messages)
+  })
 })
 
 // START pagintion
