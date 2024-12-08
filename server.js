@@ -134,14 +134,22 @@ db.run(
 // File upload setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    const folder = req.body.folder || 'uploads/'
+    
+    // Ensure the folder exists or handle folder creation dynamically
+    fs.mkdirSync(folder, { recursive: true })
+
+    cb(null, folder)
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniqueSuffix + path.extname(file.originalname))
   }
 })
-const upload = multer({ storage: storage });
+
+const upload = multer({ storage: storage })
+
+module.exports = upload
 
 // START user status
 
@@ -169,9 +177,6 @@ io.on("connection", (socket) => {
   })
 })
 // idk
-// io.emit("update chat detail"), () => {
-//   getChatDetail()
-// }
 const handleUserConnection = (user, socket) => {
   updateUserStatus("online", user.userId, (err) => {
     if (err) {
@@ -180,6 +185,7 @@ const handleUserConnection = (user, socket) => {
     }
 
     console.log(`User ${user.username} is now online`)
+    io.emit("update chat detail")
     updateOnlineUsers(1, user.userId, (err) => {
       if (err) console.error("Error updating online count:", err)
     })
@@ -191,10 +197,11 @@ const handleUserConnection = (user, socket) => {
 const handleUserDisconnection = (user) => {
   updateUserStatus("offline", user.userId, (err) => {
     if (err) return console.error('Error updating user status:', err)
-
+      
     updateOnlineUsers(-1, user.userId, (err) => {
       if (err) console.error("Error updating online count:", err)
-      console.log(`User ${user.username} is now offline`)
+        console.log(`User ${user.username} is now offline`)
+        io.emit("update chat detail")
     })
   })
 }
@@ -320,7 +327,6 @@ app.post("/delete-message", (req, res) => {
         // Delete each file if it exists
         filePaths.forEach(filePath => {
           const fullFilePath = "uploads/" + filePath
-          console.log(`Deleting file at path: ${fullFilePath}`)
           fs.unlink(fullFilePath, (err) => {
             if (err) console.error(`Failed to delete file: ${fullFilePath}`, err)
           })
@@ -341,9 +347,9 @@ app.post("/delete-message", (req, res) => {
   })
 })
 
-
 // Fetch last 50 messages when user logs in
 app.get("/get-messages", (req, res) => {
+  const { chatId } = req.query
   const query = `
     SELECT 
       messages.message, 
@@ -359,11 +365,12 @@ app.get("/get-messages", (req, res) => {
     INNER JOIN users ON messages.user_id = users.id
     LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
     LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
+    WHERE messages.chat_id = ?
     ORDER BY messages.id DESC
     LIMIT 50
   `
-  
-  db.all(query, [], (err, rows) => {
+
+  db.all(query, [chatId], (err, rows) => {
     if (err) {
       console.error("Error fetching messages:", err.message)
       return res.status(500).send("Error fetching messages")

@@ -37,7 +37,7 @@ fetch("/verify", { credentials: "include" })
 
 document.addEventListener('DOMContentLoaded', ()=> {
   applyFilters()
-  loadMessages()
+  loadMessages(chatId)
 })
 
 let socket = io()
@@ -213,12 +213,13 @@ function scrollToBottom(transition) {
 // sending message
 form.addEventListener('submit', function(e) {
   e.preventDefault()
-  if ( !input.value.startsWith("/") ) sendMessage(input.value,replyId)
+  if ( !input.value.startsWith("/") ) sendMessage(input.value,replyId,chatId)
   else handleCommand(input.value)
 })
 
-function loadMessages() {
-  fetch('/get-messages')
+function loadMessages(chatId) {
+
+  fetch(`/get-messages?chatId=${encodeURIComponent(chatId)}`)
     .then(response => response.json())
     .then(data => {
       data.forEach(message => {
@@ -524,8 +525,8 @@ async function settingButtonSetup() {
 
             <br>
             <br>
-            <input type="checkbox" id="remove-background" class="checkbox custom-checkbox">
-            <label for="remove-background">remove background</label>
+            <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
+            <label for="toggle-background">toggle background</label>
 
 
           </form>
@@ -705,7 +706,7 @@ function loadPWTEntries(pwtDeckId) {
     element.addEventListener("click", () => {
       let text = element.innerText
       if (localStorage.getItem("pwtAddSpace")        === "true") text += " "
-      if (localStorage.getItem("pwtSendImmediately") === "true") sendMessage(text, replyId)
+      if (localStorage.getItem("pwtSendImmediately") === "true") sendMessage(text, replyId, chatId)
       else   input.value += text
     })
   })
@@ -718,19 +719,19 @@ let targetedElement
 let oldTargetedElement
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
-  const selection = window.getSelection();
-  let selectedText = selection.toString().trim();
-  targetedElement = e.target.closest('.message-container') // Get the closest .message-container 
+  const selection = window.getSelection()
+  let selectedText = selection.toString().trim()
+  targetedElement = e.target.closest('.message-container')
 
   // right click when user selects a text
   if (selectedText) { 
     selectedRange = selection.getRangeAt(0)
-    contextMenu(event,['copy'])
+    contextMenu(event, ['copy'])
   }
 
   // when user right click on message container
   else if (targetedElement) {
-    let features = [`copyMessage` , 'reply' , 'hideMessage']
+    let features = [`copyMessage` , 'reply', 'hideMessage']
     if (targetedElement.querySelector(".sent"))       features.push("invertColor")
     if (userRole === "owner" || userRole === "admin") features.push("delete") 
 
@@ -741,8 +742,8 @@ document.addEventListener("contextmenu", function (e) {
   
   // right click on input
   else if (input === document.activeElement) {
-    if (selectedText) contextMenu(e,['cut','copy',"paste"])
-    else contextMenu(e,["paste"])
+    if (selectedText) contextMenu(e, ['copy', "paste"])
+    else contextMenu(e, ["paste"])
   }
 
   // right click on navigator 
@@ -1001,7 +1002,7 @@ socket.on("connect"   , () => updateConnectionStatus("online"))
 
 function examModeInit() {
   document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
-  document.getElementById("remove-background").checked = localStorage.getItem("removeBackground") === "true"
+  document.getElementById("remove-background").checked = localStorage.getItem("toggleBackground") === "true"
   document.getElementById("exam-mode-gray-scale").checked = localStorage.getItem("grayScale") ==="true"
   document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
 }
@@ -1014,37 +1015,37 @@ function applyFilters() {
     const examMode   = examModeElement.checked 
     const grayScale  = document.getElementById("exam-mode-gray-scale").checked
     const brightness = document.getElementById("exam-mode-brightness").value
-    const removeBackground = document.getElementById("remove-background").checked
+    const toggleBackground = document.getElementById("remove-background").checked
     
     // applying filter and saving config
-    examModeFilter(examMode,grayScale,brightness,removeBackground)
-    examConfig("set", { examMode, grayScale, brightness, removeBackground})
+    examModeFilter(examMode,grayScale,brightness,toggleBackground)
+    examConfig("set", { examMode, grayScale, brightness, toggleBackground})
   } 
   else {
-    const { examMode , grayScale , brightness, removeBackground} = examConfig("get")
-    if (examMode)  examModeFilter(examMode,grayScale,brightness,removeBackground)
+    const { examMode , grayScale , brightness, toggleBackground} = examConfig("get")
+    if (examMode)  examModeFilter(examMode,grayScale,brightness,toggleBackground)
   }
 }
 
-function examModeFilter(examMode, grayScale, brightness, removeBackground) {
+function examModeFilter(examMode, grayScale, brightness, toggleBackground) {
   const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
   const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
   body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter}`.trim() : ""
-  removeBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
+  toggleBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
 }
 
-function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = "", removeBackground = ""}={}) {
+function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = "", toggleBackground = ""}={}) {
   if (setOrGet==="set") {
   localStorage.setItem("examMode" ,examMode)  
   localStorage.setItem("grayScale",grayScale)  
   localStorage.setItem("brightness",brightness)  
-  localStorage.setItem("removeBackground",removeBackground)  
+  localStorage.setItem("toggleBackground",toggleBackground)  
   }
   else if (setOrGet === "get") {
     return {
       examMode: JSON.parse(localStorage.getItem("examMode")   || "false"),
       grayScale: JSON.parse(localStorage.getItem("grayScale") || "false"),
-      removeBackground: JSON.parse(localStorage.getItem("removeBackground") || "false"),
+      toggleBackground: JSON.parse(localStorage.getItem("toggleBackground") || "false"),
       brightness: localStorage.getItem("brightness") || "100"
     };
   }
@@ -1111,41 +1112,40 @@ navigatorElement = createCustomElement("div", {
 })
 
 chatContainer.appendChild(navigatorElement)
-// not good remove later
-setTimeout(()=>getChatUsers() , 200)
 
 async function chatDetail() {
-  const response = await fetch(`/chat-users?chatId=${encodeURIComponent(chatId)}`)
-  if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
-  const data = await response.json()
+  try {
+    const response = await fetch(`/chat-users?chatId=${encodeURIComponent(chatId)}`);
+    if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+    const data = await response.json()
+    displayUsers(data)
+  } catch (error) {
+    console.error("Failed to fetch chat details:", error)
+  }
+}
+
+function displayUsers(data) {
+  const userHTML = data.users.map((user) => 
+    `<div class="user-container">
+      <img class="user-profile" src="uploads/${user.profile_image}" alt="NPC">
+      <div class="user-info">
+        <span class="username" data-user-id="${user.id}">${user.username}</span>
+        ${user.status === "offline" ? "<span>offline</span>" : '<span class="highlighted-text">online</span>'}
+        <span style="position: absolute; right: 2%; top: 0%;">${user.role}</span>
+      </div>
+    </div>`
+    )
+    .join("")
 
   createMenu(`
     <div id="menu-toolbar">${data.chatName}</div>
-    <div class="users-container">
-      ${displayUsers(data.users)}
-    </div>
+    <div class="users-container">${userHTML}</div>
   `)
 
-  // remove this after the menu has been closed
-  document.addEventListener("click", (e) => {
-    const userId = e.target.closest(".user-container")?.querySelector(".username").getAttribute("data-user-id")
-    if (userId) getUsersDetail(userId) 
+  document.querySelector(".users-container").addEventListener("click", (e) => {
+    const userId = e.target.closest(".user-container")?.querySelector(".username")?.getAttribute("data-user-id")
+    if (userId) getUsersDetail(userId)
   })
-}
-
-function displayUsers(users) {
-  return users
-    .map(
-      (element) => `
-      <div class="user-container">
-        <img class="user-profile" src="uploads/${element.profile_image}" alt="NPC">
-        <div class="user-info">
-          <span class="username" data-user-id="${element.id}">${element.username}</span>
-          ${element.status === "offline" ? '<span>offline</span>': '<span class="highlighted-text">online</span>'}
-          <span style="position : absolute;right:2%;top:0%;">${element.role}</span>
-        </div>
-      </div>`
-    ).join("")
 }
 
 function getChatUsers() {
@@ -1156,8 +1156,10 @@ function getChatUsers() {
   })
   .then((data) => {
     const chatUserCount = data.userCount
+    document.getElementById("chat-users")?.remove()
     const chatUserCountElement = createCustomElement("p", {
       text: `${chatUserCount} members,` + ` ${data.onlineUsers} online`,
+      id: `chat-users`
     })
     navigatorElement.appendChild(chatUserCountElement);
   })
@@ -1166,4 +1168,20 @@ function getChatUsers() {
   })
 }
 
+socket.on("update chat detail", () => getChatUsers())
+
 // END navigator 
+
+// temp
+
+document.getElementById("exam-chat").addEventListener("click", () => {
+  chatId = 2
+  messageContainer.innerHTML = ''
+  loadMessages(chatId)
+})
+
+document.getElementById("main-chat").addEventListener("click", () => {
+  chatId = 1
+  messageContainer.innerHTML = ''
+  loadMessages(chatId)
+})

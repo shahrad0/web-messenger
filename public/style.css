@@ -675,6 +675,10 @@ button {
     background-color: var(--highlight-color); 
     border-radius: 30px;
 }
+#progress-bar::-webkit-progress-bar { 
+    background-color: var(--highlight-color); 
+    border-radius: 30px;
+}
 .upload-warning {
     border: 1px rgb(255, 56, 56) solid   !important;
     box-shadow: 0 0 25px rgb(255, 71, 71)!important;
