@@ -397,10 +397,18 @@ app.get("/get-messages", (req, res) => {
   })
 })
 
+app.get("/get-chats", (req, res) => {
+  const query = `SELECT id, name, profile_image FROM chats` 
+  db.all(query, (err, chats) => {
+    if (err) return res.status(500).json({ error: "Database query failed" });
+    res.json({chats : chats})
+  })
+})
+
 // START pagintion
 
 app.post("/get-older-messages", (req, res) => {
-  const {messageId} = req.body
+  const { messageId, chatId } = req.body
   const query = `
     SELECT 
       messages.message, 
@@ -417,10 +425,12 @@ app.post("/get-older-messages", (req, res) => {
     LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
     LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
     WHERE messages.id < ?
+    AND messages.chat_id = ? 
     ORDER BY messages.id DESC
-    LIMIT 50`
+    LIMIT 50
+    `
     
-  db.all(query, [messageId], (err, rows) => {
+  db.all(query, [messageId,chatId], (err, rows) => {
     if (err) {
       console.error("Error fetching messages:", err.message);
       return res.status(500).json({ error: "Error fetching messages" })

@@ -37,15 +37,16 @@ fetch("/verify", { credentials: "include" })
 
 document.addEventListener('DOMContentLoaded', ()=> {
   applyFilters()
+  addChats()
   loadMessages(chatId)
 })
 
 let socket = io()
+let chatId = 1
 let replyId
 let userRole
-let unseenMessages = 0
 let isUploading = false
-let chatId = 1
+let unseenMessages = 0
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
@@ -197,7 +198,7 @@ messageContainer.addEventListener('scroll', () => {
   }
   else  scrollDownButton.style.display = `block`
   
-  if (messageContainer.scrollTop === 0) loadOlderMessages()
+  if (messageContainer.scrollTop === 0) loadOlderMessages(null, chatId)
 })
 
 // END scroll button and handling pagination
@@ -286,7 +287,7 @@ function scrollToMessage(replyId) {
       setTimeout(() => messageContainer.classList.remove('highlighted-message'), 1000)
     }
   } 
-  else loadOlderMessages(replyId)
+  else loadOlderMessages(replyId,chatId)
 }
 
 // change chat id 
@@ -413,10 +414,22 @@ async function getUsersDetail(userId) {
 }
 
 document.addEventListener("click", async (event) => {
+  // showing user profile upon clicking on username 
   if (event.target.classList.contains('username')) {
     const userId = event.target.getAttribute('data-user-id')
     getUsersDetail(userId)
   }
+  
+  // changing chats upon user click
+  const clickedChatId = event.target.getAttribute("chat-id")
+
+  if (clickedChatId) {
+    if (chatId === clickedChatId) return
+    else {
+      changeChat(clickedChatId)
+    }
+  }
+
 })
 
 // Toggle Off functionality
@@ -939,7 +952,7 @@ function hideNavigator() {
 
 // START pagintion
 
-async function loadOlderMessages(replyId = null) {
+async function loadOlderMessages(replyId = null,chatId) {
   let targetMessageId
   
   if (replyId) targetMessageId = replyId + 25
@@ -953,7 +966,10 @@ async function loadOlderMessages(replyId = null) {
   const fetchOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messageId: targetMessageId })
+    body: JSON.stringify({ 
+      messageId: targetMessageId,
+      chatId: chatId
+    })
   }
 
   try {
@@ -1172,16 +1188,56 @@ socket.on("update chat detail", () => getChatUsers())
 
 // END navigator 
 
-// temp
+// START setting up chats
 
-document.getElementById("exam-chat").addEventListener("click", () => {
-  chatId = 2
+function addChats() {
+  const fragment = document.createDocumentFragment()
+  const games = createCustomElement("div", {
+    id: "games",
+    className: "side-menu-item",
+    text: "Games"
+  })
+
+  const archives = createCustomElement("div", {
+    id: "archives",
+    className: "side-menu-item",
+    text: "Archives"
+  })
+
+  fragment.appendChild(games)
+  fragment.appendChild(archives)
+
+  fetch("/get-chats")
+  .then((response) => {
+    if (!response.ok) throw new Error("Failed to fetch chats")
+    return response.json()
+  })
+  .then((data) => {
+    data.chats.forEach(element => {
+      const chatElement = createCustomElement("div", ({
+        className: "side-menu-item",
+        text: element.name
+      }))
+
+      chatElement.setAttribute("chat-id",element.id)
+      fragment.appendChild(chatElement)
+    })
+
+    sideMenu.appendChild(fragment)
+  })
+  .catch((error) => {
+    console.error("Error:", error)
+  })
+
+  
+}
+
+function changeChat(NewchatId) {
+  document.querySelector(`[chat-id="${chatId}"]`).classList.remove("selected-chat")
+  chatId = NewchatId
+  document.querySelector(`[chat-id="${chatId}"]`).classList.add("selected-chat")
   messageContainer.innerHTML = ''
   loadMessages(chatId)
-})
+}
 
-document.getElementById("main-chat").addEventListener("click", () => {
-  chatId = 1
-  messageContainer.innerHTML = ''
-  loadMessages(chatId)
-})
+// END setting up chats
