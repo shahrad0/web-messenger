@@ -4,11 +4,9 @@
 // add search
 // add customiztation
 // add custom background image 
-// make exam chat and other chats functional 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 // in exam chat add quiz mode or test mode 
-// change user role if they changed their role
 // allow selecting multiple messages and deleting them 
 // add multiple animation for deleting message and randomly choose one when deleting a message (use nuke)
 // fix pagination
@@ -219,14 +217,18 @@ form.addEventListener('submit', function(e) {
 })
 
 function loadMessages(chatId) {
-
   fetch(`/get-messages?chatId=${encodeURIComponent(chatId)}`)
     .then(response => response.json())
     .then(data => {
+      const fragment = document.createDocumentFragment()
       data.forEach(message => {
-        messageContainer.insertAdjacentHTML("beforeend" , messageTemplate(message))
-      });
-      setTimeout(() => scrollToBottom(false) , 100)
+        const messageElement = document.createElement("div")
+        messageElement.innerHTML = messageTemplate(message)
+        fragment.appendChild(messageElement)
+      })
+
+      messageContainer.appendChild(fragment)
+      scrollToBottom(false)
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
@@ -250,7 +252,7 @@ function messageTemplate(message) {
         const fileExt = filePath.split('.').pop().toLowerCase()
         if (['jpeg', 'jpg', 'png'].includes(fileExt)) return `<img src="uploads/${filePath}" class="sent image">`
         else if (['mp4', 'avi'].includes(fileExt)) return `<video controls src="uploads/${filePath}" class="sent video"></video>`
-        else if (fileExt === 'pdf') return `<object data="uploads/${filePath}" class="sent pdf" width="8000px" height="700px"></object>`
+        else if (fileExt === 'pdf') return `<iframe src="uploads/${filePath}" class="sent pdf" width="8000px" height="700px" id="ass"></iframe>`
         else return `<a href="uploads/${filePath}">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</a>`
       })
       .join('')
@@ -290,8 +292,7 @@ function scrollToMessage(replyId) {
   else loadOlderMessages(replyId,chatId)
 }
 
-// change chat id 
-async function sendMessage(userMessage, replyId = null, chatId = 1) {
+async function sendMessage(userMessage, replyId = null, chatId) {
   if (isUploading) {
     input.classList.add("upload-warning")
     setTimeout(() => input.classList.remove("upload-warning"), 5000)
@@ -425,11 +426,8 @@ document.addEventListener("click", async (event) => {
 
   if (clickedChatId) {
     if (chatId === clickedChatId) return
-    else {
-      changeChat(clickedChatId)
-    }
+    else changeChat(clickedChatId)
   }
-
 })
 
 // Toggle Off functionality
@@ -760,7 +758,7 @@ document.addEventListener("contextmenu", function (e) {
   }
 
   // right click on navigator 
-  else if (e.target === navigatorElement){
+  else if (e.target.closest("#navigation-bar")){
     contextMenu(e, ['hideNavigator'])
   }
   // remove context menu if none of the conditions were true 
@@ -1119,17 +1117,16 @@ function handleCommand(text) {
 
 // END command
 
-// START navigator 
+// START chats (minimize function to understand better)
 
 navigatorElement = createCustomElement("div", { 
   id : "navigation-bar",
-  text : "Main Chat",
-  onClick : () => chatDetail()
+  onClick : () => getChatUsers()
 })
 
 chatContainer.appendChild(navigatorElement)
 
-async function chatDetail() {
+async function getChatUsers() {
   try {
     const response = await fetch(`/chat-users?chatId=${encodeURIComponent(chatId)}`);
     if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -1164,7 +1161,7 @@ function displayUsers(data) {
   })
 }
 
-function getChatUsers() {
+function getChatDetail() {
   fetch(`/chat-detail?chatId=${encodeURIComponent(chatId)}`)
   .then((response) => {
     if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
@@ -1172,23 +1169,27 @@ function getChatUsers() {
   })
   .then((data) => {
     const chatUserCount = data.userCount
-    document.getElementById("chat-users")?.remove()
+    if (document.getElementById("chat-users")) {
+      document.getElementById("chat-users").remove()
+      document.getElementById("chat-name").remove()
+    } 
+    const chatName = createCustomElement("p", {
+      text: data.chatName,
+      id: "chat-name"
+    })
     const chatUserCountElement = createCustomElement("p", {
       text: `${chatUserCount} members,` + ` ${data.onlineUsers} online`,
       id: `chat-users`
     })
-    navigatorElement.appendChild(chatUserCountElement);
+    navigatorElement.appendChild(chatName)
+    navigatorElement.appendChild(chatUserCountElement)
   })
   .catch((error) => {
     console.error("Failed to fetch chat user count:", error)
   })
 }
 
-socket.on("update chat detail", () => getChatUsers())
-
-// END navigator 
-
-// START setting up chats
+socket.on("update chat detail", () => getChatDetail())
 
 function addChats() {
   const fragment = document.createDocumentFragment()
@@ -1197,20 +1198,20 @@ function addChats() {
     className: "side-menu-item",
     text: "Games"
   })
-
+  
   const archives = createCustomElement("div", {
     id: "archives",
     className: "side-menu-item",
     text: "Archives"
   })
-
+  
   fragment.appendChild(games)
   fragment.appendChild(archives)
-
+  
   fetch("/get-chats")
   .then((response) => {
     if (!response.ok) throw new Error("Failed to fetch chats")
-    return response.json()
+      return response.json()
   })
   .then((data) => {
     data.chats.forEach(element => {
@@ -1218,26 +1219,24 @@ function addChats() {
         className: "side-menu-item",
         text: element.name
       }))
-
+      
       chatElement.setAttribute("chat-id",element.id)
       fragment.appendChild(chatElement)
     })
-
     sideMenu.appendChild(fragment)
   })
   .catch((error) => {
     console.error("Error:", error)
   })
-
-  
 }
 
 function changeChat(NewchatId) {
   document.querySelector(`[chat-id="${chatId}"]`).classList.remove("selected-chat")
   chatId = NewchatId
+  getChatDetail(chatId)
   document.querySelector(`[chat-id="${chatId}"]`).classList.add("selected-chat")
   messageContainer.innerHTML = ''
   loadMessages(chatId)
 }
 
-// END setting up chats
+// END chats
