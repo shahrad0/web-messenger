@@ -20,7 +20,6 @@
 // ftp server
 // add safemode for future
 
-// checking these before content is loaded 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 
 fetch("/verify", { credentials: "include" })
@@ -55,28 +54,36 @@ const messageContainer = document.getElementById("messages")
 const scrollDownButton = document.getElementById("scroll-down")
 
 socket.on('chat message', (message) => {
-  // this part can be optimized a lot more using DocumentFragment
-  messageContainer.insertAdjacentHTML("beforeend" , messageTemplate(message))
-  let notify = document.getElementById("notify")
-  if (notify) {
-    clearTimeout(notifyTimeout) 
-    notify.remove()
-  }
+  if (chatId === message.chatId) {
+    const fragment = document.createDocumentFragment()
+    fragment.appendChild(messageTemplate(message))
+    messageContainer.appendChild(fragment)
 
-  notify = createCustomElement("div", { id: "notify"})
-  messageContainer.appendChild(notify)
-
-  notifyTimeout = setTimeout(() => notify.remove() , 1000)
-
-  if (messageContainer.scrollHeight - (messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
-  else {
-    unseenMessages++
-    let unseenMessagesElement = document.getElementById("unseen-messages")
-    if (!unseenMessagesElement) {
-      unseenMessagesElement = createCustomElement("div", { id: "unseen-messages" })
-      scrollDownButton.appendChild(unseenMessagesElement)
+    let notify = document.getElementById("notify")
+    if (notify) {
+      clearTimeout(notifyTimeout) 
+      notify.remove()
     }
-    unseenMessagesElement.innerText = unseenMessages
+  
+    notify = createCustomElement("div", { id: "notify"})
+    messageContainer.appendChild(notify)
+  
+    notifyTimeout = setTimeout(() => notify.remove() , 1000)
+  
+    if (messageContainer.scrollHeight - (messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
+    else {
+      unseenMessages++
+      let unseenMessagesElement = document.getElementById("unseen-messages")
+      if (!unseenMessagesElement) {
+        unseenMessagesElement = createCustomElement("div", { id: "unseen-messages" })
+        scrollDownButton.appendChild(unseenMessagesElement)
+      }
+      unseenMessagesElement.innerText = unseenMessages
+    }
+  }
+  // show unseen messages on different chats 
+  else {
+    return
   }
 })
 
@@ -196,7 +203,7 @@ messageContainer.addEventListener('scroll', () => {
   }
   else  scrollDownButton.style.display = `block`
   
-  if (messageContainer.scrollTop === 0) loadOlderMessages(null, chatId)
+  if (messageContainer.scrollTop === 0) loadOlderMessages(chatId)
 })
 
 // END scroll button and handling pagination
@@ -220,61 +227,108 @@ function loadMessages(chatId) {
   fetch(`/get-messages?chatId=${encodeURIComponent(chatId)}`)
     .then(response => response.json())
     .then(data => {
-      const fragment = document.createDocumentFragment()
-      data.forEach(message => {
-        const messageElement = document.createElement("div")
-        messageElement.innerHTML = messageTemplate(message)
-        fragment.appendChild(messageElement)
-      })
-
-      messageContainer.appendChild(fragment)
+      messageContainer.appendChild(returnFragment(data.map(messageTemplate)))
       scrollToBottom(false)
     })
     .catch(error => console.error('Error fetching messages:', error));
 }
 
-// Updated message template function
 function messageTemplate(message) {
-  // reply
-  let replySection = ''
-  let files = ''
-  if (message.replyId && message.repliedMessage && message.repliedUsername) 
-    replySection = `
-    <div class="replied-message-container" data-reply-id="${message.replyId}" onclick="scrollToMessage(${message.replyId})">
-      <div class="replied-username">${message.repliedUsername}</div>
-      <div class="replied-text"><p>${message.repliedMessage}</p></div>
-    </div>`
+  // Create the root element for the message
+  const messageDiv = document.createElement('div')
+  messageDiv.className = 'message'
 
-  // files
-  if (message.filePaths && Array.isArray(message.filePaths)) {
-    files = message.filePaths
-      .map(filePath => {
-        const fileExt = filePath.split('.').pop().toLowerCase()
-        if (['jpeg', 'jpg', 'png'].includes(fileExt)) return `<img src="uploads/${filePath}" class="sent image">`
-        else if (['mp4', 'avi'].includes(fileExt)) return `<video controls src="uploads/${filePath}" class="sent video"></video>`
-        else if (fileExt === 'pdf') return `<iframe src="uploads/${filePath}" class="sent pdf" width="8000px" height="700px" id="ass"></iframe>`
-        else return `<a href="uploads/${filePath}">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</a>`
-      })
-      .join('')
+  const messageContainer = document.createElement('div')
+  messageContainer.className = 'message-container'
+
+  // Profile section
+  const profileDiv = document.createElement('div')
+  profileDiv.className = 'message-profile'
+
+  const profileImage = document.createElement('img')
+  profileImage.src = `uploads/${message.profileImage}`
+  profileImage.alt = 'NPC'
+  profileImage.className = 'user-profile'
+  profileDiv.appendChild(profileImage)
+
+  // Content section
+  const contentDiv = document.createElement('div')
+  contentDiv.className = 'message-content'
+
+  // Username
+  const usernameDiv = document.createElement('div')
+  usernameDiv.className = 'username'
+  usernameDiv.setAttribute('data-user-id', message.userId)
+  usernameDiv.textContent = message.username
+  contentDiv.appendChild(usernameDiv)
+
+  // Reply section (if exists)
+  if (message.replyId && message.repliedMessage && message.repliedUsername) {
+    const replyDiv = document.createElement('div')
+    replyDiv.className = 'replied-message-container'
+    replyDiv.setAttribute('data-reply-id', message.replyId)
+    replyDiv.onclick = () => scrollToMessage(message.replyId)
+
+    const replyUsernameDiv = document.createElement('div')
+    replyUsernameDiv.className = 'replied-username'
+    replyUsernameDiv.textContent = message.repliedUsername
+    replyDiv.appendChild(replyUsernameDiv)
+
+    const replyTextDiv = document.createElement('div')
+    replyTextDiv.className = 'replied-text'
+    const replyTextP = document.createElement('p')
+    replyTextP.textContent = message.repliedMessage
+    replyTextDiv.appendChild(replyTextP)
+    replyDiv.appendChild(replyTextDiv)
+
+    contentDiv.appendChild(replyDiv)
   }
 
-  // message
-  return `
-    <div class="message">
-      <div class="message-container">
-        <div class="message-profile">
-          <img src="uploads/${message.profileImage}" alt="NPC" class="user-profile">
-        </div>
-        <div class="message-content">
-          <div class="username" data-user-id="${message.userId}">${message.username}</div>
-          ${replySection}
-          ${files}
-          <div class="message-text" data-message-id="${message.messageId}">
-            ${message.message ? message.message : ""}
-          </div>
-        </div>
-      </div>
-    </div>`
+  // Files section (if exists)
+  if (message.filePaths && Array.isArray(message.filePaths)) {
+    message.filePaths.forEach(filePath => {
+      const fileExt = filePath.split('.').pop().toLowerCase()
+      let fileElement
+
+      if (['jpeg', 'jpg', 'png'].includes(fileExt)) {
+        fileElement = document.createElement('img')
+        fileElement.src = `uploads/${filePath}`
+        fileElement.className = 'sent image'
+      } else if (['mp4', 'avi'].includes(fileExt)) {
+        fileElement = document.createElement('video')
+        fileElement.controls = true
+        fileElement.src = `uploads/${filePath}`
+        fileElement.className = 'sent video'
+      } else if (fileExt === 'pdf') {
+        fileElement = document.createElement('iframe')
+        fileElement.src = `uploads/${filePath}`
+        fileElement.className = 'sent pdf'
+        fileElement.width = '8000px'
+        fileElement.height = '700px'
+        fileElement.id = 'ass'
+      } else {
+        fileElement = document.createElement('a')
+        fileElement.href = `uploads/${filePath}`
+        fileElement.textContent = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+      }
+
+      contentDiv.appendChild(fileElement)
+    })
+  }
+
+  // Message text
+  const messageTextDiv = document.createElement('div')
+  messageTextDiv.className = 'message-text'
+  messageTextDiv.setAttribute('data-message-id', message.messageId)
+  messageTextDiv.textContent = message.message || ''
+  contentDiv.appendChild(messageTextDiv)
+
+  // Combine everything
+  messageContainer.appendChild(profileDiv)
+  messageContainer.appendChild(contentDiv)
+  messageDiv.appendChild(messageContainer)
+
+  return messageDiv
 }
 
 function scrollToMessage(replyId) {
@@ -289,7 +343,7 @@ function scrollToMessage(replyId) {
       setTimeout(() => messageContainer.classList.remove('highlighted-message'), 1000)
     }
   } 
-  else loadOlderMessages(replyId,chatId)
+  else loadOlderMessages(chatId, replyId)
 }
 
 async function sendMessage(userMessage, replyId = null, chatId) {
@@ -728,6 +782,7 @@ function loadPWTEntries(pwtDeckId) {
 let selectedRange 
 let targetedElement
 let oldTargetedElement
+
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
   const selection = window.getSelection()
@@ -949,8 +1004,8 @@ function hideNavigator() {
 // END right click functions
 
 // START pagintion
-
-async function loadOlderMessages(replyId = null,chatId) {
+// this can be GET instead of POST 
+async function loadOlderMessages(chatId, replyId = null) {
   let targetMessageId
   
   if (replyId) targetMessageId = replyId + 25
@@ -971,11 +1026,12 @@ async function loadOlderMessages(replyId = null,chatId) {
   }
 
   try {
-    const response = await fetch('/get-older-messages', fetchOptions);
-    const data = await response.json();
-    const previousScrollHeight = messages.scrollHeight;
+    const response = await fetch('/get-older-messages', fetchOptions)
+    const data = await response.json()
+    const previousScrollHeight = messages.scrollHeight
 
-    data.reverse().forEach(message => messageContainer.insertAdjacentHTML('afterbegin', messageTemplate(message)))
+    messageContainer.insertBefore(returnFragment(data.map(messageTemplate)), messageContainer.firstChild)
+
     messageContainer.scrollTop = messageContainer.scrollHeight - previousScrollHeight
 
     // highlight and scrolls to  message if replyId exists
@@ -1221,6 +1277,9 @@ function addChats() {
       }))
       
       chatElement.setAttribute("chat-id",element.id)
+      if (element.id == chatId) {
+        chatElement.classList.add("selected-chat")
+      }
       fragment.appendChild(chatElement)
     })
     sideMenu.appendChild(fragment)
@@ -1228,6 +1287,7 @@ function addChats() {
   .catch((error) => {
     console.error("Error:", error)
   })
+
 }
 
 function changeChat(NewchatId) {
@@ -1240,3 +1300,11 @@ function changeChat(NewchatId) {
 }
 
 // END chats
+
+function returnFragment(elements) {
+  const fragment = document.createDocumentFragment()
+  elements.forEach(element => {
+    fragment.appendChild(element)
+  })
+  return fragment
+}

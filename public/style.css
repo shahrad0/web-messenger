@@ -359,8 +359,12 @@ button {
     background-color: var(--secondary-background);
 }
 .selected-chat {
-    background-color: rgb(19, 63, 19) !important;
+    background-color: rgb(10, 30, 10);
     border-bottom: 2px var(--border-focus) solid;
+}
+.selected-chat:hover {
+    background-color: rgb(21, 61, 21);
+
 }
 #scroll-down {
     width:  40px;
