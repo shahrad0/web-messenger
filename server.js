@@ -253,7 +253,17 @@ app.post("/submit-message", upload.array("file", 5), (req, res) => {
              WHERE messages.id = ?`, [replyId], (err, repliedData) => {
               if (err) return res.status(500).send("Error fetching replied message");
 
-              io.emit("chat message", {message, username: currentUser.username, profileImage: currentUser.profile_image, userId: user.userId, messageId, replyId, repliedMessage: repliedData ? repliedData.repliedMessage : null, repliedUsername: repliedData ? repliedData.repliedUsername : null, filePaths});
+              io.emit("chat message", {
+                message,
+                username: currentUser.username,
+                profileImage: currentUser.profile_image,
+                userId: user.userId,
+                messageId, replyId,
+                repliedMessage: repliedData ? repliedData.repliedMessage : null,
+                repliedUsername: repliedData ? repliedData.repliedUsername : null,
+                filePaths,
+                chatId
+              })
 
               res.status(200).json({
                 message,
@@ -264,7 +274,8 @@ app.post("/submit-message", upload.array("file", 5), (req, res) => {
                 replyId,
                 repliedMessage: repliedData ? repliedData.repliedMessage : null,
                 repliedUsername: repliedData ? repliedData.repliedUsername : null,
-                filePaths
+                filePaths,
+                chatId
               });
             }
           );
@@ -278,7 +289,8 @@ app.post("/submit-message", upload.array("file", 5), (req, res) => {
             replyId: null,
             repliedMessage: null,
             repliedUsername: null,
-            filePaths
+            filePaths,
+            chatId
           });
 
           res.status(200).json({
@@ -290,7 +302,8 @@ app.post("/submit-message", upload.array("file", 5), (req, res) => {
             replyId: null,
             repliedMessage: null,
             repliedUsername: null,
-            filePaths
+            filePaths,
+            chatId
           })
         }
       })
@@ -667,6 +680,20 @@ function generateToken(user, res) {
 // updateUserRole(1, 'owner');
 
 // END update user role
+
+// changing chat images
+// function changeChatImage(chatId, imagePath) {
+//   const query = `UPDATE chats SET profile_image = ? WHERE id = ?`
+//   db.run(query, [imagePath, chatId], (err) => {
+//     if (err) {
+//       console.error(`Failed to update profile image for chat ID ${chatId}`, err)
+//     } else {
+//       console.log(`Profile image updated successfully for chat ID ${chatId}`)
+//     }
+//   })
+// }
+
+// changeChatImage(2, "uploads/Chats/exam.jpg")
 
 // START user role 
 

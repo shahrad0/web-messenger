@@ -19,6 +19,9 @@
 
     --reply-background      :rgb(27, 51, 33);
 
+    --selected-chat-background: rgb(10, 30, 10);
+    --selected-chat-background-hover: rgb(21, 61, 21);
+
     --short-transition : 200ms;
     --long-transition  : 500ms;
     
@@ -64,11 +67,24 @@ svg:hover path {
 svg:active path {
     fill: var(--border-focus) !important; 
 }
+svg rect {
+    fill: var(--main-color) ; 
+    transition: all var(--short-transition);
+}
+svg:hover rect {
+    fill: var(--main-border) !important; 
+}
+svg:active rect {
+    fill: var(--border-focus) !important; 
+}
 button {
     background-color: transparent;
     border: none;
     cursor: pointer;
 }
+/* img:empty {
+    display: none;
+}   */
 .generic-button {
     border-radius: 50px;
     border: solid 1px var(--main-border);
@@ -114,7 +130,7 @@ button {
 #form {
     position: absolute;
     bottom: 3%;
-    height: 7%;
+    height: 50px;
     width: -moz-available;
     width: -webkit-fill-available;
     display: flex;
@@ -129,7 +145,7 @@ button {
 #messages {
     width: 100%;
     margin-top: 50px;
-    max-height: calc(90% - 50px);
+    max-height: calc(97% - 100px);
     overflow-y: scroll;
     overflow-x: hidden;
     transition: all var(--long-transition);
@@ -188,12 +204,13 @@ button {
 .menu {
     position: relative;
     background-color: var(--secondary-background);
-    width: 40%;
-    height: 80%;
+    width: 38%;
+    height: 78%;
     margin: 5% auto;
     border-radius: 15px;
     border: 2px solid var(--main-border) ;
     box-shadow: 0 0 25px var(--main-blur);
+    padding: 1%;
 }
 .user-info-container {
     display: flex;
@@ -301,10 +318,9 @@ button {
     box-shadow: 0 0 15px 5px var(--blur-focus);
 }
 #menu-toolbar {
-    padding: 2%;
     display: flex;
-    width: 96%;
-    height: 10%;
+    margin-bottom: 20px;
+    height: 5%;
     position: relative;
     font-size: 30px;
     color: var( --highlight-color);
@@ -359,12 +375,11 @@ button {
     background-color: var(--secondary-background);
 }
 .selected-chat {
-    background-color: rgb(10, 30, 10);
+    background-color: var(--selected-chat-background);
     border-bottom: 2px var(--border-focus) solid;
 }
 .selected-chat:hover {
-    background-color: rgb(21, 61, 21);
-
+    background-color: var(--selected-chat-background-hover);
 }
 #scroll-down {
     width:  40px;
@@ -453,9 +468,6 @@ button {
 .highlighted-message{
     box-shadow: 0 0 25px var(--selected-message-blur);
     background-color: var(--selected-message-bg);
-}
-.highlighted-text {
-    color: var(--highlight-color);
 }
 .replied-message-container {
     cursor: pointer;
@@ -577,7 +589,6 @@ button {
 }
 #user-profile-image { 
     width: 20%;
-    margin: 0 3%;
  }
 #user-profile-image img {
     width: 100%;
@@ -617,12 +628,34 @@ button {
     } 
 }
 /* gonna remove this its just for goofing around */
-@keyframes deleteMessage {
+/* well that was a lie */
+@keyframes deleteMessage-1 {
     50%{
         rotate: 9000deg;
         transform: translateX(1000px);
     }
 }
+@keyframes deleteMessage-2 {
+    0% {
+        position: absolute;
+        top: 40%;
+        left: 40%;
+    }
+    50% {
+        position: absolute;
+        transform: scale(5);
+        top: 40%;
+        left: 40%;
+    }
+    90%{
+        rotate: 1000deg;
+    }
+    100% {
+        position: absolute;
+        transform: scale(25);
+    }
+  }
+  
 #unseen-messages {
     position: absolute;
     width: 20px;
@@ -686,4 +719,23 @@ button {
 .upload-warning {
     border: 1px rgb(255, 56, 56) solid   !important;
     box-shadow: 0 0 25px rgb(255, 71, 71)!important;
+}
+#manual-button {
+    width: var(--button-size);
+}
+.manual-header {
+    color: var(--highlight-color);
+    margin: 2% 0;
+}
+.manual-paragraph {
+    margin: 1%;
+}
+.highlighted-text {
+    background-color: var(--third-background);
+    border-radius: 5px;
+    color: var(--highlight-color);
+    padding: 2px;
+}
+.chat-image{
+    width: 40px;
 }

@@ -38,12 +38,12 @@ document.addEventListener('DOMContentLoaded', ()=> {
   loadMessages(chatId)
 })
 
-let socket = io()
-let chatId = 1
-let replyId
-let userRole
-let isUploading = false
 let unseenMessages = 0
+let isUploading = false
+let userRole
+let replyId
+let chatId = 1
+let socket = io()
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
@@ -54,7 +54,7 @@ const messageContainer = document.getElementById("messages")
 const scrollDownButton = document.getElementById("scroll-down")
 
 socket.on('chat message', (message) => {
-  if (chatId === message.chatId) {
+  if (chatId == message.chatId) {
     const fragment = document.createDocumentFragment()
     fragment.appendChild(messageTemplate(message))
     messageContainer.appendChild(fragment)
@@ -70,7 +70,7 @@ socket.on('chat message', (message) => {
   
     notifyTimeout = setTimeout(() => notify.remove() , 1000)
   
-    if (messageContainer.scrollHeight - (messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
+    if (messageContainer.scrollHeight - (messageContainer.clientHeight / 2) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
     else {
       unseenMessages++
       let unseenMessagesElement = document.getElementById("unseen-messages")
@@ -562,7 +562,6 @@ async function settingButtonSetup() {
       
       createMenu(`          
         <div id="menu-toolbar"> Profile
-            <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
         </div>
         <div class="user-info-container">
           <a href="/uploads/${user.profile_image}" id="user-profile-image">
@@ -573,33 +572,37 @@ async function settingButtonSetup() {
             <p class="user-detail">ID : ${user.id}</p>
             <p class="user-detail">Role : ${user.role}</p>
           </div>
+          <div>
+
+          </div>
+        </div>`
+      )
+      // <button id="manual-button" onclick="openManual()"><svg viewBox="0 0 32 32"><rect height="1" width="12" x="10" y="2"/><rect height="1" width="12" x="10" y="2"/><rect height="1" transform="translate(-9.5 22.5) rotate(-90)" width="20" x="-3.5" y="15.5"/><rect height="1" transform="translate(11.5 39.5) rotate(-90)" width="16" x="17.5" y="13.5"/><rect height="1" width="6" x="17" y="6"/><rect height="1" width="14" x="9" y="9"/><rect height="1" width="14" x="9" y="12"/><rect height="1" width="14" x="9" y="15"/><rect height="1" width="14" x="9" y="18"/><rect height="1" width="10" x="9" y="21"/><rect height="1" width="7" x="9" y="24"/><path d="M22,2V3h2a1,1,0,0,1,1,1V6h1V4a2,2,0,0,0-2-2Z"/><path d="M10,2V3H8A1,1,0,0,0,7,4V6H6V4A2,2,0,0,1,8,2Z"/><path d="M8,30V29H8a1,1,0,0,1-1-1V26H6v2a2,2,0,0,0,2,2Z"/><path d="M21.91,21.15c-.57-.32-.91-.72-.91-1.15a6.09,6.09,0,0,1-.21,1.59c-1,4.07-6,7.18-12.12,7.4H8v1h.72c8.86-.15,16.07-3.15,17.14-7A3.77,3.77,0,0,0,26,22,8.72,8.72,0,0,1,21.91,21.15Zm-5.78,7a10.5,10.5,0,0,0,5.54-6,8.94,8.94,0,0,0,3.15.79C24.07,25,20.91,27,16.13,28.13Z"/></svg></button>
+      // <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
+
+      //   <form id="exam-mode-config">
+      //   <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
+      //   <label for="exam-mode">exam mode</label>
+      //   <br>
+      //   <br>
+      //   <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
+      //   <label for="exam-mode-gray-scale">gray scale</label>
+      //   <br>
+      //   <br>
+      //   <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
+      //   <label for="exam-mode-brightness">brightness</label>
 
 
-          <form id="exam-mode-config">
-            <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
-            <label for="exam-mode">exam mode</label>
-            <br>
-            <br>
-            <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
-            <label for="exam-mode-gray-scale">gray scale</label>
-            <br>
-            <br>
-            <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
-            <label for="exam-mode-brightness">brightness</label>
+      //   <br>
+      //   <br>
+      //   <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
+      //   <label for="toggle-background">toggle background</label>
 
 
-            <br>
-            <br>
-            <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
-            <label for="toggle-background">toggle background</label>
-
-
-          </form>
-        </div>`)
-
-      examModeInit()
-      const examModeConfig = document.getElementById("exam-mode-config")
-      examModeConfig.addEventListener("input", () => applyFilters())
+      // </form>
+      // examModeInit()
+      // const examModeConfig = document.getElementById("exam-mode-config")
+      // examModeConfig.addEventListener("input", () => applyFilters())
 
       // START edit profile
 
@@ -839,10 +842,10 @@ function contextMenu(event,features) {
     if (element == "hideMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: () => hideMessage(),text : "Hide" }  ))
     if (element == "invertColor")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
     if (element == "delete") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
-    if (element == "copy")   contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }  ))
-    if (element == "cut")    contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }  ))
-    if (element == "reply")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }  ))
-    if (element == "paste")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }  ))
+    if (element == "reply")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }))
+    if (element == "paste")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }))
+    if (element == "copy")   contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }))
+    if (element == "cut")    contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }))
   });
   body.appendChild(contextMenuElement);
   
@@ -1128,13 +1131,14 @@ function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = "", togg
 socket.on("delete message", (messageId) => {
   const targetMessage = document.querySelector(`[data-message-id="${messageId.messageId}"]`);
   const messageParent = targetMessage.closest(".message")
-  messageParent.style.animation = "deleteMessage 1s"
+  let deletingAnimation = Math.ceil( Math.random() * 2 )
+  messageParent.style.animation = `deleteMessage-${deletingAnimation} .5s`
   messageParent.addEventListener("animationend" , () => messageParent.remove())
 })
 
 // END delete message 
 
-// START command
+// START command (this is kinda bs)
 
 // 0 --> user
 // 1 --> mod
@@ -1199,7 +1203,7 @@ function displayUsers(data) {
       <img class="user-profile" src="uploads/${user.profile_image}" alt="NPC">
       <div class="user-info">
         <span class="username" data-user-id="${user.id}">${user.username}</span>
-        ${user.status === "offline" ? "<span>offline</span>" : '<span class="highlighted-text">online</span>'}
+        <span>${user.status}</span>
         <span style="position: absolute; right: 2%; top: 0%;">${user.role}</span>
       </div>
     </div>`
@@ -1267,19 +1271,28 @@ function addChats() {
   fetch("/get-chats")
   .then((response) => {
     if (!response.ok) throw new Error("Failed to fetch chats")
-      return response.json()
+    return response.json()
   })
   .then((data) => {
-    data.chats.forEach(element => {
-      const chatElement = createCustomElement("div", ({
-        className: "side-menu-item",
-        text: element.name
-      }))
+    data.chats.forEach((element) => {
+      const chatElement = createCustomElement("div", {
+        className: "side-menu-item"
+      })
       
-      chatElement.setAttribute("chat-id",element.id)
-      if (element.id == chatId) {
-        chatElement.classList.add("selected-chat")
-      }
+      const chatImage = createCustomElement("img", {
+        className: "chat-image"
+      })
+      chatImage.src = element.profile_image
+      chatElement.appendChild(chatImage)
+
+      const chatText = createCustomElement("span", {
+        text: element.name
+      })
+      chatElement.appendChild(chatText)
+
+      chatElement.setAttribute("chat-id", element.id)
+      if (element.id == chatId) chatElement.classList.add("selected-chat")
+        
       fragment.appendChild(chatElement)
     })
     sideMenu.appendChild(fragment)
@@ -1307,4 +1320,36 @@ function returnFragment(elements) {
     fragment.appendChild(element)
   })
   return fragment
+}
+
+function openManual() {
+  createMenu(`
+      <div id="menu-toolbar">Manual</div>
+      <h3>Turning off the screen</h3>
+      <p>Press "Alt + X" or "Alt + ." or "Enter + ." to Turn off screen</p>
+      <br>
+      <p>IMPORTANT: if you've clicked on a PDF, this is not going to work, you have to click on the site again to make it work. This applies to all other shortcuts as well.</p>
+      <h3>Chat shortcuts</h3>
+      <p>Press "/" to focus on the text input and press "Escape" to remove focus from text input</p>
+  `)
+
+  const menu = document.getElementById("menu-toolbar").parentNode;
+
+  // Add classes to <h2> elements
+  const headers = menu.querySelectorAll("h3")
+  headers.forEach(header => {
+    header.classList.add("manual-header")
+  })
+
+  // Add classes to <p> elements
+  const paragraphs = menu.querySelectorAll("p")
+  paragraphs.forEach(paragraph => {
+    paragraph.classList.add("manual-paragraph")
+
+    // Highlight text inside quotes
+    paragraph.innerHTML = paragraph.innerHTML.replace(
+      /"(.*?)"/g, // Match text inside quotes
+      '<span class="highlighted-text">$1</span>' // Wrap with span
+    )
+  })
 }
