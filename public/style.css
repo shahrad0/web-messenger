@@ -27,6 +27,10 @@
     
     --button-size : 40px;
 }
+@font-face {
+    font-family: MainFont;
+    src: url(Font/Vazir.ttf);
+}
 * {
     margin: 0;
     padding: 0;
@@ -38,6 +42,7 @@ body {
     background-color: var(--main-background-color);
     overflow: hidden;
     height: 100vh !important;
+    font-family: MainFont;
 }
 ::selection {
     color: var(--highlight-color);
