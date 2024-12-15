@@ -143,7 +143,7 @@ button {
 #input {
     padding: 0 2%;
     width: 80%;
-    height: 100%;
+    height: 50px;
     border-radius: 50px;
     margin-left: 11.25px; 
 }
@@ -221,9 +221,9 @@ button {
     display: flex;
     flex-wrap: wrap;
 }
-.user-image {
+/* .user-image {
     width: 100px;
-}
+} */
 .user-detail {
     padding: 1%;
     font-size: 20px;
@@ -324,8 +324,6 @@ button {
 }
 #menu-toolbar {
     display: flex;
-    margin-bottom: 20px;
-    height: 5%;
     position: relative;
     font-size: 30px;
     color: var( --highlight-color);
@@ -349,10 +347,17 @@ button {
     width: var(--button-size);
 }
 .side-menu-item {
+    display: flex;
+    align-items: center;
     padding: 10px 20px;
     font-size: 20px;
     transition: all var(--short-transition);
     border-bottom: 1px var(--main-border) solid;
+}
+.side-menu-item:hover {
+    cursor: pointer;
+    color: var(--highlight-color);
+    background-color: var(--secondary-background);
 }
 #games {
     border: 1px solid transparent; 
@@ -373,11 +378,6 @@ button {
     100% {
         background-position: 200% 50%;
     }
-}
-.side-menu-item:hover {
-    cursor: pointer;
-    color: var(--highlight-color);
-    background-color: var(--secondary-background);
 }
 .selected-chat {
     background-color: var(--selected-chat-background);
@@ -592,15 +592,14 @@ button {
         opacity: 0;
     }
 }
-#user-profile-image { 
-    width: 20%;
- }
-#user-profile-image img {
-    width: 100%;
-    border-radius: 200px;
+#user-profile-image {
+    max-width:  125px;
+    max-height: 125px;
+    border-radius: 62.5px;
 }
 #user-profile-detail {
-    width: 74%;
+    width: calc(100% - 125px - 20px);
+    margin: auto 0 auto 20px;
 }
 #exam-mode-config {
     width: 100%;
@@ -743,4 +742,6 @@ button {
 }
 .chat-image{
     width: 40px;
+    border-radius: 20px;
+    margin-right: 10px;
 }

@@ -14,6 +14,8 @@
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
 // add changing password in profile edit menu
+// hot key for going to latest message, also repressing the hotkey scrolls back to where user was (toggle like)
+// add a mode that shrinks the chat and adds a pdf in a side 
 
 // priority 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/uploads/media
@@ -451,22 +453,25 @@ async function getUsersDetail(userId) {
     const response = await fetch(`/users-details?id=${encodeURIComponent(userId)}`)
     if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
     const user = await response.json()
-    createMenu(`
-      <div id="menu-toolbar">User Info</div>
-        <div class="user-info-container">
-          <img class="user-image" src="/uploads/${user.profile_image}" alt="">
-          <div style="width: 100%;">
-            <p class="user-detail">Name : ${user.username}</p>
-            <p class="user-detail">ID : ${user.id}</p>
-            <p class="user-detail">Role : ${user.role}</p>
-            <p class="user-detail">Status : ${user.status}</p>
-          </div>
-        </div>`
-    )
+    createMenu(`          
+      <div id="menu-toolbar"> Profile
+      </div>
+      <div class="user-info-container">
+        <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
+        <div id="user-profile-detail">
+          <p class="user-detail">Name : ${user.username}</p>
+          <p class="user-detail">ID : ${user.id}</p>
+          <p class="user-detail">Role : ${user.role}</p>
+          <p class="user-detail">Status : ${user.status}</p>
+        </div>
+      </div>
+      `)
   } catch (error) {
     console.error('Error fetching user details:', error)
   }
 }
+
+// START left click event DO NOT CREATE ANOTHER EVENT 
 
 document.addEventListener("click", async (event) => {
   // showing user profile upon clicking on username 
@@ -476,13 +481,15 @@ document.addEventListener("click", async (event) => {
   }
   
   // changing chats upon user click
-  const clickedChatId = event.target.getAttribute("chat-id")
+  const clickedChatId = event.target.closest(".side-menu-item")?.getAttribute("chat-id")
 
   if (clickedChatId) {
     if (chatId === clickedChatId) return
     else changeChat(clickedChatId)
   }
 })
+
+// END left click event DO NOT CREATE ANOTHER EVENT 
 
 // Toggle Off functionality
 let toggleOff = false
@@ -541,7 +548,7 @@ document.addEventListener("keyup", (event) => {
   if (key === ".") keyState.dotPressed      = false
 });
 
-// More Menu toggle
+// More Menu toggle (CHANGE THIS)
 moreButton.addEventListener("click", () => {
   moreMenu.style.display = moreMenuToggle ? 'none' : 'block';
   moreMenu.style.opacity = moreMenuToggle ? '0' : '1';
@@ -564,16 +571,14 @@ async function settingButtonSetup() {
         <div id="menu-toolbar"> Profile
         </div>
         <div class="user-info-container">
-          <a href="/uploads/${user.profile_image}" id="user-profile-image">
-            <img class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
-          </a>
+          <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
           <div id="user-profile-detail">
             <p class="user-detail">Name : ${user.username}</p>
             <p class="user-detail">ID : ${user.id}</p>
             <p class="user-detail">Role : ${user.role}</p>
           </div>
           <div>
-
+            
           </div>
         </div>`
       )
@@ -891,7 +896,7 @@ function replyStyle(replyContainer) {
   input.style.borderTopLeftRadius   = "0px"
   input.style.borderTopRightRadius  = "0px"
   input.style.padding               = `0 2%`
-  messageContainer.style.maxHeight  = `calc(83% - 50px)`
+  messageContainer.style.maxHeight  = `calc(97% - 50px - 50px - 50px)`
   input.addEventListener('focus', function() {
     replyContainer.style.border = `solid 2px var(--border-focus)`
   });
@@ -922,7 +927,7 @@ function reply() {
 }
 
 function removeReply() {
-  messageContainer.style.maxHeight = `calc(90% - 50px)`
+  messageContainer.style.maxHeight = `calc(97% - 50px - 50px)`
   input.style.borderTopLeftRadius  = "50px"
   input.style.borderTopRightRadius = "50px"
   input.style.padding = `0 2%` 
@@ -1283,6 +1288,7 @@ function addChats() {
         className: "chat-image"
       })
       chatImage.src = element.profile_image
+      chatImage.alt = ""
       chatElement.appendChild(chatImage)
 
       const chatText = createCustomElement("span", {
