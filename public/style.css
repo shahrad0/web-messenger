@@ -26,6 +26,8 @@
     --long-transition  : 500ms;
     
     --button-size : 40px;
+
+    --menu-margin : 2%;
 }
 @font-face {
     font-family: MainFont;
@@ -209,21 +211,18 @@ button {
 .menu {
     position: relative;
     background-color: var(--secondary-background);
-    width: 38%;
-    height: 78%;
+    width: 40%;
+    height: 80%;
     margin: 5% auto;
     border-radius: 15px;
     border: 2px solid var(--main-border) ;
     box-shadow: 0 0 25px var(--main-blur);
-    padding: 1%;
 }
 .user-info-container {
     display: flex;
     flex-wrap: wrap;
+    margin: 0 2%;
 }
-/* .user-image {
-    width: 100px;
-} */
 .user-detail {
     padding: 1%;
     font-size: 20px;
@@ -327,6 +326,7 @@ button {
     position: relative;
     font-size: 30px;
     color: var( --highlight-color);
+    margin: 2%;
 }
 .side-menu-toolbar {
     position: relative;
@@ -729,10 +729,10 @@ button {
 }
 .manual-header {
     color: var(--highlight-color);
-    margin: 2% 0;
+    margin: 2%;
 }
 .manual-paragraph {
-    margin: 1%;
+    margin: 2%;
 }
 .highlighted-text {
     background-color: var(--third-background);
@@ -740,8 +740,31 @@ button {
     color: var(--highlight-color);
     padding: 2px;
 }
-.chat-image{
+.chat-image {
     width: 40px;
     border-radius: 20px;
     margin-right: 10px;
+}
+.profile-item:hover {
+    background-color: var(--third-background);
+    transition: all var(--short-transition);
+    width: 100%;
+    cursor: pointer;
+}
+.profile-item-content {
+    margin-left: 2%;
+    transition: all var(--short-transition);
+    padding: 1%;
+    display: flex;
+    align-items: center;
+}
+.profile-item-content:hover {
+    color: var(--highlight-color);
+}    
+.profile-item-container {
+    width: 100%;
+    margin: 2% 0;
+}
+.menu-image {
+    width: 35px;
 }

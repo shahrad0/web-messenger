@@ -14,11 +14,10 @@
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
 // add changing password in profile edit menu
-// hot key for going to latest message, also repressing the hotkey scrolls back to where user was (toggle like)
 // add a mode that shrinks the chat and adds a pdf in a side 
 
 // priority 
-// organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/uploads/media
+// organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/media
 // ftp server
 // add safemode for future
 
@@ -42,9 +41,12 @@ document.addEventListener('DOMContentLoaded', ()=> {
 
 let unseenMessages = 0
 let isUploading = false
+let isScrolling = false
+let trackScroll = []
 let userRole
 let replyId
 let chatId = 1
+let userId
 let socket = io()
 const body             = document.body
 const form             = document.getElementById('form')
@@ -457,12 +459,12 @@ async function getUsersDetail(userId) {
       <div id="menu-toolbar"> Profile
       </div>
       <div class="user-info-container">
-        <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
+        <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="">
         <div id="user-profile-detail">
-          <p class="user-detail">Name : ${user.username}</p>
-          <p class="user-detail">ID : ${user.id}</p>
-          <p class="user-detail">Role : ${user.role}</p>
-          <p class="user-detail">Status : ${user.status}</p>
+          <p class="user-detail">Name: ${user.username}</p>
+          <p class="user-detail">ID: ${user.id}</p>
+          <p class="user-detail">Role: ${user.role}</p>
+          <p class="user-detail">Status: ${user.status}</p>
         </div>
       </div>
       `)
@@ -524,8 +526,30 @@ document.addEventListener("keydown", (event) => {
   }
   if (key === "Escape" && document.activeElement === input) input.blur()
   
-  // turn off screen when alt + (x || .) is pressed or when enter + . is pressed 
   if ((keyState.altPressed && (keyCode === 190 || keyCode === 88)) || (keyState.enterPressed && keyState.dotPressed)) toggleOffSetup()
+
+  // hotkey for scrolling between latest message and where user was before scrolling 
+  if (keyState.altPressed && event.key === "j") {
+    if (isScrolling) return // Prevent new scroll 
+  
+    isScrolling = true
+    const [storedTop, storedHeight, isToggled] = trackScroll
+  
+    if (isToggled) {
+      let difference = messageContainer.scrollHeight - storedHeight
+      messageContainer.scrollTo({
+        top: storedTop + difference,
+        behavior: "smooth"
+      })
+      trackScroll = [messageContainer.scrollTop, messageContainer.scrollHeight, false]
+    } 
+    else {
+      trackScroll = [messageContainer.scrollTop, messageContainer.scrollHeight, true]
+      scrollToBottom(true)
+    }
+
+    setTimeout(() => { isScrolling = false }, 1000)
+  }
 
   if (localStorage.getItem("examMode") === "true") {
     let brightness = parseInt(localStorage.getItem("brightness")) ?? 50
@@ -546,7 +570,7 @@ document.addEventListener("keyup", (event) => {
   if (keyCode === 13) keyState.enterPressed = false
   if (key === "`") keyState.backtickPressed = false
   if (key === ".") keyState.dotPressed      = false
-});
+})
 
 // More Menu toggle (CHANGE THIS)
 moreButton.addEventListener("click", () => {
@@ -554,7 +578,7 @@ moreButton.addEventListener("click", () => {
   moreMenu.style.opacity = moreMenuToggle ? '0' : '1';
   moreMenuToggle = !moreMenuToggle;
   if (!moreMenuToggle) setTimeout(() => moreMenu.style.display = 'none', 200);
-});
+})
 
 // Settings Button Setup
 async function settingButtonSetup() {
@@ -564,8 +588,9 @@ async function settingButtonSetup() {
       const response = await fetch(`/user-details`, {
         headers: { credentials : 'include' }
       })
-      if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
-      const user = await response.json();
+      if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
+      const user = await response.json()
+      userId = user.id
       
       createMenu(`          
         <div id="menu-toolbar"> Profile
@@ -573,62 +598,40 @@ async function settingButtonSetup() {
         <div class="user-info-container">
           <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
           <div id="user-profile-detail">
-            <p class="user-detail">Name : ${user.username}</p>
-            <p class="user-detail">ID : ${user.id}</p>
-            <p class="user-detail">Role : ${user.role}</p>
+            <p class="user-detail">Name: ${user.username}</p>
+            <p class="user-detail">ID: ${user.id}</p>
+            <p class="user-detail">Role: ${user.role}</p>
           </div>
-          <div>
+        </div>
+
+        <div class="profile-item-container">
+            <div class="profile-item">
+              <div class="profile-item-content" onclick="openManual()">
+                <svg class="menu-image" viewBox="0 0 32 32"><rect height="1" width="12" x="10" y="2"/><rect height="1" width="12" x="10" y="2"/><rect height="1" transform="translate(-9.5 22.5) rotate(-90)" width="20" x="-3.5" y="15.5"/><rect height="1" transform="translate(11.5 39.5) rotate(-90)" width="16" x="17.5" y="13.5"/><rect height="1" width="6" x="17" y="6"/><rect height="1" width="14" x="9" y="9"/><rect height="1" width="14" x="9" y="12"/><rect height="1" width="14" x="9" y="15"/><rect height="1" width="14" x="9" y="18"/><rect height="1" width="10" x="9" y="21"/><rect height="1" width="7" x="9" y="24"/><path d="M22,2V3h2a1,1,0,0,1,1,1V6h1V4a2,2,0,0,0-2-2Z"/><path d="M10,2V3H8A1,1,0,0,0,7,4V6H6V4A2,2,0,0,1,8,2Z"/><path d="M8,30V29H8a1,1,0,0,1-1-1V26H6v2a2,2,0,0,0,2,2Z"/><path d="M21.91,21.15c-.57-.32-.91-.72-.91-1.15a6.09,6.09,0,0,1-.21,1.59c-1,4.07-6,7.18-12.12,7.4H8v1h.72c8.86-.15,16.07-3.15,17.14-7A3.77,3.77,0,0,0,26,22,8.72,8.72,0,0,1,21.91,21.15Zm-5.78,7a10.5,10.5,0,0,0,5.54-6,8.94,8.94,0,0,0,3.15.79C24.07,25,20.91,27,16.13,28.13Z"/></svg>
+                <h3>Manual</h3>
+              </div>
+            </div>
             
-          </div>
+            <div class="profile-item">
+              <div class="profile-item-content" onclick="editProfile()">
+                <svg class="menu-image" viewBox="0 0 24 24"><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg>
+                <h3>Edit Profile</h3>
+              </div>
+            </div>
+
+            <div class="profile-item">
+              <div class="profile-item-content" onclick="examModeConfig()">
+                <svg class="menu-image" viewBox="0 0 24 24"><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg>
+                <h3>Exam Mode Config</h3>
+              </div>
+            </div>
         </div>`
       )
-      // <button id="manual-button" onclick="openManual()"><svg viewBox="0 0 32 32"><rect height="1" width="12" x="10" y="2"/><rect height="1" width="12" x="10" y="2"/><rect height="1" transform="translate(-9.5 22.5) rotate(-90)" width="20" x="-3.5" y="15.5"/><rect height="1" transform="translate(11.5 39.5) rotate(-90)" width="16" x="17.5" y="13.5"/><rect height="1" width="6" x="17" y="6"/><rect height="1" width="14" x="9" y="9"/><rect height="1" width="14" x="9" y="12"/><rect height="1" width="14" x="9" y="15"/><rect height="1" width="14" x="9" y="18"/><rect height="1" width="10" x="9" y="21"/><rect height="1" width="7" x="9" y="24"/><path d="M22,2V3h2a1,1,0,0,1,1,1V6h1V4a2,2,0,0,0-2-2Z"/><path d="M10,2V3H8A1,1,0,0,0,7,4V6H6V4A2,2,0,0,1,8,2Z"/><path d="M8,30V29H8a1,1,0,0,1-1-1V26H6v2a2,2,0,0,0,2,2Z"/><path d="M21.91,21.15c-.57-.32-.91-.72-.91-1.15a6.09,6.09,0,0,1-.21,1.59c-1,4.07-6,7.18-12.12,7.4H8v1h.72c8.86-.15,16.07-3.15,17.14-7A3.77,3.77,0,0,0,26,22,8.72,8.72,0,0,1,21.91,21.15Zm-5.78,7a10.5,10.5,0,0,0,5.54-6,8.94,8.94,0,0,0,3.15.79C24.07,25,20.91,27,16.13,28.13Z"/></svg></button>
-      // <button id="edit-profile-button"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M.75,17.5A.751.751,0,0,1,0,16.75V12.569a.755.755,0,0,1,.22-.53L11.461.8a2.72,2.72,0,0,1,3.848,0L16.7,2.191a2.72,2.72,0,0,1,0,3.848L5.462,17.28a.747.747,0,0,1-.531.22ZM1.5,12.879V16h3.12l7.91-7.91L9.41,4.97ZM13.591,7.03l2.051-2.051a1.223,1.223,0,0,0,0-1.727L14.249,1.858a1.222,1.222,0,0,0-1.727,0L10.47,3.91Z"/></svg></button>
-
-      //   <form id="exam-mode-config">
-      //   <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
-      //   <label for="exam-mode">exam mode</label>
-      //   <br>
-      //   <br>
-      //   <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
-      //   <label for="exam-mode-gray-scale">gray scale</label>
-      //   <br>
-      //   <br>
-      //   <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
-      //   <label for="exam-mode-brightness">brightness</label>
-
-
-      //   <br>
-      //   <br>
-      //   <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
-      //   <label for="toggle-background">toggle background</label>
-
-
-      // </form>
-      // examModeInit()
-      // const examModeConfig = document.getElementById("exam-mode-config")
-      // examModeConfig.addEventListener("input", () => applyFilters())
-
-      // START edit profile
-
-      document.getElementById("edit-profile-button").addEventListener("click", () => {
-        createMenu(`          
-          <form action="/update-profile" method="POST" enctype="multipart/form-data">
-            <div id="menu-toolbar">Edit Profile</div>
-            <input type="text" name="username" class="new-profile-input" placeholder="Enter new name" required />
-            <input type="hidden" name="userId" value="${user.id}" />
-            <input type="file" onchange="previewFile()" name="profile_image" accept="image/*" class="new-profile-input" />
-            <img src="" class="profile-preview" alt="Image preview...">
-            <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
-          </form>`)
-      })
-
-      // END edit profile
 
     } catch (error) {
       console.error('Error fetching user details:', error);
     }
-  });
+  })
 }
 settingButtonSetup()
 
@@ -1080,7 +1083,7 @@ socket.on("connect"   , () => updateConnectionStatus("online"))
 
 function examModeInit() {
   document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
-  document.getElementById("remove-background").checked = localStorage.getItem("toggleBackground") === "true"
+  document.getElementById("toggle-background").checked = localStorage.getItem("toggleBackground") === "true"
   document.getElementById("exam-mode-gray-scale").checked = localStorage.getItem("grayScale") ==="true"
   document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
 }
@@ -1093,7 +1096,7 @@ function applyFilters() {
     const examMode   = examModeElement.checked 
     const grayScale  = document.getElementById("exam-mode-gray-scale").checked
     const brightness = document.getElementById("exam-mode-brightness").value
-    const toggleBackground = document.getElementById("remove-background").checked
+    const toggleBackground = document.getElementById("toggle-background").checked
     
     // applying filter and saving config
     examModeFilter(examMode,grayScale,brightness,toggleBackground)
@@ -1328,6 +1331,8 @@ function returnFragment(elements) {
   return fragment
 }
 
+// START menu functions
+
 function openManual() {
   createMenu(`
       <div id="menu-toolbar">Manual</div>
@@ -1337,6 +1342,7 @@ function openManual() {
       <p>IMPORTANT: if you've clicked on a PDF, this is not going to work, you have to click on the site again to make it work. This applies to all other shortcuts as well.</p>
       <h3>Chat shortcuts</h3>
       <p>Press "/" to focus on the text input and press "Escape" to remove focus from text input</p>
+      <p>Press "Alt + J" to jump to the latest message and press it again to scroll back to where you were</p>
   `)
 
   const menu = document.getElementById("menu-toolbar").parentNode;
@@ -1359,3 +1365,47 @@ function openManual() {
     )
   })
 }
+
+function editProfile() {
+  createMenu(`          
+    <form action="/update-profile" method="POST" enctype="multipart/form-data">
+      <div id="menu-toolbar">Edit Profile</div>
+      <input type="text" name="username" class="new-profile-input" placeholder="Enter new name" required />
+      <input type="hidden" name="userId" value="${userId}" />
+      <input type="file" onchange="previewFile()" name="profile_image" accept="image/*" class="new-profile-input" />
+      <img src="" class="profile-preview" alt="Image preview...">
+      <button type="submit" class="generic-button" id="update-profile"> Update Profile </button>
+    </form>
+    `)
+}
+
+function examModeConfig() {
+  createMenu(`
+    <div id="menu-toolbar"> Profile
+    </div>
+    <form id="exam-mode-config">
+      <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
+      <label for="exam-mode">exam mode</label>
+      <br>
+      <br>
+      <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
+      <label for="exam-mode-gray-scale">gray scale</label>
+      <br>
+      <br>
+      <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
+      <label for="exam-mode-brightness">brightness</label>
+
+
+      <br>
+      <br>
+      <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
+      <label for="toggle-background">toggle background</label>
+    </form>
+    
+  `)
+
+  examModeInit()
+  document.getElementById("exam-mode-config").addEventListener("input", () => applyFilters())
+}
+
+// END menu functions
