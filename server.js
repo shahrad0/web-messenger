@@ -590,28 +590,66 @@ app.get("/users-details", (req, res) => {
 })
 
 // Update user profile
-app.post("/update-profile", upload.single("profile_image"), (req, res) => {
-  const { userId, username } = req.body;
-  const profileImage = req.file ? req.file.filename : null;
+app.post("/update-profile", upload.single("profile_image"), async (req, res) => {
+  const token = req.cookies.auth_token
+  const { userId, username, password } = req.body
+  const profileImage = req.file ? req.file.filename : null
 
-  let query = "UPDATE users SET username = ?, profile_image = ? WHERE id = ?";
-  let params = [username, profileImage, userId];
+  try {
+    const decoded = await new Promise((resolve, reject) => {
+      jwt.verify(token, secretKey, (err, user) => {
+        if (err) reject(err)
+        else resolve(user)
+      })
+    })
 
-  if (!profileImage) {
-    query = "UPDATE users SET username = ? WHERE id = ?";
-    params = [username, userId];
-  }
+    let query = "UPDATE users SET "
+    let params = []
 
-  db.run(query, params, function (err) {
-    if (err) {
-      console.error("Database error: ", err);
-      return res.status(500).send("Error updating profile");
+    if (profileImage) {
+      query += "profile_image = ?, "
+      params.push(profileImage)
     }
+
+    if (username) {
+      query += "username = ?, "
+      params.push(username)
+    }
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, saltRounds)
+      query += "password = ?, "
+      params.push(hashedPassword)
+    }
+
+    if (params.length === 0) return res.status(400).send("No fields to update")
     
-    generateToken({userId: userId,username: username,profile_image : profileImage},res)
-    res.status(200).send("Profile updated successfully");
-  });
-});
+
+    query = query.slice(0, -2)
+    query += " WHERE id = ?" 
+    params.push(userId)
+
+    // Execute the query
+    db.run(query, params, function (err) {
+      if (err) {
+        console.error("Database error: ", err)
+        return res.status(500).send("Error updating profile")
+      }
+
+      const newToken = jwt.sign(
+        { userId: userId, username: username || decoded.username, profile_image: profileImage || decoded.profile_image },
+        secretKey,
+        { expiresIn: "1w" }
+      )
+      res.cookie("auth_token", newToken, { httpOnly: true, secure: true }) 
+
+      res.status(200).send("Profile updated successfully")
+    })
+  } catch (error) {
+    console.error("Error verifying token:", error)
+    res.status(401).send("Unauthorized: Invalid token")
+  }
+})
 
 // Serve uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")))
