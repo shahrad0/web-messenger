@@ -486,7 +486,7 @@ document.addEventListener("click", async (event) => {
   const clickedChatId = event.target.closest(".side-menu-item")?.getAttribute("chat-id")
 
   if (clickedChatId) {
-    if (chatId === clickedChatId) return
+    if (chatId == clickedChatId) return
     else changeChat(clickedChatId)
   }
 })
@@ -1437,7 +1437,35 @@ function examModeConfig() {
 }
 
 function openCustomizationMenu() {
-  return
+  createMenu(`
+    <div id="menu-toolbar">Customize</div>
+    ${addCSSVariables()}
+    `)
 }
 
+function addCSSVariables() {
+  const rootStyles = getComputedStyle(document.documentElement)
+  const rgbRegex = /^rgb\((\d{1,3},\s?){2}\d{1,3}\)$/
+  let html = ""
+
+  Array.from(rootStyles).forEach(property => {
+    if (property.startsWith('--')) {
+      const value = rootStyles.getPropertyValue(property).trim()
+      if (rgbRegex.test(value)) {
+        html += `
+        <div style="display: flex;">
+          <label for="${property}">${property}</label>
+          <input type="text" id="${property}" value="${value}">
+          <input type="color" id="${property}-color" value="${value}">
+        </div>
+        `
+      }
+    }
+  })
+
+  return html
+}
+
+
 // END menu functions
+

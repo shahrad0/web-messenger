@@ -1,18 +1,17 @@
 :root {
-    --main-blur             : rgb(13, 65, 0);
-    --main-border           : rgb(0, 138, 53);
     --main-background-color : rgb(0, 0, 0);
-    --main-color            : rgb(199, 199, 199);
-
-    --border-focus          : rgb(0, 199, 76);
-    --blur-focus            : rgb(0, 90, 35);
-
     --secondary-background  : rgb(31, 31, 31);
-
-    --highlight-color       : rgb(0, 168, 36);
-    --highlight-color-hover : rgb(0, 209, 45); 
-
     --third-background      : rgb(50,50,50);
+    
+    --main-color            : rgb(199, 199, 199);
+    --highlight-color       : rgb(0, 168, 36);
+    --highlight-color-hover : rgb(0, 209, 45);
+    
+    --main-border           : rgb(0, 138, 53);
+    --border-focus          : rgb(0, 199, 76);
+
+    --main-blur             : rgb(13, 65, 0);
+    --blur-focus            : rgb(0, 90, 35);
 
     --selected-message-bg   : rgba(0, 55, 12, 0.55);
     --selected-message-blur : rgb(17, 65, 17);
@@ -217,6 +216,7 @@ button {
     border-radius: 15px;
     border: 2px solid var(--main-border) ;
     box-shadow: 0 0 25px var(--main-blur);
+    overflow: scroll;
 }
 .user-info-container {
     display: flex;
