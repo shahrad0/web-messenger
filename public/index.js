@@ -1436,27 +1436,56 @@ function examModeConfig() {
   document.getElementById("exam-mode-config").addEventListener("input", () => applyFilters())
 }
 
+// START customization
+
+function rgbToHex(rgb) {
+  const rgbValues = rgb.replace(/\s+/g, '').match(/\d+/g);
+  if (!rgbValues || rgbValues.length !== 3) {
+    throw new Error("Invalid RGB format");
+  }
+
+  return `#${rgbValues
+    .map(value => parseInt(value).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+function hexToRgb(hex) {
+  const cleanHex = hex.replace('#', '')
+  if (cleanHex.length !== 6 || /[^0-9a-fA-F]/.test(cleanHex)) throw new Error("Invalid HEX format")
+
+  const r = parseInt(cleanHex.slice(0, 2), 16)
+  const g = parseInt(cleanHex.slice(2, 4), 16)
+  const b = parseInt(cleanHex.slice(4, 6), 16)
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function openCustomizationMenu() {
   createMenu(`
     <div id="menu-toolbar">Customize</div>
-    ${addCSSVariables()}
+    <div class="variable-container">
+      ${addCSSVariables()}
+    <div>
     `)
 }
 
 function addCSSVariables() {
   const rootStyles = getComputedStyle(document.documentElement)
-  const rgbRegex = /^rgb\((\d{1,3},\s?){2}\d{1,3}\)$/
+  const rgbRegex = /^rgba?\(\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})(,\s*\d*(\.\d+)?)?\s*\)$/
   let html = ""
 
   Array.from(rootStyles).forEach(property => {
     if (property.startsWith('--')) {
-      const value = rootStyles.getPropertyValue(property).trim()
+      let value = rootStyles.getPropertyValue(property).trim().replace(/\s+/g, ' ')
       if (rgbRegex.test(value)) {
+        const rgbOnly = value.replace(/rgba?\(([^)]+)\)/, (_, rgb) => rgb.split(',').slice(0, 3).join(','))
         html += `
-        <div style="display: flex;">
-          <label for="${property}">${property}</label>
-          <input type="text" id="${property}" value="${value}">
-          <input type="color" id="${property}-color" value="${value}">
+        <div style="display: flex; margin: 2% 0;">
+          <label for="${property}">${property.replace(/-/g, " ")}</label>
+          <div class="color-input-container">
+            <input type="text" id="${property}" value="${value}">
+            <input type="color" id="${property}-color" value="${rgbToHex(rgbOnly)}">
+          </div>
         </div>
         `
       }
@@ -1466,6 +1495,7 @@ function addCSSVariables() {
   return html
 }
 
+// END customization
 
 // END menu functions
 
