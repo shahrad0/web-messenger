@@ -2,7 +2,6 @@
 // polishing the code (for css too)(this is always going to be the goal)
 // add notification and add toggle for it 
 // add search
-// add customiztation
 // add custom background image 
 // add poll or voting system
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
@@ -15,6 +14,7 @@
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
 // add changing password in profile edit menu
 // add a mode that shrinks the chat and adds a pdf in a side 
+// show upload speed when uploading 
 
 // priority 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/media
@@ -35,8 +35,10 @@ fetch("/verify", { credentials: "include" })
 
 document.addEventListener('DOMContentLoaded', ()=> {
   applyFilters()
+  loadSavedColors()
   addChats()
   loadMessages(chatId)
+  getUserRole()
 })
 
 let unseenMessages = 0
@@ -111,8 +113,6 @@ async function getUserRole() {
     console.error("Failed to fetch user role:", error)
   }
 }
-
-getUserRole()
 
 // END getting user role
 
@@ -358,9 +358,9 @@ async function sendMessage(userMessage, replyId = null, chatId) {
   }
   const message = userMessage.trim()
   const hasFile = fileInput && fileInput.files.length > 0
-
+  
   if (!message && !hasFile) return
-
+  
   try {
     isUploading = true
     const xhr = new XMLHttpRequest()
@@ -392,6 +392,7 @@ async function sendMessage(userMessage, replyId = null, chatId) {
         input.value = ''
         if (hasFile) fileInput.value = ''
         if (document.getElementById('reply-container')) removeReply()
+        trackScroll = [messageContainer.scrollTop, messageContainer.scrollHeight, true]
         scrollToBottom(true)
       }
       else console.error('Error uploading file:', xhr.responseText)
@@ -530,7 +531,7 @@ document.addEventListener("keydown", (event) => {
 
   // hotkey for scrolling between latest message and where user was before scrolling 
   if (keyState.altPressed && event.key === "j") {
-    if (isScrolling) return // Prevent new scroll 
+    if (isScrolling) return 
   
     isScrolling = true
     const [storedTop, storedHeight, isToggled] = trackScroll
@@ -1422,8 +1423,10 @@ function examModeConfig() {
       <br>
       <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
       <label for="exam-mode-brightness">brightness</label>
-
-
+      <br>
+      <br>
+      <input type="checkbox" id="exam-mode-restriction" class="checkbox custom-checkbox">
+      <label for="exam-mode-restriction">apply effects only on exam chat</label>
       <br>
       <br>
       <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
@@ -1436,63 +1439,115 @@ function examModeConfig() {
   document.getElementById("exam-mode-config").addEventListener("input", () => applyFilters())
 }
 
-// START customization
+// START customization (this part is magic idk wtf is happening)
 
 function rgbToHex(rgb) {
-  const rgbValues = rgb.replace(/\s+/g, '').match(/\d+/g);
-  if (!rgbValues || rgbValues.length !== 3) {
-    throw new Error("Invalid RGB format");
-  }
+  const rgbValues = rgb.match(/\d+/g)
+  if (!rgbValues || rgbValues.length !== 3) throw new Error("Invalid RGB format")
 
-  return `#${rgbValues
-    .map(value => parseInt(value).toString(16).padStart(2, '0'))
-    .join('')}`;
+  return `#${rgbValues.map(val => (+val).toString(16).padStart(2, '0')).join('')}`
 }
 
 function hexToRgb(hex) {
-  const cleanHex = hex.replace('#', '')
-  if (cleanHex.length !== 6 || /[^0-9a-fA-F]/.test(cleanHex)) throw new Error("Invalid HEX format")
+  const [r, g, b] = hex.replace('#', '').match(/.{2}/g).map(val => parseInt(val, 16))
+  return `rgb(${r}, ${g}, ${b})`
+}
 
-  const r = parseInt(cleanHex.slice(0, 2), 16)
-  const g = parseInt(cleanHex.slice(2, 4), 16)
-  const b = parseInt(cleanHex.slice(4, 6), 16)
+function saveColor(property, value) {
+  const savedColors = JSON.parse(localStorage.getItem('customColors')) || {}
+  savedColors[property] = value
+  localStorage.setItem('customColors', JSON.stringify(savedColors))
+}
 
-  return `rgb(${r}, ${g}, ${b})`;
+function loadSavedColors() {
+  const savedColors = JSON.parse(localStorage.getItem('customColors')) || {}
+  Object.entries(savedColors).forEach(([property, value]) => {
+    document.documentElement.style.setProperty(property, value)
+  })
 }
 
 function openCustomizationMenu() {
+  loadSavedColors()
   createMenu(`
     <div id="menu-toolbar">Customize</div>
     <div class="variable-container">
       ${addCSSVariables()}
-    <div>
-    `)
+    </div>
+  `)
+
+  document.querySelector('.variable-container').addEventListener('input', (event) => {
+    const target = event.target
+    const id = target.id
+
+    if (target.type === 'text') {
+      const colorInput = document.getElementById(`${id}-color`)
+      const match = target.value.match(/rgba?\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})(?:,\s*(\d?\.?\d+))?\)/)
+
+      if (match) {
+        const [_, r, g, b] = match
+        colorInput.value = rgbToHex(`rgb(${r}, ${g}, ${b})`)
+        saveColor(`--${id}`, target.value)
+        document.documentElement.style.setProperty(`--${id}`, target.value)
+      }
+    } else if (target.type === 'color') {
+      const textInput = document.getElementById(id.replace('-color', ''))
+      const [r, g, b] = target.value.match(/\w\w/g).map(val => parseInt(val, 16))
+      const rgbaValue = `rgba(${r}, ${g}, ${b}, 1)` // Default alpha to 1 for simplicity
+
+      textInput.value = rgbaValue
+      saveColor(`--${textInput.id}`, rgbaValue)
+      document.documentElement.style.setProperty(`--${textInput.id}`, rgbaValue)
+    }
+  })
 }
 
 function addCSSVariables() {
-  const rootStyles = getComputedStyle(document.documentElement)
-  const rgbRegex = /^rgba?\(\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})(,\s*\d*(\.\d+)?)?\s*\)$/
+  const rootStyles = getCSSVariables()
+  const isRGBA = value => /^rgba?\(\d{1,3},\s*\d{1,3},\s*\d{1,3}(?:,\s*\d*\.?\d+)?\)$/.test(value)
   let html = ""
 
-  Array.from(rootStyles).forEach(property => {
-    if (property.startsWith('--')) {
-      let value = rootStyles.getPropertyValue(property).trim().replace(/\s+/g, ' ')
-      if (rgbRegex.test(value)) {
-        const rgbOnly = value.replace(/rgba?\(([^)]+)\)/, (_, rgb) => rgb.split(',').slice(0, 3).join(','))
-        html += `
-        <div style="display: flex; margin: 2% 0;">
-          <label for="${property}">${property.replace(/-/g, " ")}</label>
-          <div class="color-input-container">
-            <input type="text" id="${property}" value="${value}">
-            <input type="color" id="${property}-color" value="${rgbToHex(rgbOnly)}">
-          </div>
+  Object.entries(rootStyles).forEach(([property, value]) => {
+    value = value.trim()
+    if (isRGBA(value)) {
+      const match = value.match(/rgba?\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})(?:,\s*(\d?\.?\d+))?\)/)
+      const [_, r, g, b] = match
+      const savedColors = JSON.parse(localStorage.getItem('customColors')) || {}
+      const savedValue = savedColors[property] || value
+
+      html += `
+      <div style="display: flex; flex-direction: column; margin: 3% 0;position: relative;">
+        <p>${property.replace(/-/g, ' ')}</p>
+        <div class="color-input-container">
+          <input type="text" id="${property.replace('--', '')}" value="${savedValue}" style="flex: 2;">
+          <input type="color" id="${property.replace('--', '')}-color" value="${rgbToHex(`rgb(${r}, ${g}, ${b})`)}" style="flex: 1;">
         </div>
-        `
-      }
+      </div>
+      `
     }
   })
 
   return html
+}
+
+// this bs is to support chrome (fuck chrome)
+function getCSSVariables() {
+  const variables = {}
+  
+  Array.from(document.styleSheets).forEach(sheet => {
+    try {
+      Array.from(sheet.cssRules).forEach(rule => {
+        if (rule.style) {
+          Array.from(rule.style).forEach(property => {
+            if (property.startsWith('--')) variables[property] = rule.style.getPropertyValue(property).trim()
+          })
+        }
+      })
+    } catch (e) {
+      console.warn('Could not access stylesheet:', sheet.href)
+    }
+  })
+
+  return variables
 }
 
 // END customization
