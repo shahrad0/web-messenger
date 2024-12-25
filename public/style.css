@@ -775,6 +775,7 @@ button {
     width: 35px;
 }
 .variable-container {
+    margin-left: 2%;
     overflow-y: scroll;
     flex: 1;
 }

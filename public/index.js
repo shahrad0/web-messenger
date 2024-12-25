@@ -1090,53 +1090,83 @@ socket.on("connect"   , () => updateConnectionStatus("online"))
 // START exam mode functions
 
 function examModeInit() {
+  // restrictions
   document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
-  document.getElementById("toggle-background").checked = localStorage.getItem("toggleBackground") === "true"
-  document.getElementById("exam-mode-gray-scale").checked = localStorage.getItem("grayScale") ==="true"
+  document.getElementById("exam-mode-restriction").checked = localStorage.getItem("grayScale") ==="true"
+  
+  // filters
+  document.getElementById("exam-mode-gray-scale").checked  = localStorage.getItem("grayScale") ==="true"
+  document.getElementById("exam-mode-contrast").value   = parseInt(localStorage.getItem("contrast") || 100)
   document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
+
+  // other
+  document.getElementById("remove-background").checked = localStorage.getItem("removeBackground") === "true"
 }
 
 function applyFilters() {
   const examModeElement = document.getElementById("exam-mode")
-
+  
   if (examModeElement) {
     // getting element values
     const examMode   = examModeElement.checked 
+    const examRestriction = document.getElementById("exam-mode-restriction").checked
     const grayScale  = document.getElementById("exam-mode-gray-scale").checked
     const brightness = document.getElementById("exam-mode-brightness").value
-    const toggleBackground = document.getElementById("toggle-background").checked
+    const contrast = document.getElementById("exam-mode-contrast").value
+    const removeBackground = document.getElementById("remove-background").checked
     
     // applying filter and saving config
-    examModeFilter(examMode,grayScale,brightness,toggleBackground)
-    examConfig("set", { examMode, grayScale, brightness, toggleBackground})
+    examModeFilter(examMode, examRestriction, grayScale, brightness, contrast, removeBackground)
+    examConfig("set", {examMode, examRestriction, grayScale, brightness, contrast, removeBackground})
   } 
   else {
-    const { examMode , grayScale , brightness, toggleBackground} = examConfig("get")
-    if (examMode)  examModeFilter(examMode,grayScale,brightness,toggleBackground)
+    const { examMode, examRestriction, grayScale, brightness, contrast, removeBackground } = examConfig("get")
+    if (examMode)  examModeFilter(examMode, examRestriction, grayScale, brightness, contrast, removeBackground)
   }
 }
 
-function examModeFilter(examMode, grayScale, brightness, toggleBackground) {
-  const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
-  const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
-  body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter}`.trim() : ""
-  toggleBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
+function examModeFilter(examMode, examRestriction, grayScale, brightness, contrast, removeBackground) {
+  // check for exam mode
+  if (examMode) {
+    // if true check for chatId else applies the filters
+    if (examRestriction) {
+      // chatId 2 == exam chat
+      if (chatId == 2) {
+        const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
+        const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
+        const contrastFilter = brightness ? `contrast(${contrast}%)` : "" 
+        body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter} ${contrastFilter}`.trim() : ""
+        removeBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
+      }
+    }
+    else {
+      const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
+      const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
+      const contrastFilter = brightness ? `contrast(${contrast}%)` : ""         
+      body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter} ${contrastFilter}`.trim() : ""
+      removeBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
+    }
+  }
 }
 
-function examConfig(setOrGet,{examMode = "",grayScale = "",brightness = "", toggleBackground = ""}={}) {
+function examConfig(setOrGet, { examMode = "", examRestriction = "", grayScale = "", brightness = "",contrast = "", removeBackground = "" } = {}) {
   if (setOrGet==="set") {
-  localStorage.setItem("examMode" ,examMode)  
-  localStorage.setItem("grayScale",grayScale)  
-  localStorage.setItem("brightness",brightness)  
-  localStorage.setItem("toggleBackground",toggleBackground)  
+  localStorage.setItem("examMode", examMode)
+  localStorage.setItem("examRestriction", examRestriction)
+  localStorage.setItem("grayScale", grayScale)
+  localStorage.setItem("brightness", brightness)
+  localStorage.setItem("contrast", contrast)
+  localStorage.setItem("removeBackground", removeBackground)
   }
   else if (setOrGet === "get") {
     return {
       examMode: JSON.parse(localStorage.getItem("examMode")   || "false"),
+      examRestriction: JSON.parse(localStorage.getItem("examRestriction")   || "false"),
       grayScale: JSON.parse(localStorage.getItem("grayScale") || "false"),
-      toggleBackground: JSON.parse(localStorage.getItem("toggleBackground") || "false"),
-      brightness: localStorage.getItem("brightness") || "100"
-    };
+      removeBackground: JSON.parse(localStorage.getItem("removeBackground") || "false"),
+      brightness: localStorage.getItem("brightness") || "100",
+      contrast: localStorage.getItem("contrast") || "100"
+    }
   }
 }
 
@@ -1407,7 +1437,8 @@ function editProfile() {
       })
       .catch(err => console.error('Error:', err))
     }
-  }
+}
+
 function examModeConfig() {
   createMenu(`
     <div id="menu-toolbar"> Profile
@@ -1417,29 +1448,32 @@ function examModeConfig() {
       <label for="exam-mode">exam mode</label>
       <br>
       <br>
-      <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
-      <label for="exam-mode-gray-scale">gray scale</label>
-      <br>
-      <br>
-      <input type="number" min="0" max="100" id="exam-mode-brightness" style = "display:initial;"/>
-      <label for="exam-mode-brightness">brightness</label>
-      <br>
-      <br>
       <input type="checkbox" id="exam-mode-restriction" class="checkbox custom-checkbox">
       <label for="exam-mode-restriction">apply effects only on exam chat</label>
       <br>
       <br>
-      <input type="checkbox" id="toggle-background" class="checkbox custom-checkbox">
-      <label for="toggle-background">toggle background</label>
+      <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
+      <label for="exam-mode-gray-scale">gray scale</label>
+      <br>
+      <br>
+      <input type="number" min="0" max="400" id="exam-mode-brightness" style = "display:initial;"/>
+      <label for="exam-mode-brightness">brightness</label>
+      <br>
+      <br>
+      <input type="number" min="0" max="400" id="exam-mode-contrast" style = "display:initial;"/>
+      <label for="exam-mode-contrast">contrast</label>
+      <br>
+      <br>
+      <input type="checkbox" id="remove-background" class="checkbox custom-checkbox">
+      <label for="remove-background">remove background</label>
     </form>
-    
   `)
 
   examModeInit()
   document.getElementById("exam-mode-config").addEventListener("input", () => applyFilters())
 }
 
-// START customization (this part is magic idk wtf is happening)
+// START customization (this part is magic idk wtf is happening)(not finished need more work)
 
 function rgbToHex(rgb) {
   const rgbValues = rgb.match(/\d+/g)
@@ -1471,6 +1505,7 @@ function openCustomizationMenu() {
   createMenu(`
     <div id="menu-toolbar">Customize</div>
     <div class="variable-container">
+      <h2>Colors</h2>
       ${addCSSVariables()}
     </div>
   `)
