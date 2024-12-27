@@ -104,7 +104,7 @@ button {
 .generic-button:active {
     box-shadow: 0 0 15px var(--main-blur);
 }
-.main-container {
+#main-container {
     display: flex;
     height: 100vh;
 }
@@ -117,6 +117,7 @@ button {
     max-height: 100vh;
     background-size: cover;
     background-repeat: no-repeat;
+    position: relative;
 }
 #divider { 
     background-color: var(--main-border);
@@ -171,7 +172,7 @@ button {
     background-color:var(--secondary-background) ;
     border: solid 1px var(--main-border);
     max-width:80%;
-    padding: 1%;
+    padding: 10px;
     border-radius: 15px;
     border-bottom-left-radius: 0;
     box-shadow: 0 0 15px 5px var(--main-blur);
@@ -680,7 +681,7 @@ button {
 #navigation-bar {
     background-color: var(--main-background-color);
     border-bottom: solid 1px var(--main-border);
-    position: fixed;
+    position: absolute;
     top: 0;
     height: 50px;
     width: -moz-available;

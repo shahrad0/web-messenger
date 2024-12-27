@@ -34,8 +34,8 @@ fetch("/verify", { credentials: "include" })
   })
 
 document.addEventListener('DOMContentLoaded', ()=> {
-  applyFilters()
   loadSavedColors()
+  applyFilters()
   addChats()
   loadMessages(chatId)
   getUserRole()
@@ -55,6 +55,7 @@ const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const sideMenu         = document.getElementById("side-menu")
 const fileInput        = document.getElementById('file')
+const mainContainer    = document.getElementById("main-container")
 const chatContainer    = document.getElementById("chat")
 const messageContainer = document.getElementById("messages")
 const scrollDownButton = document.getElementById("scroll-down")
@@ -553,14 +554,15 @@ document.addEventListener("keydown", (event) => {
   }
 
   if (localStorage.getItem("examMode") === "true") {
+    if (localStorage.getItem("examRestriction") === "true" && !chatId == 2) return
+    
     let brightness = parseInt(localStorage.getItem("brightness")) ?? 50
-    const grayScale = localStorage.getItem("grayScale") === "true" ? 1 : 0
 
     if (event.key === "=" || event.key === "+")   brightness = Math.min(brightness + 50, 400); // max brightness 400
-    else if (event.key === "-" ) brightness = Math.max(brightness - 50, 0); // min brightness 0
+    else if (event.key === "-") brightness = Math.max(brightness - 50, 0); // min brightness 0
     
     localStorage.setItem("brightness", brightness)
-    body.style.filter = `grayscale(${grayScale}) brightness(${brightness}%)`.trim()
+    applyFilters()
   }
 })
 
@@ -641,6 +643,7 @@ async function settingButtonSetup() {
     }
   })
 }
+
 settingButtonSetup()
 
 // END setting 
@@ -817,7 +820,8 @@ document.addEventListener("contextmenu", function (e) {
   // when user right click on message container
   else if (targetedElement) {
     let features = [`copyMessage` , 'reply', 'hideMessage']
-    if (targetedElement.querySelector(".sent"))       features.push("invertColor")
+    if (targetedElement.querySelector(".sent")) features.push("invertColor")
+    if (targetedElement.querySelector("iframe")) features.push("addToSide")
     if (userRole === "owner" || userRole === "admin") features.push("delete") 
 
     contextMenu(e,features)
@@ -834,6 +838,11 @@ document.addEventListener("contextmenu", function (e) {
   // right click on navigator 
   else if (e.target.closest("#navigation-bar")){
     contextMenu(e, ['hideNavigator'])
+  }
+
+  // right click on the side menu for pdf
+  else if (e.target.closest("#pdf-container")) {
+    contextMenu(e, ['invertColor','closeSideMenu'])
   }
   // remove context menu if none of the conditions were true 
   else removeExistingMenu()
@@ -857,12 +866,13 @@ function contextMenu(event,features) {
     if (element == "copyMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
     if (element == "hideMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: () => hideMessage(),text : "Hide" }  ))
     if (element == "invertColor")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
+    if (element == "addToSide") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"add-to-side", onClick: () => addToSide(),text : "Add to side" }  ))
     if (element == "delete") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
     if (element == "reply")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }))
     if (element == "paste")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }))
     if (element == "copy")   contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }))
     if (element == "cut")    contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }))
-  });
+  })
   body.appendChild(contextMenuElement);
   
   // Adjust the position of the menu within the viewport
@@ -984,17 +994,12 @@ function hideMessage(count = null) {
 }
 
 function invertColor() {
-  const elements = targetedElement.querySelectorAll(".sent")
-  elements.forEach(element => {
-    element.style.filter ? element.style.filter = "" : element.style.filter = "invert()"
-  });
-  // if (elementFilter.tagName === "OBJECT") {
-  //   // failed attempt at inverting just the pdf pages not the whole pdf
-  //   elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
-  // } 
-  // else {
-    // elementFilter.style.filter ? elementFilter.style.filter = "" : elementFilter.style.filter = "invert()"
-  // }
+  // const elements = targetedElement.querySelectorAll(".sent")
+  
+  const elements = targetedElement ?  targetedElement.querySelectorAll(".sent") : [document.getElementById("pdf-container").querySelector("iframe")]
+    elements.forEach(element => {
+      element.style.filter ? element.style.filter = "" : element.style.filter = "invert()"
+    })
 }
 
 // this can be combined with other function in future 
@@ -1013,11 +1018,29 @@ async function deleteMessage() {
     window.alert(`Failed to delete message: ${error}`);
   }
 }
+
 // not complete 
 function hideNavigator() {
   navigatorElement.style.display = "none"
   messageContainer.style.maxHeight = "90%"
   messageContainer.style.marginTop = 0
+}
+
+function addToSide() {
+  const pdf = targetedElement.querySelector("iframe")
+  const pdfContainer = createCustomElement("div", { id: "pdf-container" })
+
+  pdf.style.height = "100%"
+  pdfContainer.style.width = "46%"
+  pdfContainer.style.padding = "0 2%"
+
+  pdfContainer.appendChild(pdf)
+  mainContainer.appendChild(pdfContainer)
+  
+  pdfContainer.addEventListener("con", () => {
+    
+  })
+  targetedElement.style.display = "none"
 }
 
 // END right click functions
@@ -1092,7 +1115,7 @@ socket.on("connect"   , () => updateConnectionStatus("online"))
 function examModeInit() {
   // restrictions
   document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
-  document.getElementById("exam-mode-restriction").checked = localStorage.getItem("grayScale") ==="true"
+  document.getElementById("exam-mode-restriction").checked = localStorage.getItem("examRestriction") ==="true"
   
   // filters
   document.getElementById("exam-mode-gray-scale").checked  = localStorage.getItem("grayScale") ==="true"
@@ -1133,17 +1156,22 @@ function examModeFilter(examMode, examRestriction, grayScale, brightness, contra
       // chatId 2 == exam chat
       if (chatId == 2) {
         const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
-        const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
-        const contrastFilter = brightness ? `contrast(${contrast}%)` : "" 
-        body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter} ${contrastFilter}`.trim() : ""
+        const brightnessFilter = brightness ? `brightness(${brightness}%)` : ""
+        const contrastFilter = brightness ? `contrast(${contrast}%)` : ""
+
+        body.style.filter = `${grayScaleFilter} ${brightnessFilter} ${contrastFilter}`.trim()
+
         removeBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
       }
+      else body.style.filter =""
     }
     else {
       const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
-      const brightnessFilter = brightness ? `brightness(${brightness}%)` : "" 
-      const contrastFilter = brightness ? `contrast(${contrast}%)` : ""         
-      body.style.filter = examMode ? `${grayScaleFilter} ${brightnessFilter} ${contrastFilter}`.trim() : ""
+      const brightnessFilter = brightness ? `brightness(${brightness}%)` : ""
+      const contrastFilter = brightness ? `contrast(${contrast}%)` : ""
+
+      body.style.filter = `${grayScaleFilter} ${brightnessFilter} ${contrastFilter}`.trim()
+
       removeBackground ? chatContainer.style.backgroundImage = "" : chatContainer.style.backgroundImage = "url(Images/Main/weed-leaf-led-neon-sign-120113.jpg)"
     }
   }
@@ -1183,45 +1211,6 @@ socket.on("delete message", (messageId) => {
 })
 
 // END delete message 
-
-// START command (this is kinda bs)
-
-// 0 --> user
-// 1 --> mod
-// 2 --> admin
-// 3 --> owner
-
-const roles = { user: 0, mod: 1, admin: 2,owner: 3 }
-
-const commands = {
-  hideMessage: {
-    handler: (count) => {
-      hideMessage(count)
-    },
-    requiredRole: 0,
-  },
-  // deleteMessage: {
-  //   handler: (count) => {
-
-  //   },
-  //   requiredRole: 1, 
-  // },
-}
-
-function handleCommand(text) {
-  // still dont know wtf is  ...
-  const [commandName, ...args] = text.slice(1).split(" ")
-  const command = commands[commandName]
-
-  if (command) {
-    command.handler(args[0])
-  } 
-
-  // else console.error(`Unknown command: ${commandName}`);
-  
-}
-
-// END command
 
 // START chats (minimize function to understand better)
 
@@ -1357,6 +1346,7 @@ function changeChat(NewchatId) {
   document.querySelector(`[chat-id="${chatId}"]`).classList.add("selected-chat")
   messageContainer.innerHTML = ''
   loadMessages(chatId)
+  applyFilters()
 }
 
 // END chats
