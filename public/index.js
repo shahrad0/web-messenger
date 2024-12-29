@@ -8,15 +8,11 @@
 // in exam chat add quiz mode or test mode 
 // allow selecting multiple messages and deleting them 
 // add multiple animation for deleting message and randomly choose one when deleting a message (use nuke)
-// fix pagination
 // rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
+// rework createMenu function 
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
-// add changing password in profile edit menu
-// add a mode that shrinks the chat and adds a pdf in a side 
 // show upload speed when uploading 
-
-// priority 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/media
 // ftp server
 // add safemode for future
@@ -862,16 +858,17 @@ function contextMenu(event,features) {
   contextMenuElement.id    = "context-menu"
   // add element depending on where user right clicks
   features.forEach(element => {
-    if (element == "hideNavigator")contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-navigator", onClick: hideNavigator,text : "Hide" }  ))
-    if (element == "copyMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy-message", onClick: copyMessage,text : "Copy" }  ))
-    if (element == "hideMessage")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"hide-message", onClick: () => hideMessage(),text : "Hide" }  ))
-    if (element == "invertColor")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"invert-color", onClick: invertColor,text : "Invert content color " }  ))
-    if (element == "addToSide") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"add-to-side", onClick: () => addToSide(),text : "Add to side" }  ))
-    if (element == "delete") contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"delete",onClick: deleteMessage,text : "Delete" }  ))
-    if (element == "reply")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"reply", onClick: reply,text : "Reply" }))
-    if (element == "paste")  contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"paste", onClick: paste,text : "Paste" }))
-    if (element == "copy")   contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"copy",  onClick: copy ,text : "Copy" }))
-    if (element == "cut")    contextMenuElement.appendChild(createCustomElement("div",{ className: "right-click-item", id:"cut" ,  onClick: cut  ,text : "Cut" }))
+    if (element == "hideNavigator") contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "hide-navigator", onClick: hideNavigator, text: "Hide" }))
+    if (element == "closeSideMenu") contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "close-side-menu", onClick: closeSideMenu, text: "Close" }))
+    if (element == "copyMessage")   contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "copy-message", onClick: copyMessage, text: "Copy" }))
+    if (element == "hideMessage")   contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "hide-message", onClick: () => hideMessage(), text: "Hide" }))
+    if (element == "invertColor")   contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "invert-color", onClick: invertColor, text: "Invert content color " }))
+    if (element == "addToSide")     contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "add-to-side", onClick: addToSide, text: "Add to side" }))
+    if (element == "delete")        contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "delete", onClick: deleteMessage, text: "Delete" }))
+    if (element == "reply")         contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "reply", onClick: reply, text: "Reply" }))
+    if (element == "paste")         contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "paste", onClick: paste, text: "Paste" }))
+    if (element == "copy")          contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "copy",  onClick: copy , text: "Copy" }))
+    if (element == "cut")           contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "cut" ,  onClick: cut  , text: "Cut" }))
   })
   body.appendChild(contextMenuElement);
   
@@ -887,6 +884,10 @@ function contextMenu(event,features) {
 }
 
 // START right click functions
+
+async function cut() {
+  return
+}
 
 async function copy() {
     const selection = window.getSelection();
@@ -969,7 +970,7 @@ document.addEventListener("dblclick", (e) => {
 
 // END reply 
 
-function createCustomElement(elementType, { id = "", className = "", text = "", HTML = "",onClick = null} = {}) {
+function createCustomElement(elementType, { id = "", className = "", text = "", HTML = "", onClick = null } = {}) {
   const element = document.createElement(elementType)
 
   if (typeof onClick === "function") element.onclick = onClick
@@ -994,15 +995,12 @@ function hideMessage(count = null) {
 }
 
 function invertColor() {
-  // const elements = targetedElement.querySelectorAll(".sent")
-  
   const elements = targetedElement ?  targetedElement.querySelectorAll(".sent") : [document.getElementById("pdf-container").querySelector("iframe")]
-    elements.forEach(element => {
-      element.style.filter ? element.style.filter = "" : element.style.filter = "invert()"
-    })
-}
 
-// this can be combined with other function in future 
+  elements.forEach(element => {
+    element.style.filter ? element.style.filter = "" : element.style.filter = "invert()"
+  })
+}
 
 async function deleteMessage() {
   const messageId = targetedElement.querySelector(".message-text").getAttribute("data-message-id");
@@ -1028,19 +1026,17 @@ function hideNavigator() {
 
 function addToSide() {
   const pdf = targetedElement.querySelector("iframe")
+  const clonedPdf = pdf.cloneNode(true)
   const pdfContainer = createCustomElement("div", { id: "pdf-container" })
 
-  pdf.style.height = "100%"
-  pdfContainer.style.width = "46%"
-  pdfContainer.style.padding = "0 2%"
+  clonedPdf.style.height = "100%"
 
-  pdfContainer.appendChild(pdf)
+  pdfContainer.appendChild(clonedPdf)
   mainContainer.appendChild(pdfContainer)
-  
-  pdfContainer.addEventListener("con", () => {
-    
-  })
-  targetedElement.style.display = "none"
+}
+
+function closeSideMenu() {
+  document.getElementById("pdf-container").remove()
 }
 
 // END right click functions
@@ -1373,7 +1369,7 @@ function openManual() {
       <p>Press "Alt + J" to jump to the latest message and press it again to scroll back to where you were</p>
   `)
 
-  const menu = document.getElementById("menu-toolbar").parentNode;
+  const menu = document.getElementById("menu-toolbar").parentNode
 
   // Add classes to <h2> elements
   const headers = menu.querySelectorAll("h3")
@@ -1431,7 +1427,7 @@ function editProfile() {
 
 function examModeConfig() {
   createMenu(`
-    <div id="menu-toolbar"> Profile
+    <div id="menu-toolbar"> Exam config
     </div>
     <form id="exam-mode-config">
       <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">

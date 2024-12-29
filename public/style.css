@@ -119,18 +119,18 @@ button {
     background-repeat: no-repeat;
     position: relative;
 }
-#divider { 
+.divider { 
     background-color: var(--main-border);
     box-shadow: 0 0 15px 5px var(--main-blur);
     height: 100vh;
     width: 0.2%;
     transition: all var(--short-transition);
 }
-#divider:hover {
+.divider:hover {
     background-color: var(--border-focus);
     cursor: e-resize;
 }
-#divider:active {
+.divider:active {
     box-shadow: 0 0 15px 10px var(--blur-focus);
     cursor: e-resize;
 }
@@ -239,7 +239,7 @@ button {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: 100;
+    z-index: 1000;
     background-color: black;
 }
 #more {
@@ -547,7 +547,6 @@ button {
         opacity: 0;
     }
 }
-/* can add padding to menu to prevent repeating the same thing */
 .note-container {
     padding: 2%;
     font-style: italic;
@@ -584,6 +583,7 @@ button {
     text-align: center;
     transition: all var(--long-transition);
     padding: 1%;
+    z-index: 100;
 }
 .connected {
     background-color:var(--secondary-background) !important;
@@ -780,9 +780,13 @@ button {
     overflow-y: scroll;
     flex: 1;
 }
-.color-input-container{
+.color-input-container {
     display: flex;
     width: 50%;
     position: absolute;
     right: .5%;
+}
+#pdf-container {
+    width: 46%;
+    padding: 0 2%;
 }

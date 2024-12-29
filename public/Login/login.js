@@ -1,22 +1,17 @@
-function previewFile() {
-    var preview = document.querySelector('img');
-    var file    = document.querySelector('input[type=file]').files[0];
-    var reader  = new FileReader();
-    reader.onloadend = function () {
-      preview.src = reader.result;
-    }
-  
-    if (file) reader.readAsDataURL(file);
-    else preview.src = "";
-    
-  }
-//   new 
+// to insure redirecting user
+fetch("/verify", { credentials: "include" })
+  .then((res) => {
+    if (!res.ok) throw new Error("Failed to verify user")
+    window.location.href = "../"
+    return res.json()
+  })
+
 const form = document.getElementById("form")
 form.addEventListener('submit', function(e) {
-  e.preventDefault();
+  e.preventDefault()
   
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value
+  const password = document.getElementById("password").value
 
   // Prepare the data as JSON
   const data = JSON.stringify({ username, password });
@@ -36,19 +31,15 @@ form.addEventListener('submit', function(e) {
     return response.text().then(text => { throw new Error(text); })
   }
 
-  return response.json();
+  return response.json()
   })
   .then(data => {
-    setTimeout(()=>{window.location.href = '../../'},1)
+    window.location.href = '../'
   })
   .catch(error => {
-    console.error('Error:', error);
-    alert(error.message);
-}); 
-  
-});
-
-document.getElementById("login-redirect").addEventListener("click",()=>{
-  setTimeout(()=>{window.location.href = '../Sign-up/'},1)
-
+    console.error('Error:', error)
+    alert(error.message)
+  })
 })
+
+document.getElementById("login-redirect").addEventListener("click", () => { window.location.href = '../Sign-up/' })
