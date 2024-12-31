@@ -113,7 +113,9 @@ button {
     overflow: hidden;
 }
 #chat {
-    flex: 1;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
     max-height: 100vh;
     background-size: cover;
     background-repeat: no-repeat;
@@ -123,7 +125,7 @@ button {
     background-color: var(--main-border);
     box-shadow: 0 0 15px 5px var(--main-blur);
     height: 100vh;
-    width: 0.2%;
+    min-width: 3px;
     transition: all var(--short-transition);
 }
 .divider:hover {
@@ -787,6 +789,9 @@ button {
     right: .5%;
 }
 #pdf-container {
-    width: 46%;
-    padding: 0 2%;
+    width: 50%;
+    display: flex;
+}
+#pdf-divider {
+    margin-right: 2%;
 }

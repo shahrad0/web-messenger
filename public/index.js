@@ -113,15 +113,15 @@ async function getUserRole() {
 
 // END getting user role
 
-// START divider
+// START menu divider
 
-const divider = document.getElementById("divider")
+const divider = document.getElementById("menu-divider")
 let sideMenuIsOpen = true
 let debounceTimeout
 
 divider.addEventListener("mousedown", () => {
   const onMouseMove = (e) => {
-    if (sideMenuIsOpen){
+    if (sideMenuIsOpen) {
       const newWidth = e.x > 80 ? e.x : e.x >= 50 ? 80 : null
       if (newWidth !== null) sideMenu.style.width = `${newWidth}px`
       else hideSideMenu()
@@ -182,7 +182,7 @@ function showSideMenu(width = 80) {
   document.removeEventListener("mousemove",handleSideMenuHover())
 }
 
-// END divider
+// END menu divider
 
 function previewFile() {
   let preview = document.querySelector('img')
@@ -1025,19 +1025,37 @@ function hideNavigator() {
 }
 
 function addToSide() {
+  if (document.getElementById("pdf-container")) document.getElementById("pdf-container").remove()
+  
   const pdf = targetedElement.querySelector("iframe")
   const clonedPdf = pdf.cloneNode(true)
   const pdfContainer = createCustomElement("div", { id: "pdf-container" })
+  const pdfDivider = createCustomElement("div", { id: "pdf-divider", className: "divider" })
 
   clonedPdf.style.height = "100%"
 
+  // START PDF divider
+
+  pdfDivider.addEventListener("mousedown", () => {
+    const onMouseMove = (e) => pdfContainer.style.width = `${ window.innerWidth - e.x }px`
+    
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove)
+      document.removeEventListener("mouseup", onMouseUp)
+    }
+
+    document.addEventListener("mousemove", onMouseMove)
+    document.addEventListener("mouseup", onMouseUp)
+  })
+
+  // END PDF divider
+
+  pdfContainer.appendChild(pdfDivider)
   pdfContainer.appendChild(clonedPdf)
   mainContainer.appendChild(pdfContainer)
 }
 
-function closeSideMenu() {
-  document.getElementById("pdf-container").remove()
-}
+function closeSideMenu() { document.getElementById("pdf-container").remove() }
 
 // END right click functions
 
