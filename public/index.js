@@ -9,13 +9,13 @@
 // allow selecting multiple messages and deleting them 
 // add multiple animation for deleting message and randomly choose one when deleting a message (use nuke)
 // rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
-// rework createMenu function 
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
 // show upload speed when uploading 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/media
 // ftp server
 // add safemode for future
+// make it so whilst user clicks divider it wouldnt highlight text and also make it so it wouldnt focus on pdf it really fucks up cpu usage
 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 
@@ -424,24 +424,37 @@ let moreMenuToggle = false
 // START creating menu 
 
 function toggleBlurOverlay(content = '',element) {
-  element.style.display = content ? 'block' : 'none';
-  element.innerHTML = content;
+  element.innerHTML = ''
+  if (content) {
+    element.style.display = 'block'
+    element.appendChild(content)
+  }
+  else element.style.display = 'none'
 }
 
-function addCloseButton(parent,removableElement) {
-  const button = document.createElement("button");
-  button.id = "close-blur-overlay";
-  button.innerHTML = '<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 460.775 460.775"><g > <path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>'
-  button.addEventListener("click", () => toggleBlurOverlay('',removableElement));
-  parent.appendChild(button);
+function addCloseButton(removableElement) {
+  const button = createCustomElement("button", { 
+    id: "close-blur-overlay",
+    onClick: () => toggleBlurOverlay('', removableElement),
+    HTML: '<svg fill="#000000" viewBox="0 0 460.775 460.775"><g><path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/></g></svg>' 
+  })
+
+  const parent = document.getElementById("menu-toolbar")
+  parent.appendChild(button)
 }
 
-function createMenu(content) {
-  mainContent = `<div class="menu">${content}</div>`
-  toggleBlurOverlay(mainContent,blurOverlay)
-  addCloseButton(document.getElementById("menu-toolbar"),blurOverlay)
-  document.addEventListener('keydown',(event)=>{
-    if (event.key === "Escape") toggleBlurOverlay('',blurOverlay)
+function createMenu(menuName, content) {
+  const menuNameElement = createCustomElement("div", { text: menuName, id: "menu-toolbar" })
+  const menu = createCustomElement("div", { className: "menu" })
+
+  menu.appendChild(menuNameElement)
+  menu.innerHTML += content
+
+  toggleBlurOverlay(menu, blurOverlay)
+  addCloseButton(blurOverlay)
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === "Escape") toggleBlurOverlay('', blurOverlay)
   })
 }
 
@@ -453,9 +466,7 @@ async function getUsersDetail(userId) {
     const response = await fetch(`/users-details?id=${encodeURIComponent(userId)}`)
     if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
     const user = await response.json()
-    createMenu(`          
-      <div id="menu-toolbar"> Profile
-      </div>
+    createMenu(`Profile`, `
       <div class="user-info-container">
         <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="">
         <div id="user-profile-detail">
@@ -591,9 +602,7 @@ async function settingButtonSetup() {
       const user = await response.json()
       userId = user.id
       
-      createMenu(`          
-        <div id="menu-toolbar"> Profile
-        </div>
+      createMenu(`Profile`, `
         <div class="user-info-container">
           <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
           <div id="user-profile-detail">
@@ -676,8 +685,7 @@ preWrittenMenu.addEventListener("click",()=>{
   }
 
   function PWTConfigMenu() {
-    createMenu(`
-      <div id="menu-toolbar">Configuration</div>
+    createMenu(`Configuration`, `
       <div class="note-container">
         <p class="note">Add more words at once by separating words with ","</p>
         <p class="note">Press 0 to 9 to simulate clicking on the buttons</p>
@@ -692,7 +700,8 @@ preWrittenMenu.addEventListener("click",()=>{
         <br>
         <input type="checkbox" id="list-mode" class="checkbox custom-checkbox">
         <label for="list-mode">list mode</label>
-      </div>`)
+      </div>`
+    )
     
     setupCheckboxes([
       { id: "send-immediately" , storageKey: "pwtSendImmediately" },
@@ -1259,8 +1268,7 @@ function displayUsers(data) {
     )
     .join("")
 
-  createMenu(`
-    <div id="menu-toolbar">${data.chatName}</div>
+  createMenu(`${data.chatName}`, `
     <div class="users-container">${userHTML}</div>
   `)
 
@@ -1376,7 +1384,7 @@ function returnFragment(elements) {
 // START menu functions
 
 function openManual() {
-  createMenu(`
+  createMenu(`Manual`, `
       <div id="menu-toolbar">Manual</div>
       <h3>Turning off the screen</h3>
       <p>Press "Alt + X" or "Alt + ." or "Enter + ." to Turn off screen</p>
@@ -1409,9 +1417,8 @@ function openManual() {
 }
 
 function editProfile() {
-  createMenu(`          
+  createMenu(`Edit Profile`, `          
     <form id="edit-profile-form" method="POST" enctype="multipart/form-data">
-      <div id="menu-toolbar">Edit Profile</div>
       <input type="hidden" name="userId" value="${userId}" />
       <input type="text" name="username" class="new-profile-input" placeholder="Enter new name"/>
       <input type="password" onchange="previewFile()" name="password" class="new-profile-input" placeholder="Enter new password"/>
@@ -1444,9 +1451,7 @@ function editProfile() {
 }
 
 function examModeConfig() {
-  createMenu(`
-    <div id="menu-toolbar"> Exam config
-    </div>
+  createMenu(`Exam config`, `
     <form id="exam-mode-config">
       <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
       <label for="exam-mode">exam mode</label>
@@ -1506,8 +1511,7 @@ function loadSavedColors() {
 
 function openCustomizationMenu() {
   loadSavedColors()
-  createMenu(`
-    <div id="menu-toolbar">Customize</div>
+  createMenu(`Customize`, `
     <div class="variable-container">
       <h2>Colors</h2>
       ${addCSSVariables()}
@@ -1568,7 +1572,6 @@ function addCSSVariables() {
   return html
 }
 
-// this bs is to support chrome (fuck chrome)
 function getCSSVariables() {
   const variables = {}
   

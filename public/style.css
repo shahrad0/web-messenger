@@ -83,14 +83,27 @@ svg:hover rect {
 svg:active rect {
     fill: var(--border-focus) !important; 
 }
+
 button {
     background-color: transparent;
     border: none;
     cursor: pointer;
 }
-/* img:empty {
-    display: none;
-}   */
+#search-container {
+    padding: 3%;
+    margin-left: 2%;
+    width: calc(100% - var(--button-size));
+    display: flex;
+    background-color: var(--secondary-background);
+    border-radius: 30px;
+}
+#search-input {
+    flex: 1;
+    margin-left: 2%;
+    width: 50px;
+    border: none !important;
+    box-shadow: none !important;
+}
 .generic-button {
     border-radius: 50px;
     border: solid 1px var(--main-border);
@@ -401,7 +414,7 @@ button {
     position: fixed;
     border-radius: 100px;
     border: solid 1px var(--main-border);
-    top: 80%;
+    top: calc(80% - 40px);
     right: 1.2%;
     font-size: 24px;
     background-color: var(--main-background-color);
