@@ -809,3 +809,27 @@ app.get("/chat-users", (req, res) => {
 })
 
 // END get chat name and users in chat 
+
+
+// START search (add limit "later")
+
+app.get('/search', (req, res) => {
+  const { query } = req.query
+  if (!query) return res.status(400).json({ error: 'Query is required' })
+
+  const searchQuery = `%${query}%`
+  db.all(
+    'SELECT * FROM messages WHERE message LIKE ?',
+    [searchQuery],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err)
+        return res.status(500).json({ error: 'Database error' })
+      }
+      res.json(rows)
+      console.log(rows)
+    }
+  )
+})
+
+// END search 

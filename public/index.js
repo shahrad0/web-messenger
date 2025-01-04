@@ -45,12 +45,14 @@ let userRole
 let replyId
 let chatId = 1
 let userId
+let clicks = parseInt(localStorage.getItem('clicks'), 10) || 0
 let socket = io()
 const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const sideMenu         = document.getElementById("side-menu")
 const fileInput        = document.getElementById('file')
+const searchInput      = document.getElementById("search-input")
 const mainContainer    = document.getElementById("main-container")
 const chatContainer    = document.getElementById("chat")
 const messageContainer = document.getElementById("messages")
@@ -221,7 +223,7 @@ function scrollToBottom(transition) {
 form.addEventListener('submit', function(e) {
   e.preventDefault()
   if ( !input.value.startsWith("/") ) sendMessage(input.value,replyId,chatId)
-  else handleCommand(input.value)
+  else commandHandler(input.value)
 })
 
 function loadMessages(chatId) {
@@ -235,96 +237,87 @@ function loadMessages(chatId) {
 }
 
 function messageTemplate(message) {
-  // Create the root element for the message
-  const messageDiv = document.createElement('div')
-  messageDiv.className = 'message'
+  const messageDiv = createCustomElement('div', { className: 'message' })
 
-  const messageContainer = document.createElement('div')
-  messageContainer.className = 'message-container'
+  const messageContainer = createCustomElement('div', { className: 'message-container' })
 
-  // Profile section
-  const profileDiv = document.createElement('div')
-  profileDiv.className = 'message-profile'
-
-  const profileImage = document.createElement('img')
+  const profileDiv = createCustomElement('div', { className: 'message-profile' })
+  const profileImage = createCustomElement('img', { 
+    className: 'user-profile',
+  })
   profileImage.src = `uploads/${message.profileImage}`
   profileImage.alt = 'NPC'
-  profileImage.className = 'user-profile'
   profileDiv.appendChild(profileImage)
 
-  // Content section
-  const contentDiv = document.createElement('div')
-  contentDiv.className = 'message-content'
-
-  // Username
-  const usernameDiv = document.createElement('div')
-  usernameDiv.className = 'username'
-  usernameDiv.setAttribute('data-user-id', message.userId)
-  usernameDiv.textContent = message.username
+  const contentDiv = createCustomElement('div', { className: 'message-content' })
+  const usernameDiv = createCustomElement('div', { 
+    className: 'username', 
+    text: message.username 
+  })
+  usernameDiv.dataset.userId = message.userId
   contentDiv.appendChild(usernameDiv)
 
-  // Reply section (if exists)
   if (message.replyId && message.repliedMessage && message.repliedUsername) {
-    const replyDiv = document.createElement('div')
-    replyDiv.className = 'replied-message-container'
-    replyDiv.setAttribute('data-reply-id', message.replyId)
-    replyDiv.onclick = () => scrollToMessage(message.replyId)
+    const replyDiv = createCustomElement('div', { 
+      className: 'replied-message-container', 
+      onClick: () => scrollToMessage(message.replyId) 
+    })
+    replyDiv.dataset.replyId = message.replyId
 
-    const replyUsernameDiv = document.createElement('div')
-    replyUsernameDiv.className = 'replied-username'
-    replyUsernameDiv.textContent = message.repliedUsername
+    const replyUsernameDiv = createCustomElement('div', { 
+      className: 'replied-username', 
+      text: message.repliedUsername 
+    })
     replyDiv.appendChild(replyUsernameDiv)
 
-    const replyTextDiv = document.createElement('div')
-    replyTextDiv.className = 'replied-text'
-    const replyTextP = document.createElement('p')
-    replyTextP.textContent = message.repliedMessage
+    const replyTextDiv = createCustomElement('div', { className: 'replied-text' })
+    const replyTextP = createCustomElement('p', { text: message.repliedMessage })
     replyTextDiv.appendChild(replyTextP)
     replyDiv.appendChild(replyTextDiv)
 
     contentDiv.appendChild(replyDiv)
   }
 
-  // Files section (if exists)
   if (message.filePaths && Array.isArray(message.filePaths)) {
     message.filePaths.forEach(filePath => {
       const fileExt = filePath.split('.').pop().toLowerCase()
       let fileElement
 
       if (['jpeg', 'jpg', 'png'].includes(fileExt)) {
-        fileElement = document.createElement('img')
+        fileElement = createCustomElement('img', { 
+          className: 'sent image',
+        })
         fileElement.src = `uploads/${filePath}`
-        fileElement.className = 'sent image'
       } else if (['mp4', 'avi'].includes(fileExt)) {
-        fileElement = document.createElement('video')
-        fileElement.controls = true
+        fileElement = createCustomElement('video', { 
+          className: 'sent video',
+        })
         fileElement.src = `uploads/${filePath}`
-        fileElement.className = 'sent video'
       } else if (fileExt === 'pdf') {
-        fileElement = document.createElement('iframe')
+        fileElement = createCustomElement('iframe', { 
+          id: 'ass', 
+          className: 'sent pdf',
+        })
         fileElement.src = `uploads/${filePath}`
-        fileElement.className = 'sent pdf'
-        fileElement.width = '8000px'
-        fileElement.height = '700px'
-        fileElement.id = 'ass'
+        fileElement.width = `8000px`
+        fileElement.height = `700px`
       } else {
-        fileElement = document.createElement('a')
-        fileElement.href = `uploads/${filePath}`
-        fileElement.textContent = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        fileElement = createCustomElement('a', { 
+          HTML: `<a href="uploads/${filePath}">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</a>` 
+        })
       }
 
       contentDiv.appendChild(fileElement)
     })
   }
 
-  // Message text
-  const messageTextDiv = document.createElement('div')
-  messageTextDiv.className = 'message-text'
-  messageTextDiv.setAttribute('data-message-id', message.messageId)
-  messageTextDiv.textContent = message.message || ''
+  const messageTextDiv = createCustomElement('div', { 
+    className: 'message-text', 
+    text: message.message || '' 
+  })
+  messageTextDiv.dataset.messageId = message.messageId
   contentDiv.appendChild(messageTextDiv)
 
-  // Combine everything
   messageContainer.appendChild(profileDiv)
   messageContainer.appendChild(contentDiv)
   messageDiv.appendChild(messageContainer)
@@ -968,7 +961,7 @@ function removeReply() {
 }
 
 document.addEventListener("dblclick", (e) => {
-  if (e.target.classList.contains("message-text")) return
+  if (e.target.classList.contains("message-text") || e.target.tagName !== "button") return
 
   targetedElement = e.target.classList.contains("message") 
   ? e.target.querySelector(".message-container")
@@ -1596,3 +1589,51 @@ function getCSSVariables() {
 
 // END menu functions
 
+// START SEARCH
+
+searchInput.addEventListener("input", () => {
+  const searchTerm = searchInput.value.trim();
+
+  fetch(`/search?query=${encodeURIComponent(searchTerm)}`)
+    .then(response => response.json())
+    .then(data => {
+      console.log(data)
+    })
+    .catch(error => {
+      console.error('Error fetching search results:', error)
+    })
+})
+
+// END SEARCH
+
+// START command 
+
+function commandHandler(command) {
+  if (command === "/clicker") {
+    clickerInit()
+  }
+}
+
+function clickerInit() {
+  const clicker = messageTemplate(
+    { 
+      username: "Dopamine",
+      message: ""
+    }
+  )
+  const clickerElement = clicker.querySelector(".message-text")
+  const button = createCustomElement("button", { text: "CLICKKKKKK", id: "clicker" })
+  clickerElement.appendChild(button)
+
+  messageContainer.appendChild(clicker)
+
+  const counter = createCustomElement("p", { id: "counter", text: clicks })
+  clickerElement.appendChild(counter)
+
+  clickerElement.addEventListener("click", () => {
+    clicks++
+    document.getElementById("counter").innerText = clicks
+    localStorage.setItem("clicks", clicks)
+  })
+  scrollToBottom(true)
+}

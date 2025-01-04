@@ -414,7 +414,8 @@ button {
     position: fixed;
     border-radius: 100px;
     border: solid 1px var(--main-border);
-    top: calc(80% - 40px);
+    /* 3% for forms bottom property, 50px for form height 40px for elements height +1% to add more space  */
+    top: calc(96% - 40px - 50px);
     right: 1.2%;
     font-size: 24px;
     background-color: var(--main-background-color);
@@ -807,4 +808,20 @@ button {
 }
 #pdf-divider {
     margin-right: 2%;
+}
+#clicker {
+    background-color: var(--third-background);
+    color: var(--highlight-color);
+    border-radius: 50px;
+    border: 1px solid var(--main-border);
+    padding: 10%;
+    cursor: pointer;
+    transition: all var(--short-transition);
+}
+#clicker:hover {
+    box-shadow: 0 0 15px var(--blur-focus);
+}
+#clicker:active {
+    border: 1px solid var(--border-focus);
+    box-shadow: 0 0 25px var(--blur-focus);
 }
