@@ -90,12 +90,14 @@ button {
     cursor: pointer;
 }
 #search-container {
+    display: flex;
+    width: calc(100% - var(--button-size));
     padding: 3%;
     margin-left: 2%;
-    width: calc(100% - var(--button-size));
-    display: flex;
     background-color: var(--secondary-background);
     border-radius: 30px;
+    border: solid 1px var(--main-border);
+    transition: all var(--short-transition);
 }
 #search-input {
     flex: 1;
@@ -269,8 +271,9 @@ button {
     border-radius: 15px;
     border-bottom-right-radius: 0px;
     opacity: 0;
-    transition: all var(--short-transition);
     display: none;
+    z-index: 10;
+    transition: all var(--short-transition);
 }
 .more-menu-item {
     padding: 6%;
@@ -816,7 +819,7 @@ button {
     border: 1px solid var(--main-border);
     padding: 10%;
     cursor: pointer;
-    transition: all var(--short-transition);
+    transition: all 30ms;
 }
 #clicker:hover {
     box-shadow: 0 0 15px var(--blur-focus);

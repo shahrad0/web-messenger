@@ -735,6 +735,24 @@ function generateToken(user, res) {
 
 // START user role 
 
+// START changing chat image
+
+// function changeChatImage(chatId, imagePath) {
+//   const query = `UPDATE chats SET profile_image = ? WHERE id = ?`
+
+//   db.run(query, [imagePath, chatId], (err) => {
+//     if (err) {
+//       console.error(`Failed to update profile image for chat ID ${chatId}`, err)
+//       return
+//     }
+//     console.log(`Profile image updated successfully for chat ID ${chatId}`)
+//   })
+// }
+
+// changeChatImage(1, "uploads/Chats/main chat.jpg")
+
+// END changing chat image
+
 app.get("/get-user-role", (req, res) => {
   const token = req.cookies.auth_token
 
@@ -818,16 +836,12 @@ app.get('/search', (req, res) => {
   if (!query) return res.status(400).json({ error: 'Query is required' })
 
   const searchQuery = `%${query}%`
-  db.all(
-    'SELECT * FROM messages WHERE message LIKE ?',
-    [searchQuery],
-    (err, rows) => {
+  db.all('SELECT * FROM messages WHERE message LIKE ?', [searchQuery], (err, rows) => {
       if (err) {
         console.error('Database error:', err)
         return res.status(500).json({ error: 'Database error' })
       }
       res.json(rows)
-      console.log(rows)
     }
   )
 })
