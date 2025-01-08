@@ -832,18 +832,31 @@ app.get("/chat-users", (req, res) => {
 // START search (add limit "later")
 
 app.get('/search', (req, res) => {
-  const { query } = req.query
-  if (!query) return res.status(400).json({ error: 'Query is required' })
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ error: 'Query is required' });
 
-  const searchQuery = `%${query}%`
-  db.all('SELECT * FROM messages WHERE message LIKE ?', [searchQuery], (err, rows) => {
-      if (err) {
-        console.error('Database error:', err)
-        return res.status(500).json({ error: 'Database error' })
-      }
-      res.json(rows)
+  const searchQuery = `%${query}%`;
+  const sql = `
+    SELECT 
+      messages.message,
+      messages.id AS messageId,
+      users.username,
+      chats.name AS chatName,
+      chats.id AS chatId,
+      chats.profile_image AS chatProfileImage
+    FROM messages
+    JOIN users ON messages.user_id = users.id
+    JOIN chats ON messages.chat_id = chats.id
+    WHERE messages.message LIKE ?
+  `
+
+  db.all(sql, [searchQuery], (err, rows) => {
+    if (err) {
+      console.error('Database error:', err)
+      return res.status(500).json({ error: 'Database error' })
     }
-  )
+    res.json(rows)
+  })
 })
 
 // END search 
