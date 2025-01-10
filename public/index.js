@@ -147,7 +147,7 @@ function hideSideMenu() {
   const showSideMenuButton = createCustomElement("button", {
     id : "show-side-menu",
     className: "generic-button",
-    HTML: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g><path d="M31.71,15.29l-10-10L20.29,6.71,28.59,15H0v2H28.59l-8.29,8.29,1.41,1.41,10-10A1,1,0,0,0,31.71,15.29Z"/></g></svg>`,
+    HTML: `<svg viewBox="0 0 32 32"><g><path d="M31.71,15.29l-10-10L20.29,6.71,28.59,15H0v2H28.59l-8.29,8.29,1.41,1.41,10-10A1,1,0,0,0,31.71,15.29Z"/></g></svg>`,
     onClick: () => showSideMenu()
   })
 
@@ -208,7 +208,7 @@ messageContainer.addEventListener('scroll', () => {
   }
   else scrollDownButton.style.display = `block`
   
-  if (messageContainer.scrollTop === 0) loadOlderMessages(chatId)
+  if (messageContainer.scrollTop === 0) loadOlderMessages()
 })
 
 // END scroll button and handling pagination
@@ -339,7 +339,7 @@ function scrollToMessage(replyId) {
       setTimeout(() => messageContainer.classList.remove('highlighted-message'), 1000)
     }
   } 
-  else loadOlderMessages(chatId, replyId)
+  else loadOlderMessages(replyId = replyId)
 }
 
 async function sendMessage(userMessage, replyId = null, chatId) {
@@ -1114,7 +1114,7 @@ function closeSideMenu() { document.getElementById("pdf-container").remove() }
 
 // START pagintion
 // this can be GET instead of POST 
-async function loadOlderMessages(chatId, replyId = null) {
+async function loadOlderMessages(newChatId = null, replyId = null) {
   let targetMessageId
   
   if (replyId) targetMessageId = replyId + 25
@@ -1124,14 +1124,18 @@ async function loadOlderMessages(chatId, replyId = null) {
     if (oldestMessageID === 1 || !oldestMessageID) return
     targetMessageId = oldestMessageID
   }
-
-  const fetchOptions = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      messageId: targetMessageId,
-      chatId: chatId
-    })
+  if (!newChatId) {
+    const fetchOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        messageId: targetMessageId,
+        chatId: chatId
+      })
+    }
+  }
+  else {
+    changeChat(newChatId)
   }
 
   try {
