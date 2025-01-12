@@ -128,19 +128,19 @@ button {
 }
 .divider { 
     background-color: var(--main-border);
-    box-shadow: 0 0 15px 5px var(--main-blur);
     height: 100vh;
     min-width: 3px;
     transition: all var(--short-transition);
-    z-index: 5;
 }
 .divider:hover {
     background-color: var(--border-focus);
     cursor: e-resize;
+    z-index: 5;
 }
 .divider:active {
-    box-shadow: 0 0 15px 10px var(--blur-focus);
+    box-shadow: 0 0 10px 5px var(--blur-focus);
     cursor: e-resize;
+    z-index: 5;
 }
 #form {
     position: absolute;
@@ -179,7 +179,7 @@ button {
 .message-content {
     background-color:var(--secondary-background) ;
     border: solid 1px var(--main-border);
-    max-width:80%;
+    max-width: 90%;
     padding: 10px;
     border-radius: 15px;
     border-bottom-left-radius: 0;
@@ -232,6 +232,7 @@ button {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    z-index: 15;
 }
 .user-info-container {
     display: flex;
@@ -452,6 +453,7 @@ button {
 }
 .message-text {
     overflow-wrap: break-word;
+    width: min-content;
     direction: rtl;
 }
 #reply-container {
@@ -705,6 +707,7 @@ button {
 }
 .users-container {
     overflow: auto;
+    height: inherit;
 }
 .user-container {
     width: 100%;
@@ -854,8 +857,9 @@ button {
 }
 .search-result {
     display: flex;
-    padding: 1%;
+    padding: 3%;
     cursor: pointer;
+    height: 40px;
     transition: all var(--short-transition);
 }
 .search-result:hover {

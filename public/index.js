@@ -6,15 +6,20 @@
 // make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 // in exam chat add quiz mode or test mode 
 // allow selecting multiple messages and deleting them 
-// add multiple animation for deleting message and randomly choose one when deleting a message (use nuke)
-// rework pagination if the first message(message id 1) is deleted it keeps sending request to server for older messages
+// reverse pagination
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
 // add /game + name of the game e.g. /game pong and they'd be able to play a game in chat and others could spectate
 // show upload speed when uploading 
 // organize where user uploads are e.g. profile goes in -> user/profile or user upload goes to user/media
 // ftp server
 // add safemode for future
-// make it so whilst user clicks divider it wouldnt highlight text and also make it so it wouldnt focus on pdf it really fucks up cpu usage
+// link clicks to users in db also make it a global thing and add a leaderboard maybe ? idk
+// add right click item for downloading shit
+// add date to chat
+// add edit but not with right click, if user clicks on its own message it would just act as a text on a notepad so they'd be able to change it easily 
+// limit search
+// store things (images etc...)on users device 
+// /calc for simple math
 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 
@@ -296,12 +301,9 @@ function messageTemplate(message) {
         })
         fileElement.src = `uploads/${filePath}`
       } else if (fileExt === 'pdf') {
-        fileElement = createCustomElement('iframe', { 
-          id: 'ass', 
-          className: 'sent pdf',
-        })
+        fileElement = createCustomElement('iframe', { className: 'sent pdf' })
         fileElement.src = `uploads/${filePath}`
-        fileElement.width = `8000px`
+        fileElement.width = `8000px !important`
         fileElement.height = `700px`
       } else {
         fileElement = createCustomElement('a', { 
@@ -327,8 +329,8 @@ function messageTemplate(message) {
   return messageDiv
 }
 
-function scrollToMessage(replyId) {
-  const targetMessage = document.querySelector(`.message-text[data-message-id="${replyId}"]`);
+function scrollToMessage(messageId, newChatId = null) {
+  const targetMessage = document.querySelector(`.message-text[data-message-id="${messageId}"]`);
   
   if (targetMessage) {
     targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -339,7 +341,7 @@ function scrollToMessage(replyId) {
       setTimeout(() => messageContainer.classList.remove('highlighted-message'), 1000)
     }
   } 
-  else loadOlderMessages(replyId = replyId)
+  else loadOlderMessages(newChatId !== chatId ? newChatId : null, messageId)
 }
 
 async function sendMessage(userMessage, replyId = null, chatId) {
@@ -412,13 +414,17 @@ async function sendMessage(userMessage, replyId = null, chatId) {
 // end message func
 
 const blurOverlay = document.getElementById("blur-overlay")
+blurOverlay.onclick = (e) =>  {
+  if (!e.target.closest(".menu")) toggleBlurOverlay('', blurOverlay)
+}
+
 const moreButton = document.getElementById("more")
 const moreMenu = document.getElementById("more-menu")
 let moreMenuToggle = false
 
 // START creating menu 
 
-function toggleBlurOverlay(content = '',element) {
+function toggleBlurOverlay(content = '',element = null) {
   element.innerHTML = ''
   if (content) {
     element.style.display = 'block'
@@ -982,7 +988,7 @@ function removeReply() {
 }
 
 document.addEventListener("dblclick", (e) => {
-  if (e.target.classList.contains("message-text") || e.target.tagName !== "button") return
+  if (e.target.classList.contains("message-text") || e.target.tagName === "BUTTON") return
 
   targetedElement = e.target.classList.contains("message") 
   ? e.target.querySelector(".message-container")
@@ -1113,43 +1119,37 @@ function closeSideMenu() { document.getElementById("pdf-container").remove() }
 // END right click functions
 
 // START pagintion
-// this can be GET instead of POST 
+
+let lastMessageOffset = 0
+
 async function loadOlderMessages(newChatId = null, replyId = null) {
-  let targetMessageId
-  
-  if (replyId) targetMessageId = replyId + 25
-  else {
-    const messageElement = document.querySelector('[data-message-id]');
-    const oldestMessageID = messageElement ? parseInt(messageElement.getAttribute('data-message-id')) : Infinity
-    if (oldestMessageID === 1 || !oldestMessageID) return
-    targetMessageId = oldestMessageID
+  if (newChatId && chatId !== newChatId) {
+    chatId = newChatId
+    lastMessageOffset = 0 // Reset the offset when changing chats
+    changeChat(newChatId, true)
   }
-  if (!newChatId) {
-    const fetchOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        messageId: targetMessageId,
-        chatId: chatId
-      })
-    }
+
+  if (replyId) {
+    lastMessageOffset = 0 // Ignore offset when directly targeting a reply
   }
-  else {
-    changeChat(newChatId)
-  }
+
+  const params = new URLSearchParams({
+    offset: lastMessageOffset,
+    chatId: chatId
+  }).toString()
 
   try {
-    const response = await fetch('/get-older-messages', fetchOptions)
+    const response = await fetch(`/get-older-messages?${params}`)
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+
     const data = await response.json()
-    const previousScrollHeight = messages.scrollHeight
+    if (data.length === 0) return // Stop if no more messages
 
+    const previousScrollHeight = messageContainer.scrollHeight
     messageContainer.insertBefore(returnFragment(data.map(messageTemplate)), messageContainer.firstChild)
-
     messageContainer.scrollTop = messageContainer.scrollHeight - previousScrollHeight
 
-    // highlight and scrolls to  message if replyId exists
-    if (replyId) scrollToMessage(replyId)
-
+    lastMessageOffset += data.length // Increment offset by the number of fetched messages
   } catch (error) {
     console.error('Error fetching messages:', error)
   }
@@ -1409,13 +1409,15 @@ function addChats() {
 
 }
 
-function changeChat(NewchatId) {
+function changeChat(newchatId, fromSearch = false) {
   document.querySelector(`[chat-id="${chatId}"]`).classList.remove("selected-chat")
-  chatId = NewchatId
+  chatId = newchatId
   getChatDetail(chatId)
   document.querySelector(`[chat-id="${chatId}"]`).classList.add("selected-chat")
   messageContainer.innerHTML = ''
-  loadMessages(chatId)
+
+  if (!fromSearch) loadMessages(chatId)
+
   applyFilters()
 }
 
@@ -1423,9 +1425,7 @@ function changeChat(NewchatId) {
 
 function returnFragment(elements) {
   const fragment = document.createDocumentFragment()
-  elements.forEach(element => {
-    fragment.appendChild(element)
-  })
+  elements.forEach(element => fragment.appendChild(element))
   return fragment
 }
 
@@ -1530,7 +1530,7 @@ function examModeConfig() {
   document.getElementById("exam-mode-config").addEventListener("input", () => applyFilters())
 }
 
-// START customization (this part is magic idk wtf is happening)(not finished need more work)
+// START customization (this part is magic idk wtf is happening)(not finished need more work (custom background ,paddings and shit like that, themes etc.. ))
 
 function rgbToHex(rgb) {
   const rgbValues = rgb.match(/\d+/g)
@@ -1659,7 +1659,7 @@ searchInput.addEventListener("input", () => {
       data.forEach(result => {
         const searchResult = createCustomElement('div', {
           className: "search-result",
-          onClick: () => loadOlderMessages(result.chatId, result.messageId)
+          onClick: () => scrollToMessage(result.messageId, result.chatId)
         })
 
         const chatImage = createCustomElement("img", { className: "chat-image" })
@@ -1702,12 +1702,7 @@ function commandHandler(command) {
 }
 
 function clickerInit() {
-  const clicker = messageTemplate(
-    { 
-      username: "Dopamine",
-      message: ""
-    }
-  )
+  const clicker = messageTemplate({ username: "Dopamine" })
 
   const clickerElement = clicker.querySelector(".message-text")
 

@@ -420,8 +420,8 @@ app.get("/get-chats", (req, res) => {
 
 // START pagintion
 
-app.post("/get-older-messages", (req, res) => {
-  const { messageId, chatId } = req.body
+app.get("/get-older-messages", (req, res) => {
+  const { offset, chatId } = req.query
   const query = `
     SELECT 
       messages.message, 
@@ -437,15 +437,14 @@ app.post("/get-older-messages", (req, res) => {
     INNER JOIN users ON messages.user_id = users.id
     LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
     LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
-    WHERE messages.id < ?
-    AND messages.chat_id = ? 
+    WHERE messages.chat_id = ? 
     ORDER BY messages.id DESC
-    LIMIT 50
-    `
-    
-  db.all(query, [messageId,chatId], (err, rows) => {
+    LIMIT 50 OFFSET ?
+  `
+  
+  db.all(query, [chatId, offset], (err, rows) => {
     if (err) {
-      console.error("Error fetching messages:", err.message);
+      console.error("Error fetching messages:", err.message)
       return res.status(500).json({ error: "Error fetching messages" })
     }
 
