@@ -37,6 +37,7 @@
 }
 
 * {
+    caret-color: var(--caret-color);
     margin: 0;
     padding: 0;
     color: var(--main-color);
@@ -57,7 +58,6 @@ body {
 }
 
 input {
-    caret-color: var(--caret-color)               !important;
     background-color: var(--secondary-background) !important;
     border: solid 2px var(--main-border)          !important;
     box-shadow: 0 0 15px 5px var(--main-blur)     !important;
@@ -69,6 +69,33 @@ input:focus {
     outline: none;
 }
 
+#input-container {
+    background-color: var(--secondary-background);
+    border: solid 2px var(--main-border);
+    box-shadow: 0 0 15px 5px var(--main-blur);
+    transition: all var(--short-transition);
+    font-size: 16px;
+    display: block;
+
+    padding: 0 2%;
+    width: 80%;
+    height: 50px;
+    border-radius: 50px;
+    margin-left: 1%; 
+}
+.input-container-focus {
+    border: solid 2px var(--border-focus)      !important;
+    box-shadow: 0 0 20px 5px var(--blur-focus) !important;
+}
+
+#input {
+    height: 100%;
+    width: 98%;
+    outline: none;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+}
 svg path {
     fill: var(--main-color) ; 
     transition: all var(--short-transition);
@@ -149,17 +176,6 @@ button {
     width: -moz-available;
     width: -webkit-fill-available;
     display: flex;
-}
-#input {
-    padding: 0 2%;
-    width: 80%;
-    height: 50px;
-    border-radius: 50px;
-    margin-left: 11.25px; 
-}
-#input:focus {
-    border: solid 2px var(--border-focus)      !important;
-    box-shadow: 0 0 20px 5px var(--blur-focus) !important;
 }
 #messages {
     width: 100%;
@@ -453,7 +469,6 @@ button {
 }
 .message-text {
     overflow-wrap: break-word;
-    width: min-content;
     direction: rtl;
 }
 #reply-container {

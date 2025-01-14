@@ -3,7 +3,6 @@
 // add notification and add toggle for it 
 // add custom background image 
 // add poll or voting system
-// make the main input a div and then add an input tag inside it to make it more flexible (also can fix reply with this )
 // in exam chat add quiz mode or test mode 
 // allow selecting multiple messages and deleting them 
 // reverse pagination
@@ -59,6 +58,7 @@ const fileInput        = document.getElementById('file')
 const searchInput      = document.getElementById("search-input")
 const mainContainer    = document.getElementById("main-container")
 const chatContainer    = document.getElementById("chat")
+const inputContainer   = document.getElementById("input-container")
 const messageContainer = document.getElementById("messages")
 const scrollDownButton = document.getElementById("scroll-down")
 
@@ -226,11 +226,13 @@ function scrollToBottom(transition) {
   removeUnseenMessagesElement()
 }
 
-// sending message
-form.addEventListener('submit', function(e) {
-  e.preventDefault()
-  if ( !input.value.startsWith("/") ) sendMessage(input.value,replyId,chatId)
-  else commandHandler(input.value)
+input.addEventListener("focus", () => {
+  log(inputContainer)
+  inputContainer.classList.add("input-container-focus")
+  input.addEventListener("blur", () => {
+    inputContainer.classList.remove("input-container-focus")
+    log()
+  })
 })
 
 function loadMessages(chatId) {
@@ -383,7 +385,7 @@ async function sendMessage(userMessage, replyId = null, chatId) {
       progressBar?.remove()
       if (xhr.status === 200) {
         isUploading = false
-        input.value = ''
+        input.innerText = ''
         if (hasFile) fileInput.value = ''
         if (document.getElementById('reply-container')) removeReply()
         trackScroll = [messageContainer.scrollTop, messageContainer.scrollHeight, true]
@@ -519,7 +521,8 @@ const keyState = {
   altPressed      : false,
   enterPressed    : false,
   dotPressed      : false,
-  backtickPressed : false
+  backtickPressed : false,
+  shiftPressed    : false
 }
 
 document.addEventListener("keydown", (event) => {
@@ -527,8 +530,18 @@ document.addEventListener("keydown", (event) => {
 
   keyState.altPressed      ||= keyCode === 18
   keyState.enterPressed    ||= keyCode === 13
-  keyState.backtickPressed ||= key === "`"
   keyState.dotPressed      ||= key === "."
+  keyState.backtickPressed ||= key === "`"
+  keyState.shiftPressed    ||= key === "Shift"
+
+  if (keyState.shiftPressed) {
+    if (keyState.enterPressed) { }
+  }
+
+  else if (keyState.enterPressed) {
+    if ( !input.innerText.startsWith("/") ) sendMessage(input.innerText,replyId,chatId)
+    else commandHandler(input.innerText)
+  }
 
   if (key === "/" && document.activeElement !== input) {
     event.preventDefault()
@@ -579,8 +592,9 @@ document.addEventListener("keyup", (event) => {
 
   if (keyCode === 18) keyState.altPressed   = false
   if (keyCode === 13) keyState.enterPressed = false
-  if (key === "`") keyState.backtickPressed = false
   if (key === ".") keyState.dotPressed      = false
+  if (key === "`") keyState.backtickPressed = false
+  if (key === "Shift") keyState.shiftPressed = false
 })
 
 // More Menu toggle (CHANGE THIS)
@@ -910,9 +924,9 @@ function contextMenu(event,features) {
 async function cut() {
   if (selectedRange && selectedRange.element) {
     const input = selectedRange.element
-    const cutText = input.value.slice(selectedRange.start, selectedRange.end)
+    const cutText = input.innerText.slice(selectedRange.start, selectedRange.end)
 
-    input.value = input.value.slice(0, selectedRange.start) + input.value.slice(selectedRange.end)
+    input.innerText = input.innerText.slice(0, selectedRange.start) + input.innerText.slice(selectedRange.end)
     input.setSelectionRange(selectedRange.start, selectedRange.start)
 
     selectedRange = null
@@ -924,7 +938,7 @@ async function cut() {
 async function copy() {
   if (selectedRange && selectedRange.element) {
     const input = selectedRange.element
-    const copiedText = input.value.slice(selectedRange.start, selectedRange.end)
+    const copiedText = input.innerText.slice(selectedRange.start, selectedRange.end)
 
     await navigator.clipboard.writeText(copiedText)
   }
@@ -942,7 +956,7 @@ async function copyMessage() {
 // START reply 
 
 function replyStyle(replyContainer) {
-  input.setSelectionRange(input.value.length, input.value.length);
+  // input.setSelectionRange(input.value.length, input.value.length);
   input.style.transition            = "all 0s"
   input.style.borderTopLeftRadius   = "0px"
   input.style.borderTopRightRadius  = "0px"
@@ -1433,7 +1447,6 @@ function returnFragment(elements) {
 
 function openManual() {
   createMenu(`Manual`, `
-      <div id="menu-toolbar">Manual</div>
       <h3>Turning off the screen</h3>
       <p>Press "Alt + X" or "Alt + ." or "Enter + ." to Turn off screen</p>
       <br>
