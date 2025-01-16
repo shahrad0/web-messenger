@@ -76,6 +76,7 @@ input:focus {
     transition: all var(--short-transition);
     font-size: 16px;
     display: block;
+    position: relative;
 
     padding: 0 2%;
     width: 80%;
@@ -89,7 +90,7 @@ input:focus {
 }
 
 #input {
-    height: 100%;
+    height: 50px;
     width: 98%;
     outline: none;
     overflow: auto;
@@ -138,20 +139,21 @@ button {
 #main-container {
     display: flex;
     height: 100vh;
+    width: 100vw;
+    overflow: hidden;
 }
 #side-menu {
-    width: 20%;
+    flex: 0 0 20%;
     overflow: hidden;
     position: relative;
 }
 #chat {
-    flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: 0;
+    flex: 1;
     max-height: 100vh;
     background-size: cover;
     background-repeat: no-repeat;
     position: relative;
+    /* max-width: 100%;dont know if necessary or not  */
 }
 .divider { 
     background-color: var(--main-border);
@@ -176,21 +178,24 @@ button {
     width: -moz-available;
     width: -webkit-fill-available;
     display: flex;
+    background-color: var(--main-background-color);
+    transition: all var(--short-transition);
 }
-#messages {
+#message-container {
+    position: relative;
     width: 100%;
     margin-top: 50px;
     max-height: calc(97% - 100px);
     overflow-y: scroll;
     overflow-x: hidden;
-    transition: all var(--long-transition);
+    transition: all var(--short-transition);
 }
 .message-container {
     display: flex;
     transition: all var(--short-transition);
 }
 .message {
-    padding: 1% 0;
+    padding: 10px 0;
 }
 .message-content {
     background-color:var(--secondary-background) ;
@@ -431,6 +436,7 @@ button {
     font-size: 24px;
     background-color: var(--main-background-color);
     transition: all var(--short-transition);
+    animation: show-scroll-down var(--short-transition) ease-in-out;
 }
 #scroll-down:hover {
     color: var( --highlight-color-hover);
@@ -439,6 +445,25 @@ button {
 #scroll-down:active {
     box-shadow: 0 0 25px 5px var(--main-blur);
 }
+
+@keyframes show-scroll-down {
+    0% {
+        top: calc(96% - 10px - 50px);
+    }
+    100% {
+        top: calc(96% - 40px - 50px);
+    }
+}
+
+@keyframes hide-scroll-down {
+    0% {
+        top: calc(96% - 40px - 50px);
+    }
+    100% {
+        top: calc(96% - 40px);
+    }
+}
+
 #context-menu {
     transition: all var(--short-transition);
     min-width: 100px;
@@ -468,22 +493,13 @@ button {
     cursor: pointer;
 }
 .message-text {
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     direction: rtl;
 }
 #reply-container {
-    position: absolute;
-    background-color: var(--secondary-background);
-    border: solid 2px var(--border-focus);
-    border-bottom: 0;
-    border-radius: 50px;
-    border-bottom-left-radius : 0;
-    border-bottom-right-radius: 0;   
-    height: 100%;
-    top: -100%;
-    margin-left: 11.25px ;
-    padding: 0 2%;
-    transition: all var(--short-transition);
+    width: 98%;
+    height: 50px;
+    overflow: hidden;
 }
 #close-reply {
     width : 2.5%;
@@ -495,14 +511,14 @@ button {
 .form-button {
     transition: all var(--short-transition);
     width : 3%;
-    margin: .5%;
+    margin: .8%;
 }
 .reply-username {
     color: var( --highlight-color);
-    margin-top: 0.8%;
+    margin-top: .5%;
 }
 .reply-text {
-    margin-top: 0.3%;   
+    text-overflow: ellipsis;
 }
 .highlighted-message{
     box-shadow: 0 0 25px var(--selected-message-blur);
@@ -517,10 +533,13 @@ button {
 .replied-username {
     color: var( --highlight-color);
     min-width: 100px;
-    margin-bottom: 4%;
 }
 .replied-text {
-    overflow-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    max-width: 100%;
 }
 .sent {
     max-width: 100%;

@@ -59,8 +59,7 @@ const searchInput      = document.getElementById("search-input")
 const mainContainer    = document.getElementById("main-container")
 const chatContainer    = document.getElementById("chat")
 const inputContainer   = document.getElementById("input-container")
-const messageContainer = document.getElementById("messages")
-const scrollDownButton = document.getElementById("scroll-down")
+const messageContainer = document.getElementById("message-container")
 
 socket.on('chat message', (message) => {
   if (chatId == message.chatId) {
@@ -85,7 +84,8 @@ socket.on('chat message', (message) => {
       let unseenMessagesElement = document.getElementById("unseen-messages")
       if (!unseenMessagesElement) {
         unseenMessagesElement = createCustomElement("div", { id: "unseen-messages" })
-        scrollDownButton.appendChild(unseenMessagesElement)
+        // this is wrong 
+        document.getElementById("scroll-down")?.appendChild(unseenMessagesElement)
       }
       unseenMessagesElement.innerText = unseenMessages
     }
@@ -119,7 +119,7 @@ async function getUserRole() {
 
 // END getting user role
 
-// START menu divider
+// START menu divider (optimize maybe ?)
 
 const divider = document.getElementById("menu-divider")
 let sideMenuIsOpen = true
@@ -129,16 +129,18 @@ divider.addEventListener("mousedown", () => {
   body.style.userSelect = "none"
 
   const onMouseMove = (e) => {
+    const containerWidth = mainContainer.clientWidth
+    const percentageWidth = (e.clientX / containerWidth) * 100
     if (sideMenuIsOpen) {
-      const newWidth = e.x > 80 ? e.x : e.x >= 50 ? 80 : null
-      if (newWidth !== null) sideMenu.style.width = `${newWidth}px`
-      else hideSideMenu()
+      if (percentageWidth >= 5 && percentageWidth <= 50) sideMenu.style.flexBasis = `${percentageWidth}%`
+      else if (percentageWidth < 5) hideSideMenu()
     }
   }
+
   const onMouseUp = () => {
     body.style.userSelect = ""
-    document.removeEventListener("mousemove", onMouseMove); // Remove the mousemove listener
-    document.removeEventListener("mouseup", onMouseUp);     // Remove the mouseup listener
+    document.removeEventListener("mousemove", onMouseMove)
+    document.removeEventListener("mouseup", onMouseUp)
   }
 
   document.addEventListener("mousemove", onMouseMove)
@@ -147,32 +149,30 @@ divider.addEventListener("mousedown", () => {
 
 function hideSideMenu() {
   sideMenuIsOpen = false 
-  sideMenu.style.width = "0px"
+  sideMenu.style.display = "none"
   divider.style.display = "none"
   const showSideMenuButton = createCustomElement("button", {
-    id : "show-side-menu",
+    id: "show-side-menu",
     className: "generic-button",
     HTML: `<svg viewBox="0 0 32 32"><g><path d="M31.71,15.29l-10-10L20.29,6.71,28.59,15H0v2H28.59l-8.29,8.29,1.41,1.41,10-10A1,1,0,0,0,31.71,15.29Z"/></g></svg>`,
     onClick: () => showSideMenu()
   })
 
   body.appendChild(showSideMenuButton)
-  
-  const debouncedHoverHandler = debounce((e) => handleSideMenuHover(e, showSideMenuButton), 1000);
-  document.addEventListener("mousemove", debouncedHoverHandler);
+  const debouncedHoverHandler = debounce((e) => handleSideMenuHover(e, showSideMenuButton), 1000)
+  document.addEventListener("mousemove", debouncedHoverHandler)
 }
 
-function handleSideMenuHover(e,showSideMenuButton) {
+function handleSideMenuHover(e, showSideMenuButton) {
   clearTimeout(debounceTimeout)
   if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
     if (!sideMenuIsOpen && e.x < window.innerWidth / 10) {
       showSideMenuButton.style.animation = "showSideMenu var(--long-transition) forwards"
       showSideMenuButton.style.left = "15px"
     }
-  } 
-  else {
-      showSideMenuButton.style.animation = "hideSideMenu var(--long-transition) forwards"
-      showSideMenuButton.style.left = "-50px"
+  } else {
+    showSideMenuButton.style.animation = "hideSideMenu var(--long-transition) forwards"
+    showSideMenuButton.style.left = "-50px"
   }
 }
 
@@ -183,12 +183,12 @@ function debounce(fn, delay) {
   }
 }
 
-function showSideMenu(width = 80) {
+function showSideMenu() {
   sideMenuIsOpen = true
-  sideMenu.style.width = `${width}px` 
+  sideMenu.style.display = "block"
   divider.style.display = "block"
   document.getElementById("show-side-menu").remove()
-  document.removeEventListener("mousemove",handleSideMenuHover())
+  document.removeEventListener("mousemove", handleSideMenuHover)
 }
 
 // END menu divider
@@ -204,14 +204,26 @@ function previewFile() {
 
 // START scroll button and handling pagination
 
-// this part can be a lot more polished (create custom element and add keyframe animation)
 messageContainer.addEventListener('scroll', () => {
   // check if element been scrolled more than 10% of message height
-  if ((messageContainer.scrollHeight - messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight) ) {
-    scrollDownButton.style.display = `none` 
+  if ((messageContainer.scrollHeight - messageContainer.clientHeight / 4) <= (messageContainer.scrollTop + messageContainer.clientHeight)) {
+    const scrollDownButton = document.getElementById("scroll-down")
+    if (scrollDownButton) {
+      scrollDownButton.style.animation = "hide-scroll-down var(--short-transition) ease-in-out"
+      scrollDownButton.addEventListener('animationend', () => scrollDownButton.remove(), { once: true })
+    }
+
     removeUnseenMessagesElement()
   }
-  else scrollDownButton.style.display = `block`
+  else if (!document.getElementById("scroll-down")) {
+    const scrollDownButton = createCustomElement("button", {
+      id: "scroll-down",
+      text: "v",
+      onClick: () => scrollToBottom(true)
+    })
+
+    messageContainer.appendChild(scrollDownButton)
+  }
   
   if (messageContainer.scrollTop === 0) loadOlderMessages()
 })
@@ -223,17 +235,22 @@ function scrollToBottom(transition) {
     top: messageContainer.scrollHeight,
     behavior: transition ? "smooth" : "instant"
   })
+
   removeUnseenMessagesElement()
 }
 
 input.addEventListener("focus", () => {
-  log(inputContainer)
   inputContainer.classList.add("input-container-focus")
-  input.addEventListener("blur", () => {
-    inputContainer.classList.remove("input-container-focus")
-    log()
-  })
+  input.addEventListener("blur", () => inputContainer.classList.remove("input-container-focus"), { once: true })
 })
+
+function handleSendingMessage(e) {
+  e.preventDefault()
+  if (!input.innerText.startsWith("/")) sendMessage(input.innerText,replyId,chatId)
+  else commandHandler(input.innerText)
+}
+
+form.addEventListener('submit', (e) => handleSendingMessage(e))
 
 function loadMessages(chatId) {
   fetch(`/get-messages?chatId=${encodeURIComponent(chatId)}`)
@@ -242,7 +259,7 @@ function loadMessages(chatId) {
       messageContainer.appendChild(returnFragment(data.map(messageTemplate)))
       scrollToBottom(false)
     })
-    .catch(error => console.error('Error fetching messages:', error));
+    .catch(error => console.error('Error fetching messages:', error))
 }
 
 function messageTemplate(message) {
@@ -252,7 +269,7 @@ function messageTemplate(message) {
 
   const profileDiv = createCustomElement('div', { className: 'message-profile' })
   const profileImage = createCustomElement('img', { 
-    className: 'user-profile',
+    className: 'user-profile'
   })
   profileImage.src = `uploads/${message.profileImage}`
   profileImage.alt = 'NPC'
@@ -279,10 +296,8 @@ function messageTemplate(message) {
     })
     replyDiv.appendChild(replyUsernameDiv)
 
-    const replyTextDiv = createCustomElement('div', { className: 'replied-text' })
-    const replyTextP = createCustomElement('p', { text: message.repliedMessage })
-    replyTextDiv.appendChild(replyTextP)
-    replyDiv.appendChild(replyTextDiv)
+    const replyText = createCustomElement('div', { className: 'replied-text', text: message.repliedMessage })
+    replyDiv.appendChild(replyText)
 
     contentDiv.appendChild(replyDiv)
   }
@@ -346,13 +361,19 @@ function scrollToMessage(messageId, newChatId = null) {
   else loadOlderMessages(newChatId !== chatId ? newChatId : null, messageId)
 }
 
+function sanitizeMessage(inputMessage) {
+  // Combine consecutive newlines into one and trim leading/trailing whitespace or newlines
+  return inputMessage.replace(/\s*\n\s*/g, '\n').trim()
+}
+
 async function sendMessage(userMessage, replyId = null, chatId) {
   if (isUploading) {
-    input.classList.add("upload-warning")
-    setTimeout(() => input.classList.remove("upload-warning"), 5000)
+    inputContainer.classList.add("upload-warning")
+    setTimeout(() => inputContainer.classList.remove("upload-warning"), 5000)
     return
   }
-  const message = userMessage.trim()
+
+  const message = sanitizeMessage(userMessage)
   const hasFile = fileInput && fileInput.files.length > 0
   
   if (!message && !hasFile) return
@@ -535,13 +556,10 @@ document.addEventListener("keydown", (event) => {
   keyState.shiftPressed    ||= key === "Shift"
 
   if (keyState.shiftPressed) {
-    if (keyState.enterPressed) { }
+    if (keyState.enterPressed) { return }
   }
 
-  else if (keyState.enterPressed) {
-    if ( !input.innerText.startsWith("/") ) sendMessage(input.innerText,replyId,chatId)
-    else commandHandler(input.innerText)
-  }
+  else if (keyState.enterPressed) handleSendingMessage(event)
 
   if (key === "/" && document.activeElement !== input) {
     event.preventDefault()
@@ -955,48 +973,39 @@ async function copyMessage() {
 
 // START reply 
 
-function replyStyle(replyContainer) {
-  // input.setSelectionRange(input.value.length, input.value.length);
-  input.style.transition            = "all 0s"
-  input.style.borderTopLeftRadius   = "0px"
-  input.style.borderTopRightRadius  = "0px"
-  input.style.padding               = `0 2%`
-  messageContainer.style.maxHeight  = `calc(97% - 50px - 50px - 50px)`
-  input.addEventListener('focus', function() {
-    replyContainer.style.border = `solid 2px var(--border-focus)`
-  });
-  
-  input.addEventListener('blur', function() {
-    replyContainer.style.border = `solid 2px var(--main-border)`
-  })
-  window.addEventListener("resize", ()=>{replyContainer.style.width = getComputedStyle(input).width })
-}
-
 function reply() {
   if (document.getElementById("reply-container")) removeReply()
-  const reply = document.createElement('div')
-  reply.id    = "reply-container"
-  replyStyle(reply) 
-  reply.style.width     = getComputedStyle(input).width
-  const closeReply      = document.createElement("button")
-  closeReply.id         = "close-reply"
-  closeReply.innerHTML  = `<svg fill="#000000" viewBox="0 0 460.775 460.775"><g><path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/> </g></svg>`
-  closeReply.addEventListener( "click" , ()=> removeReply())
+
+  const reply = createCustomElement("div", { id: "reply-container" })
+  const closeReply = createCustomElement("button", {
+    id: "close-reply",
+    HTML: `<svg fill="#000000" viewBox="0 0 460.775 460.775"><g><path d="M285.08,230.397L456.218,59.27c6.076-6.077,6.076-15.911,0-21.986L423.511,4.565c-2.913-2.911-6.866-4.55-10.992-4.55 c-4.127,0-8.08,1.639-10.993,4.55l-171.138,171.14L59.25,4.565c-2.913-2.911-6.866-4.55-10.993-4.55 c-4.126,0-8.08,1.639-10.992,4.55L4.558,37.284c-6.077,6.075-6.077,15.909,0,21.986l171.138,171.128L4.575,401.505 c-6.074,6.077-6.074,15.911,0,21.986l32.709,32.719c2.911,2.911,6.865,4.55,10.992,4.55c4.127,0,8.08-1.639,10.994-4.55 l171.117-171.12l171.118,171.12c2.913,2.911,6.866,4.55,10.993,4.55c4.128,0,8.081-1.639,10.992-4.55l32.709-32.719 c6.074-6.075,6.074-15.909,0-21.986L285.08,230.397z"/></g></svg>`,
+    onClick: () => removeReply()
+  })
+
   input.focus()
+  messageContainer.style.maxHeight = `calc(97% - 150px)`
+  inputContainer.style.height = `100px`
+  form.style.height = `100px`
+  // this is wrong just fix its css
+  // bro why tf this shit aint workin
+  // document.getElementById("scroll-down")?.style.top = `calc(96% - 140px)`
+
+  // if (document.getElementById("scroll-down")) document.getElementById("scroll-down").style.top = `calc(96% - 140px)`
 
   replyId = targetedElement.querySelector('.message-text').getAttribute('data-message-id')
-  form.appendChild(reply)
   reply.appendChild(closeReply)
-  reply.appendChild(createCustomElement("p", {className : "reply-username", text : "Replying to " + targetedElement.querySelector('.username').innerText} ))
-  reply.appendChild(createCustomElement("p", {className : "reply-text"    , text : targetedElement.querySelector('.message-text').innerText }  ))
+  reply.appendChild(createCustomElement("p", { className: "reply-username", text: "Replying to " + targetedElement.querySelector('.username').innerText }))
+  reply.appendChild(createCustomElement("p", { className: "reply-text", text: targetedElement.querySelector('.message-text').innerText }))
+  inputContainer.insertBefore(reply, inputContainer.firstChild)
 }
 
 function removeReply() {
-  messageContainer.style.maxHeight = `calc(97% - 50px - 50px)`
-  input.style.borderTopLeftRadius  = "50px"
-  input.style.borderTopRightRadius = "50px"
-  input.style.padding = `0 2%` 
-  input.style.width = `80%` 
+  messageContainer.style.maxHeight = `calc(97% - 100px)`
+  form.style.height = `50px`
+  inputContainer.style.height = `50px`
+  // if (document.getElementById("scroll-down")) document.getElementById("scroll-down").style.top = `calc(96% - 140px)`
+
   replyId = null
   document.getElementById("reply-container").remove()
 }
