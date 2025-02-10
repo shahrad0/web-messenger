@@ -425,14 +425,13 @@ button {
     background-color: var(--selected-chat-background-hover);
 }
 #scroll-down {
-    width:  40px;
+    width: 40px;
     height: 40px;
-    position: fixed;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: calc(100% - 50px);
     border-radius: 100px;
     border: solid 1px var(--main-border);
-    /* 3% for forms bottom property, 50px for form height 40px for elements height +1% to add more space  */
-    top: calc(96% - 40px - 50px);
-    right: 1.2%;
     font-size: 24px;
     background-color: var(--main-background-color);
     transition: all var(--short-transition);
@@ -448,19 +447,22 @@ button {
 
 @keyframes show-scroll-down {
     0% {
-        top: calc(96% - 10px - 50px);
+        z-index: -1;
+        bottom: calc(100% - 40px);
     }
     100% {
-        top: calc(96% - 40px - 50px);
+        bottom: calc(100% + 10px);
     }
 }
 
 @keyframes hide-scroll-down {
     0% {
-        top: calc(96% - 40px - 50px);
+        bottom: calc(100% + 10px);
+        z-index: -1;
     }
     100% {
-        top: calc(96% - 40px);
+        z-index: -1;
+        bottom: calc(100% - 40px);
     }
 }
 
@@ -910,3 +912,10 @@ button {
 }
 
 /* END search style */
+
+#load-more {
+    width: 100%;
+    height: 100px;
+    position: relative;
+    background-color: aqua;
+}

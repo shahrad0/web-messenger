@@ -389,7 +389,7 @@ app.get("/get-messages", (req, res) => {
       return res.status(500).send("Error fetching messages")
     }
     
-    const messages = rows.reverse().map(row => {
+    const messages = rows.map(row => {
       // If there's a file_path, split it into an array of file paths (in case of multiple files)
       const filePaths = row.file_path ? row.file_path.split(',') : []
       
@@ -421,7 +421,8 @@ app.get("/get-chats", (req, res) => {
 // START pagintion
 
 app.get("/get-older-messages", (req, res) => {
-  const { offset, chatId } = req.query
+  const { chatId, offset } = req.query
+  const limit = 50
   const query = `
     SELECT 
       messages.message, 
@@ -437,30 +438,96 @@ app.get("/get-older-messages", (req, res) => {
     INNER JOIN users ON messages.user_id = users.id
     LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
     LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
-    WHERE messages.chat_id = ? 
+    WHERE messages.chat_id = ?
+    AND messages.id < ?
     ORDER BY messages.id DESC
-    LIMIT 50 OFFSET ?
+    LIMIT ?
   `
-  
-  db.all(query, [chatId, offset], (err, rows) => {
+  db.all(query, [chatId, offset, limit], (err, rows) => {
+    if (err) {
+      console.error("Error fetching messages:", err.message)
+      return res.status(500).json({ error: "Error fetching messages" })
+    }
+    res.json(rows.reverse())
+  })
+})
+
+
+app.get("/get-specific-message", (req, res) => {
+  const { oldestClientMessage, messageId, chatId } = req.query
+  const findRangeQuery = `
+    SELECT id FROM messages
+    WHERE chat_id = ? AND id < ?
+    ORDER BY id DESC
+    LIMIT 50
+  `
+
+  db.all(findRangeQuery, [chatId, oldestClientMessage], (err, rows) => {
     if (err) {
       console.error("Error fetching messages:", err.message)
       return res.status(500).json({ error: "Error fetching messages" })
     }
 
-    const messages = rows.reverse().map(row => ({
-      message: row.message,
-      username: row.username,
-      profileImage: row.profile_image,
-      userId: row.userId,
-      messageId: row.messageId,
-      replyId: row.reply_id,
-      repliedMessage: row.repliedMessage,
-      repliedUsername: row.repliedUsername,
-      filePath: row.file_path 
-    }))
+    const lowerBound = rows[rows.length - 1].id
+    const isInRange = messageId >= lowerBound
+    let query, params
 
-    res.json(messages)
+    if (isInRange) {
+      query = `
+        SELECT 
+          messages.message, 
+          messages.id AS messageId, 
+          users.username, 
+          users.profile_image, 
+          users.id AS userId,
+          messages.reply_id,
+          messages.file_path,
+          repliedMessages.message AS repliedMessage,
+          repliedUsers.username AS repliedUsername
+        FROM messages
+        INNER JOIN users ON messages.user_id = users.id
+        LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
+        LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
+        WHERE messages.chat_id = ?
+        AND messages.id >= ?
+        AND messages.id < ?
+        ORDER BY messages.id ASC
+      `
+      params = [chatId, lowerBound, oldestClientMessage]
+    } 
+    else {
+      query = `
+        SELECT 
+          messages.message, 
+          messages.id AS messageId, 
+          users.username, 
+          users.profile_image, 
+          users.id AS userId,
+          messages.reply_id,
+          messages.file_path,
+          repliedMessages.message AS repliedMessage,
+          repliedUsers.username AS repliedUsername
+        FROM messages
+        INNER JOIN users ON messages.user_id = users.id
+        LEFT JOIN messages AS repliedMessages ON messages.reply_id = repliedMessages.id
+        LEFT JOIN users AS repliedUsers ON repliedMessages.user_id = repliedUsers.id
+        WHERE messages.chat_id = ?
+        AND messages.id >= ?
+        AND messages.id <= ?
+        ORDER BY messages.id ASC
+        LIMIT 50
+      `
+      params = [chatId, messageId - 25, messageId + 25]
+    }
+
+    db.all(query, params, (err, messages) => {
+      if (err) {
+        console.error("Error fetching messages:", err.message)
+        return res.status(500).json({ error: "Error fetching messages" })
+      }
+
+      res.json({ messages, isInRange: isInRange })
+    })
   })
 })
 

@@ -19,6 +19,10 @@
 // limit search
 // store things (images etc...)on users device 
 // /calc for simple math
+// support phones (css bs)
+// show file name (save it as a message in db or sth)
+// rework html structre its kinda stupid rn (message container form and navigator)
+// show who is typing 
 
 if (!localStorage.getItem('authorized')) window.location.href = '/Authorize/'
 
@@ -40,6 +44,7 @@ document.addEventListener('DOMContentLoaded', ()=> {
   getUserRole()
 })
 
+let loadedMessageRange = []
 let unseenMessages = 0
 let isUploading = false
 let isScrolling = false
@@ -221,10 +226,10 @@ messageContainer.addEventListener('scroll', () => {
       text: "v",
       onClick: () => scrollToBottom(true)
     })
-
-    messageContainer.appendChild(scrollDownButton)
+    scrollDownButton.type = "button"
+    form.appendChild(scrollDownButton)
   }
-  
+
   if (messageContainer.scrollTop === 0) loadOlderMessages()
 })
 
@@ -251,16 +256,6 @@ function handleSendingMessage(e) {
 }
 
 form.addEventListener('submit', (e) => handleSendingMessage(e))
-
-function loadMessages(chatId) {
-  fetch(`/get-messages?chatId=${encodeURIComponent(chatId)}`)
-    .then(response => response.json())
-    .then(data => {
-      messageContainer.appendChild(returnFragment(data.map(messageTemplate)))
-      scrollToBottom(false)
-    })
-    .catch(error => console.error('Error fetching messages:', error))
-}
 
 function messageTemplate(message) {
   const messageDiv = createCustomElement('div', { className: 'message' })
@@ -347,18 +342,18 @@ function messageTemplate(message) {
 }
 
 function scrollToMessage(messageId, newChatId = null) {
-  const targetMessage = document.querySelector(`.message-text[data-message-id="${messageId}"]`);
-  
+  const targetMessage = document.querySelector(`.message-text[data-message-id="${messageId}"]`)
+
   if (targetMessage) {
-    targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const messageContainer = targetMessage.closest('.message')?.querySelector('.message-container');
+    targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const messageContainer = targetMessage.closest('.message')?.querySelector('.message-container')
     
     if (messageContainer) {
       messageContainer.classList.add('highlighted-message')
       setTimeout(() => messageContainer.classList.remove('highlighted-message'), 1000)
     }
-  } 
-  else loadOlderMessages(newChatId !== chatId ? newChatId : null, messageId)
+  }
+  else loadSpecificMessage(newChatId !== chatId ? newChatId : null, messageId)
 }
 
 function sanitizeMessage(inputMessage) {
@@ -634,7 +629,7 @@ async function settingButtonSetup() {
       if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`)
       const user = await response.json()
       userId = user.id
-      
+      // OPTIMIZA HERE tf is this 
       createMenu(`Profile`, `
         <div class="user-info-container">
           <img id="user-profile-image" class="user-image" src="/uploads/${user.profile_image}" alt="NPC">
@@ -874,7 +869,7 @@ document.addEventListener("contextmenu", function (e) {
   }
   
   // right click on input
-  else if (targetedElement.tagName === "INPUT") {
+  else if (targetedElement.tagName === "INPUT" || targetedElement.closest("#input")) {
     const inputElement = e.target
 
     if (inputElement.selectionStart !== inputElement.selectionEnd) {
@@ -987,11 +982,6 @@ function reply() {
   messageContainer.style.maxHeight = `calc(97% - 150px)`
   inputContainer.style.height = `100px`
   form.style.height = `100px`
-  // this is wrong just fix its css
-  // bro why tf this shit aint workin
-  // document.getElementById("scroll-down")?.style.top = `calc(96% - 140px)`
-
-  // if (document.getElementById("scroll-down")) document.getElementById("scroll-down").style.top = `calc(96% - 140px)`
 
   replyId = targetedElement.querySelector('.message-text').getAttribute('data-message-id')
   reply.appendChild(closeReply)
@@ -1004,7 +994,6 @@ function removeReply() {
   messageContainer.style.maxHeight = `calc(97% - 100px)`
   form.style.height = `50px`
   inputContainer.style.height = `50px`
-  // if (document.getElementById("scroll-down")) document.getElementById("scroll-down").style.top = `calc(96% - 140px)`
 
   replyId = null
   document.getElementById("reply-container").remove()
@@ -1143,46 +1132,94 @@ function closeSideMenu() { document.getElementById("pdf-container").remove() }
 
 // START pagintion
 
-let lastMessageOffset = 0
+function loadMessages(chatId) {
+  fetch(`/get-messages?chatId=${encodeURIComponent(chatId)}`)
+    .then(response => response.json())
+    .then(data => {
+      loadedMessageRange.push({ start: data[0].messageId, end: data[data.length - 1].messageId })
 
-async function loadOlderMessages(newChatId = null, replyId = null) {
-  if (newChatId && chatId !== newChatId) {
-    chatId = newChatId
-    lastMessageOffset = 0 // Reset the offset when changing chats
-    changeChat(newChatId, true)
-  }
+      messageContainer.appendChild(returnFragment(data.reverse().map(messageTemplate)))
+      scrollToBottom(false)
+    })
+    .catch(error => console.error('Error fetching messages:', error))
+}
 
-  if (replyId) {
-    lastMessageOffset = 0 // Ignore offset when directly targeting a reply
-  }
+async function loadOlderMessages() {
+  let offset = loadedMessageRange[loadedMessageRange.length - 1].end
 
   const params = new URLSearchParams({
-    offset: lastMessageOffset,
-    chatId: chatId
+    chatId: chatId,
+    offset: offset
   }).toString()
 
   try {
     const response = await fetch(`/get-older-messages?${params}`)
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
-
     const data = await response.json()
-    if (data.length === 0) return // Stop if no more messages
+    if (!data.length) return
 
     const previousScrollHeight = messageContainer.scrollHeight
     messageContainer.insertBefore(returnFragment(data.map(messageTemplate)), messageContainer.firstChild)
     messageContainer.scrollTop = messageContainer.scrollHeight - previousScrollHeight
 
-    lastMessageOffset += data.length // Increment offset by the number of fetched messages
+    // updating range
+    loadedMessageRange[loadedMessageRange.length - 1].end = data[0].messageId
   } catch (error) {
     console.error('Error fetching messages:', error)
   }
 }
 
-// END pagintion
+async function loadSpecificMessage(newChatId = null, messageId) {
+  let oldestClientMessage
 
-// START for debug 
-function log(content = undefined) { console.log(content ? content : "ass") }
-// END for debug 
+  if (newChatId) {
+    chatId = newChatId
+    loadedMessageRange = []
+  }
+
+  // Find the relevant range for oldestClientMessage
+  const range = loadedMessageRange.find(range => range.end > messageId)
+  if (range) oldestClientMessage = range.end
+
+  try {
+    const response = await fetch(`/get-specific-message?chatId=${chatId}&messageId=${messageId}&oldestClientMessage=${oldestClientMessage}`)
+    const { messages, isInRange } = await response.json()
+
+    if (!messages.length) return
+
+    if (!isInRange) {
+      loadedMessageRange.push({
+        start: messages[messages.length - 1].messageId,
+        end: messages[0].messageId
+      })
+
+      const loadMoreElement = createCustomElement("div", {
+        className: "load-more",
+        id: `load-more-${loadedMessageRange.length - 1}`
+      })
+
+      const referenceNode = document.querySelector(`[data-message-id="${oldestClientMessage}"]`)?.closest('.message')
+      if (referenceNode) messageContainer.insertBefore(loadMoreElement, referenceNode)
+    } 
+    else {
+      if (loadedMessageRange.length === 1) loadedMessageRange[0].end = messages[0].messageId
+      else {
+        loadedMessageRange.forEach((value, index) => {
+          const lastMessageId = messages[messages.length - 1].messageId
+          if (value.end < lastMessageId && loadedMessageRange[index]?.start > lastMessageId) loadedMessageRange[index - 1].end = messages[0].messageId
+        })
+      }
+    }
+
+    const loadMoreElement = document.getElementById(`load-more-${loadedMessageRange.length - 1}`)
+    if (loadMoreElement) messageContainer.insertBefore(returnFragment(messages.map(messageTemplate)), loadMoreElement)
+    scrollToMessage(messageId)
+  } catch (error) {
+    console.error("Error loading specific message:", error);
+  }
+}
+
+// END pagintion
 
 // START user status
 
@@ -1718,7 +1755,9 @@ searchInput.addEventListener("input", () => {
 // START command 
 
 function commandHandler(command) {
-  if (command === "/clicker") {
+  const trimedCommand = command.trim()
+
+  if (trimedCommand == "/clicker") {
     clickerInit()
   }
 }
@@ -1728,7 +1767,7 @@ function clickerInit() {
 
   const clickerElement = clicker.querySelector(".message-text")
 
-  const button = createCustomElement("button", { text: "CLICKKKKKK", id: "clicker" })
+  const button = createCustomElement("button", { text: "CLICKKKK", id: "clicker" })
   clickerElement.appendChild(button)
   
   const counter = createCustomElement("p", { id: "counter", text: clicks })
@@ -1742,6 +1781,7 @@ function clickerInit() {
     localStorage.setItem("clicks", clicks)
   })
 
+  input.innerText = ""
   scrollToBottom(true)
 }
 
