@@ -153,7 +153,6 @@ button {
     background-size: cover;
     background-repeat: no-repeat;
     position: relative;
-    /* max-width: 100%;dont know if necessary or not  */
 }
 .divider { 
     background-color: var(--main-border);
@@ -572,9 +571,9 @@ button {
     width: 22%;
 }
 #notify {
+    position: fixed;
     width: -moz-available;
     width: -webkit-fill-available;
-    position: absolute;
     bottom: 10%;
     border-top-left-radius: 100%;
     border-top-right-radius: 100%;
@@ -686,8 +685,6 @@ button {
         left: -50px;
     } 
 }
-/* gonna remove this its just for goofing around */
-/* well that was a lie */
 @keyframes deleteMessage-1 {
     50%{
         rotate: 9000deg;
@@ -713,7 +710,7 @@ button {
         position: absolute;
         transform: scale(25);
     }
-  }
+}
   
 #unseen-messages {
     position: absolute;
@@ -727,11 +724,13 @@ button {
     font-size: 16px;
 }
 #navigation-bar {
+    display: flex;
     background-color: var(--main-background-color);
     border-bottom: solid 1px var(--main-border);
     position: absolute;
     top: 0;
-    height: 50px;
+    height: 40px;
+    padding: 5px;
     width: -moz-available;
     width: -webkit-fill-available;
     cursor: pointer;
@@ -740,6 +739,9 @@ button {
 }
 #navigation-bar:hover {
     border-bottom: solid 1px var(--border-focus);
+}
+#chat-user-stat {
+    font-size: 13px;
 }
 .users-container {
     overflow: auto;
@@ -801,6 +803,7 @@ button {
 }
 .chat-image {
     width: 40px;
+    height: 40px;
     border-radius: 20px;
     margin-right: 10px;
 }

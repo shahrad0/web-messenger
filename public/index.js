@@ -3,7 +3,7 @@
 // add notification and add toggle for it 
 // add custom background image 
 // add poll or voting system
-// in exam chat add quiz mode or test mode 
+// in ahh chat add quiz mode or test mode 
 // allow selecting multiple messages and deleting them 
 // reverse pagination
 // add "convert to" as right click option when right clicking on an input and add "binary" etc.. as options
@@ -38,7 +38,7 @@ fetch("/verify", { credentials: "include" })
 
 document.addEventListener('DOMContentLoaded', ()=> {
   loadSavedColors()
-  applyFilters()
+  updateFilters()
   addChats()
   loadMessages(chatId)
   getUserRole()
@@ -83,13 +83,15 @@ socket.on('chat message', (message) => {
   
     notifyTimeout = setTimeout(() => notify.remove() , 1000)
   
-    if (messageContainer.scrollHeight - (messageContainer.clientHeight / 2) <= (messageContainer.scrollTop + messageContainer.clientHeight)) scrollToBottom(true)
+    if (messageContainer.scrollHeight - (messageContainer.clientHeight / 2) <= (messageContainer.scrollTop + messageContainer.clientHeight)) {
+      // TEMP
+      setTimeout(() => scrollToBottom(true), 100)
+    }
     else {
       unseenMessages++
       let unseenMessagesElement = document.getElementById("unseen-messages")
       if (!unseenMessagesElement) {
         unseenMessagesElement = createCustomElement("div", { id: "unseen-messages" })
-        // this is wrong 
         document.getElementById("scroll-down")?.appendChild(unseenMessagesElement)
       }
       unseenMessagesElement.innerText = unseenMessages
@@ -587,8 +589,8 @@ document.addEventListener("keydown", (event) => {
     setTimeout(() => { isScrolling = false }, 1000)
   }
 
-  if (localStorage.getItem("examMode") === "true") {
-    if (localStorage.getItem("examRestriction") === "true" && !chatId == 2) return
+  if (localStorage.getItem("filterMode") === "true") {
+    if (localStorage.getItem("filterRestriction") === "true" && !chatId == 2) return
     
     let brightness = parseInt(localStorage.getItem("brightness")) ?? 50
 
@@ -656,9 +658,9 @@ async function settingButtonSetup() {
             </div>
 
             <div class="profile-item">
-              <div class="profile-item-content" onclick="examModeConfig()">
+              <div class="profile-item-content" onclick="filtersConfig()">
                 <svg class="menu-image" viewBox="0 0 50 50"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"/></svg>
-                <h3>Exam Mode Config</h3>
+                <h3>filter Config</h3>
               </div>
             </div>
 
@@ -1241,50 +1243,49 @@ socket.on("connect"   , () => updateConnectionStatus("online"))
 
 // END user status
 
-// START exam mode functions
+// START filters functions
 
-function examModeInit() {
+function filtersInit() {
   // restrictions
-  document.getElementById("exam-mode").checked = localStorage.getItem("examMode") === "true"
-  document.getElementById("exam-mode-restriction").checked = localStorage.getItem("examRestriction") ==="true"
+  document.getElementById("filter-mode").checked = localStorage.getItem("filterMode") === "true"
+  document.getElementById("filter-restriction").checked = localStorage.getItem("filterRestriction") ==="true"
   
   // filters
-  document.getElementById("exam-mode-gray-scale").checked  = localStorage.getItem("grayScale") ==="true"
-  document.getElementById("exam-mode-contrast").value   = parseInt(localStorage.getItem("contrast") || 100)
-  document.getElementById("exam-mode-brightness").value = parseInt(localStorage.getItem("brightness") || 100)
+  document.getElementById("gray-scale").checked = localStorage.getItem("grayScale") ==="true"
+  document.getElementById("contrast").value = parseInt(localStorage.getItem("contrast") || 100)
+  document.getElementById("brightness").value = parseInt(localStorage.getItem("brightness") || 100)
 
   // other
   document.getElementById("remove-background").checked = localStorage.getItem("removeBackground") === "true"
 }
 
-function applyFilters() {
-  const examModeElement = document.getElementById("exam-mode")
-  
-  if (examModeElement) {
+function updateFilters() {
+  const filterModeElement = document.getElementById("filter-mode")
+
+  if (filterModeElement) {
     // getting element values
-    const examMode   = examModeElement.checked 
-    const examRestriction = document.getElementById("exam-mode-restriction").checked
-    const grayScale  = document.getElementById("exam-mode-gray-scale").checked
-    const brightness = document.getElementById("exam-mode-brightness").value
-    const contrast = document.getElementById("exam-mode-contrast").value
+    const filterMode = filterModeElement.checked 
+    const filterRestriction = document.getElementById("filter-restriction").checked
+    const grayScale  = document.getElementById("gray-scale").checked
+    const brightness = document.getElementById("brightness").value
+    const contrast = document.getElementById("contrast").value
     const removeBackground = document.getElementById("remove-background").checked
     
     // applying filter and saving config
-    examModeFilter(examMode, examRestriction, grayScale, brightness, contrast, removeBackground)
-    examConfig("set", {examMode, examRestriction, grayScale, brightness, contrast, removeBackground})
+    applyFilters(filterMode, filterRestriction, grayScale, brightness, contrast, removeBackground)
+    filterConfig("set", { filterMode, filterRestriction, grayScale, brightness, contrast, removeBackground })
   } 
   else {
-    const { examMode, examRestriction, grayScale, brightness, contrast, removeBackground } = examConfig("get")
-    if (examMode)  examModeFilter(examMode, examRestriction, grayScale, brightness, contrast, removeBackground)
+    const { filterMode, filterRestriction, grayScale, brightness, contrast, removeBackground } = filterConfig("get")
+    if (filterMode) applyFilters(filterMode, filterRestriction, grayScale, brightness, contrast, removeBackground)
   }
 }
 
-function examModeFilter(examMode, examRestriction, grayScale, brightness, contrast, removeBackground) {
-  // check for exam mode
-  if (examMode) {
+function applyFilters(filterMode, filterRestriction, grayScale, brightness, contrast, removeBackground) {
+  // check for filter mode
+  if (filterMode) {
     // if true check for chatId else applies the filters
-    if (examRestriction) {
-      // chatId 2 == exam chat
+    if (filterRestriction) {
       if (chatId == 2) {
         const grayScaleFilter  = grayScale  ? "grayscale(1)" :  ""
         const brightnessFilter = brightness ? `brightness(${brightness}%)` : ""
@@ -1308,10 +1309,10 @@ function examModeFilter(examMode, examRestriction, grayScale, brightness, contra
   }
 }
 
-function examConfig(setOrGet, { examMode = "", examRestriction = "", grayScale = "", brightness = "",contrast = "", removeBackground = "" } = {}) {
-  if (setOrGet==="set") {
-  localStorage.setItem("examMode", examMode)
-  localStorage.setItem("examRestriction", examRestriction)
+function filterConfig(setOrGet, { filterMode = "", filterRestriction = "", grayScale = "", brightness = "",contrast = "", removeBackground = "" } = {}) {
+  if (setOrGet === "set") {
+  localStorage.setItem("filterMode", filterMode)
+  localStorage.setItem("filterRestriction", filterRestriction)
   localStorage.setItem("grayScale", grayScale)
   localStorage.setItem("brightness", brightness)
   localStorage.setItem("contrast", contrast)
@@ -1319,8 +1320,8 @@ function examConfig(setOrGet, { examMode = "", examRestriction = "", grayScale =
   }
   else if (setOrGet === "get") {
     return {
-      examMode: JSON.parse(localStorage.getItem("examMode")   || "false"),
-      examRestriction: JSON.parse(localStorage.getItem("examRestriction")   || "false"),
+      filterMode: JSON.parse(localStorage.getItem("filterMode")   || "false"),
+      filterRestriction: JSON.parse(localStorage.getItem("filterRestriction")   || "false"),
       grayScale: JSON.parse(localStorage.getItem("grayScale") || "false"),
       removeBackground: JSON.parse(localStorage.getItem("removeBackground") || "false"),
       brightness: localStorage.getItem("brightness") || "100",
@@ -1329,7 +1330,7 @@ function examConfig(setOrGet, { examMode = "", examRestriction = "", grayScale =
   }
 }
 
-// END exam mode functions
+// END filter mode functions
 
 // START delete message 
 
@@ -1393,21 +1394,29 @@ function getChatDetail() {
     return response.json()
   })
   .then((data) => {
+    const chatImage = createCustomElement("img", {
+      className: "chat-image"
+    })
+    chatImage.src = data.chatImage
+
     const chatUserCount = data.userCount
+
     if (document.getElementById("chat-users")) {
       document.getElementById("chat-users").remove()
       document.getElementById("chat-name").remove()
-    } 
+    }
+
     const chatName = createCustomElement("p", {
-      text: data.chatName,
-      id: "chat-name"
+      text: `${data.chatName}`
     })
-    const chatUserCountElement = createCustomElement("p", {
-      text: `${chatUserCount} members,` + ` ${data.onlineUsers} online`,
-      id: `chat-users`
+    const chatUserStat = createCustomElement("p", {
+      text: `${chatUserCount} members, ${data.onlineUsers} online`,
+      id: "chat-user-stat"
     })
+    chatName.appendChild(chatUserStat)
+
+    navigatorElement.appendChild(chatImage)
     navigatorElement.appendChild(chatName)
-    navigatorElement.appendChild(chatUserCountElement)
   })
   .catch((error) => {
     console.error("Failed to fetch chat user count:", error)
@@ -1557,27 +1566,27 @@ function editProfile() {
     }
 }
 
-function examModeConfig() {
-  createMenu(`Exam config`, `
-    <form id="exam-mode-config">
-      <input type="checkbox" id="exam-mode" class="checkbox custom-checkbox">
-      <label for="exam-mode">exam mode</label>
+function filtersConfig() {
+  createMenu(`Filters`, `
+    <form id="filters-config">
+      <input type="checkbox" id="filter-mode" class="checkbox custom-checkbox">
+      <label for="filter-mode">filter mode</label>
       <br>
       <br>
-      <input type="checkbox" id="exam-mode-restriction" class="checkbox custom-checkbox">
-      <label for="exam-mode-restriction">apply effects only on exam chat</label>
+      <input type="checkbox" id="filter-restriction" class="checkbox custom-checkbox">
+      <label for="filter-restriction">apply effects only on second chat</label>
       <br>
       <br>
-      <input type="checkbox" id="exam-mode-gray-scale" class="checkbox custom-checkbox">
-      <label for="exam-mode-gray-scale">gray scale</label>
+      <input type="checkbox" id="gray-scale" class="checkbox custom-checkbox">
+      <label for="gray-scale">gray scale</label>
       <br>
       <br>
-      <input type="number" min="0" max="400" id="exam-mode-brightness" style = "display:initial;"/>
-      <label for="exam-mode-brightness">brightness</label>
+      <input type="number" min="0" max="400" id="brightness" style = "display:initial;"/>
+      <label for="brightness">brightness</label>
       <br>
       <br>
-      <input type="number" min="0" max="400" id="exam-mode-contrast" style = "display:initial;"/>
-      <label for="exam-mode-contrast">contrast</label>
+      <input type="number" min="0" max="400" id="contrast" style = "display:initial;"/>
+      <label for="contrast">contrast</label>
       <br>
       <br>
       <input type="checkbox" id="remove-background" class="checkbox custom-checkbox">
@@ -1585,11 +1594,11 @@ function examModeConfig() {
     </form>
   `)
 
-  examModeInit()
-  document.getElementById("exam-mode-config").addEventListener("input", () => applyFilters())
+  filtersInit()
+  document.getElementById("filters-config").addEventListener("input", () => updateFilters())
 }
 
-// START customization (this part is magic idk wtf is happening)(not finished need more work (custom background ,paddings and shit like that, themes etc.. ))
+// START customization (not finished need more work (custom background ,paddings and shit like that, themes etc.. ))
 
 function rgbToHex(rgb) {
   const rgbValues = rgb.match(/\d+/g)

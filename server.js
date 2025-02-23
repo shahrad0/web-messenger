@@ -74,7 +74,7 @@ db.get(
 )
 
 function createBasicChats() {
-  const query = 'INSERT INTO chats (name) VALUES ("Main Chat"),("Exam")'
+  const query = 'INSERT INTO chats (name) VALUES ("Main Chat"),("Second chat")'
 
   db.run(query, (err) => {
     if (err) console.error("Error inserting basic chats:", err.message)
@@ -842,16 +842,16 @@ app.get("/get-user-role", (req, res) => {
 function getChatDetail(req, res) {
   const { chatId } = req.query 
 
-  const query = 'SELECT user_id  FROM chat_users WHERE chat_id = ?'
+  const query = 'SELECT user_id FROM chat_users WHERE chat_id = ?'
   db.all(query, [chatId], (err,users) => {
-    const chatQuery = 'SELECT online_users, name FROM chats WHERE id = ?'
+    const chatQuery = 'SELECT online_users, name, profile_image FROM chats WHERE id = ?'
     db.get(chatQuery, [chatId], (err, chat) => {
       if (err) {
         console.error(err)
         res.status(500).send("Error fetching chat details")
         return
       }
-      res.json({userCount: users.length, onlineUsers: chat.online_users, chatName: chat.name})
+      res.json({userCount: users.length, onlineUsers: chat.online_users, chatName: chat.name, chatImage: chat.profile_image})
     })
   })
 }
