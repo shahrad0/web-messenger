@@ -183,7 +183,6 @@ button {
 #message-container {
     position: relative;
     width: 100%;
-    margin-top: 50px;
     max-height: calc(97% - 100px);
     overflow-y: scroll;
     overflow-x: hidden;
@@ -727,8 +726,6 @@ button {
     display: flex;
     background-color: var(--main-background-color);
     border-bottom: solid 1px var(--main-border);
-    position: absolute;
-    top: 0;
     height: 40px;
     padding: 5px;
     width: -moz-available;
@@ -900,6 +897,7 @@ button {
     cursor: pointer;
     height: 40px;
     transition: all var(--short-transition);
+    overflow: hidden;
 }
 .search-result:hover {
     background-color: var(--third-background);

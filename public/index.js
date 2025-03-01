@@ -59,6 +59,7 @@ const body             = document.body
 const form             = document.getElementById('form')
 const input            = document.getElementById('input')
 const sideMenu         = document.getElementById("side-menu")
+const navigator        = document.getElementById("navigation-bar")
 const fileInput        = document.getElementById('file')
 const searchInput      = document.getElementById("search-input")
 const mainContainer    = document.getElementById("main-container")
@@ -434,6 +435,7 @@ async function sendMessage(userMessage, replyId = null, chatId) {
 // end message func
 
 const blurOverlay = document.getElementById("blur-overlay")
+
 blurOverlay.onclick = (e) =>  {
   if (!e.target.closest(".menu")) toggleBlurOverlay('', blurOverlay)
 }
@@ -476,7 +478,7 @@ function createMenu(menuName, content) {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === "Escape") toggleBlurOverlay('', blurOverlay)
-  })
+  }, { once: true })
 }
 
 // END creating menu 
@@ -836,36 +838,32 @@ function loadPWTEntries(pwtDeckId) {
 
 // END PWT
 
-let selection
-let selectedRange
-let selectedText
-
 let targetedElement
 let oldTargetedElement
 
 document.addEventListener("contextmenu", function (e) {
   e.preventDefault()
+  document.addEventListener("mousedown", (e) => e.preventDefault(), { once: true })
 
-  selection = window.getSelection()
-  selectedText = selection.toString().trim()
   targetedElement = e.target
+  const selectedText = window.getSelection().toString().trim()
 
   // right click when user selects a text
-  if (selectedText && targetedElement.tagName !== "INPUT") { 
-    selectedRange = selection.getRangeAt(0)
-    contextMenu(event, ['copy'])
+  if (selectedText && (targetedElement.tagName !== "INPUT" && !targetedElement.closest("#input"))) { 
+    contextMenu(e, ['copy'])
   }
 
   // when user right click on message container
   else if (targetedElement.closest('.message-container')) {
     targetedElement = targetedElement.closest('.message-container')
 
-    let features = [`copyMessage` , 'reply', 'hideMessage']
+    let features = [`copyMessage`, 'reply', 'hideMessage']
+
     if (targetedElement.querySelector(".sent")) features.push("invertColor")
     if (targetedElement.querySelector("iframe")) features.push("addToSide")
     if (userRole === "owner" || userRole === "admin") features.push("delete") 
 
-    contextMenu(e,features)
+    contextMenu(e, features)
     targetedElement.classList.add("highlighted-message")
     oldTargetedElement = targetedElement
   }
@@ -905,7 +903,7 @@ function removeExistingMenu() {
 
 function contextMenu(event,features) {
   removeExistingMenu()
-  const contextMenuElement = document.createElement("div");
+  const contextMenuElement = document.createElement("div")
   contextMenuElement.id    = "context-menu"
   // add element depending on where user right clicks
   features.forEach(element => {
@@ -918,10 +916,10 @@ function contextMenu(event,features) {
     if (element == "delete")        contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "delete", onClick: deleteMessage, text: "Delete" }))
     if (element == "reply")         contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "reply", onClick: reply, text: "Reply" }))
     if (element == "paste")         contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "paste", onClick: paste, text: "Paste" }))
-    if (element == "copy")          contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "copy",  onClick: copy, text: "Copy" }))
+    if (element == "copy")          contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "copy",  onClick: copySelectedText, text: "Copy" }))
     if (element == "cut")           contextMenuElement.appendChild(createCustomElement("div", { className: "right-click-item", id: "cut" ,  onClick: cut, text: "Cut" }))
   })
-  body.appendChild(contextMenuElement);
+  body.appendChild(contextMenuElement)
   
   // Adjust the position of the menu within the viewport
   contextMenuElement.style.left  = `${Math.min(event.pageX, window.innerWidth  - contextMenuElement.offsetWidth )}px`
@@ -930,42 +928,60 @@ function contextMenu(event,features) {
   // Remove the menu when clicking outside
   document.addEventListener("click", function () {
     if (targetedElement)  targetedElement.classList.remove("highlighted-message")
-      contextMenuElement.remove()
+    contextMenuElement.remove()
   } , { once: true })
 }
 
 // START right click functions
 
 async function cut() {
-  if (selectedRange && selectedRange.element) {
-    const input = selectedRange.element
-    const cutText = input.innerText.slice(selectedRange.start, selectedRange.end)
+  const activeElement = document.activeElement
 
-    input.innerText = input.innerText.slice(0, selectedRange.start) + input.innerText.slice(selectedRange.end)
-    input.setSelectionRange(selectedRange.start, selectedRange.start)
-
-    selectedRange = null
-
-    await navigator.clipboard.writeText(cutText)
+  if (activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA")) {
+    const { selectionStart: start, selectionEnd: end, value } = activeElement
+    if (start === end) return
+    const selectedText = value.slice(start, end)
+    await copy(selectedText)
+    activeElement.setRangeText("")
+    activeElement.selectionStart = activeElement.selectionEnd = start
+    return
   }
-}
 
-async function copy() {
-  if (selectedRange && selectedRange.element) {
-    const input = selectedRange.element
-    const copiedText = input.innerText.slice(selectedRange.start, selectedRange.end)
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
 
-    await navigator.clipboard.writeText(copiedText)
-  }
+  const range = selection.getRangeAt(0)
+  const selectedText = range.toString()
+  if (!selectedText) return
+
+  await copy(selectedText)
+  range.deleteContents()
 }
 
 async function paste() {
   const read = await navigator.clipboard.readText()
-  targetedElement.value += read
+  targetedElement.innerText += read
 }
 
-async function copyMessage() {
-  await navigator.clipboard.writeText(targetedElement.querySelector(".message-text").innerText)
+function copySelectedText() {
+  copy(window.getSelection().toString().trim())
+}
+
+function copyMessage() {
+  copy(targetedElement.querySelector(".message-text").innerText)
+}
+
+async function copy(text) {
+  if (navigator.clipboard) await navigator.clipboard.writeText(text)
+  else {
+    // works with older browser + no need for https 
+    const textarea = document.createElement("textarea")
+    textarea.value = text
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand("copy")
+    document.body.removeChild(textarea)
+  }
 }
 
 // START reply 
@@ -1062,9 +1078,8 @@ async function deleteMessage() {
 
 // not complete 
 function hideNavigator() {
-  navigatorElement.style.display = "none"
-  messageContainer.style.maxHeight = "90%"
-  messageContainer.style.marginTop = 0
+  navigator.style.display = "none"
+  messageContainer.style.maxHeight = "calc(100% - 50px - 3%)"
 }
 
 function addToSide() {
@@ -1227,7 +1242,7 @@ async function loadSpecificMessage(newChatId = null, messageId) {
 
 function updateConnectionStatus(status) {
   if (status === "offline")
-    setTimeout(() => body.appendChild(createCustomElement( "h1" , { id:"disconnected" , text:"disconnected" })) , 1000)
+    setTimeout(() => body.appendChild(createCustomElement( "h1", { id:"disconnected", text:"disconnected" })), 1000)
   else if (status === "online") {
     const disconnectElement = document.getElementById("disconnected")
     if (disconnectElement) {
@@ -1266,6 +1281,7 @@ function updateFilters() {
     // getting element values
     const filterMode = filterModeElement.checked 
     const filterRestriction = document.getElementById("filter-restriction").checked
+
     const grayScale  = document.getElementById("gray-scale").checked
     const brightness = document.getElementById("brightness").value
     const contrast = document.getElementById("contrast").value
@@ -1313,19 +1329,23 @@ function filterConfig(setOrGet, { filterMode = "", filterRestriction = "", grayS
   if (setOrGet === "set") {
   localStorage.setItem("filterMode", filterMode)
   localStorage.setItem("filterRestriction", filterRestriction)
+
   localStorage.setItem("grayScale", grayScale)
   localStorage.setItem("brightness", brightness)
   localStorage.setItem("contrast", contrast)
+
   localStorage.setItem("removeBackground", removeBackground)
   }
   else if (setOrGet === "get") {
     return {
       filterMode: JSON.parse(localStorage.getItem("filterMode")   || "false"),
       filterRestriction: JSON.parse(localStorage.getItem("filterRestriction")   || "false"),
+
       grayScale: JSON.parse(localStorage.getItem("grayScale") || "false"),
-      removeBackground: JSON.parse(localStorage.getItem("removeBackground") || "false"),
       brightness: localStorage.getItem("brightness") || "100",
-      contrast: localStorage.getItem("contrast") || "100"
+      contrast: localStorage.getItem("contrast") || "100",
+
+      removeBackground: JSON.parse(localStorage.getItem("removeBackground") || "false")
     }
   }
 }
@@ -1345,13 +1365,6 @@ socket.on("delete message", (messageId) => {
 // END delete message 
 
 // START chats (minimize function to understand better)
-
-navigatorElement = createCustomElement("div", { 
-  id : "navigation-bar",
-  onClick : () => getChatUsers()
-})
-
-chatContainer.appendChild(navigatorElement)
 
 async function getChatUsers() {
   try {
@@ -1415,8 +1428,9 @@ function getChatDetail() {
     })
     chatName.appendChild(chatUserStat)
 
-    navigatorElement.appendChild(chatImage)
-    navigatorElement.appendChild(chatName)
+    navigator.innerHTML = null
+    navigator.appendChild(chatImage)
+    navigator.appendChild(chatName)
   })
   .catch((error) => {
     console.error("Failed to fetch chat user count:", error)
@@ -1766,9 +1780,8 @@ searchInput.addEventListener("input", () => {
 function commandHandler(command) {
   const trimedCommand = command.trim()
 
-  if (trimedCommand == "/clicker") {
-    clickerInit()
-  }
+  if (trimedCommand == "/clicker") clickerInit()
+
 }
 
 function clickerInit() {
